@@ -320,16 +320,25 @@ function InteractiveCheckout({
         // Always return actual products from database for other categories
         // Handle both 'Film' and 'PDLC Film' for backward compatibility
         const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : [category];
-        return dbProducts
-            .filter(p => categoryFilter.includes(p.category) && p.stock > 0)
-            .map(p => ({
-                id: p.id,
-                name: p.name,
-                price: `${p.price.toLocaleString()} BDT`,
-                gangType: p.category,
-                imageUrl: p.image || '/images/smart_switch/one gang.webp',
-                isSoldOut: p.stock === 0
-            }));
+        const filteredProducts = dbProducts.filter(p => categoryFilter.includes(p.category) && p.stock > 0);
+        
+        // Sort Security products by serial_order, others by default
+        const sortedProducts = category === 'Security' 
+            ? filteredProducts.sort((a, b) => {
+                const aOrder = a.serial_order || 999;
+                const bOrder = b.serial_order || 999;
+                return aOrder - bOrder;
+            })
+            : filteredProducts;
+            
+        return sortedProducts.map(p => ({
+            id: p.id,
+            name: p.name,
+            price: `${p.price.toLocaleString()} BDT`,
+            gangType: p.category,
+            imageUrl: p.image || '/images/smart_switch/one gang.webp',
+            isSoldOut: p.stock === 0
+        }));
     };
 
     // Listen for back button event from BuyNowModal

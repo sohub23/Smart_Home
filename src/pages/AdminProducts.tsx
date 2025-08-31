@@ -40,7 +40,8 @@ const AdminProducts = () => {
     engraving_available: false,
     engraving_price: '',
     warranty: '',
-    installation_included: false
+    installation_included: false,
+    serial_order: ''
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
@@ -116,7 +117,8 @@ const AdminProducts = () => {
       engraving_available: product.engraving_available || false,
       engraving_price: product.engraving_price?.toString() || '',
       warranty: product.warranty || '',
-      installation_included: product.installation_included || false
+      installation_included: product.installation_included || false,
+      serial_order: product.serial_order?.toString() || ''
     });
     setImagePreview(product.image || '');
     setImageFile(null);
@@ -265,6 +267,7 @@ const AdminProducts = () => {
         engraving_price: formData.engraving_available ? parseFloat(formData.engraving_price) || 0 : null,
         warranty: formData.warranty,
         installation_included: formData.installation_included,
+        serial_order: formData.category === 'Security' ? parseInt(formData.serial_order) || null : null,
         status: parseInt(formData.stock) === 0 ? 'Out of Stock' : 'Active'
       }));
       
@@ -358,6 +361,7 @@ const AdminProducts = () => {
         engraving_price: formData.engraving_available ? parseFloat(formData.engraving_price) || 0 : null,
         warranty: formData.warranty,
         installation_included: formData.installation_included,
+        serial_order: formData.category === 'Security' ? parseInt(formData.serial_order) || null : null,
         status: parseInt(formData.stock) === 0 ? 'Out of Stock' : 'Active'
       };
       
@@ -372,7 +376,7 @@ const AdminProducts = () => {
       setFormData({ 
         name: '', category: '', price: '', stock: '', description: '', image: '', image2: '', image3: '', image4: '', image5: '', engraving_image: '',
         engraving_text_color: '#000000', detailed_description: '', features: '', specifications: '', engraving_available: false,
-        engraving_price: '', warranty: '', installation_included: false
+        engraving_price: '', warranty: '', installation_included: false, serial_order: ''
       });
       setImageFile(null);
       setImagePreview('');
@@ -491,6 +495,18 @@ const AdminProducts = () => {
                       onChange={(e) => setFormData({...formData, stock: e.target.value})}
                     />
                   </div>
+                  {formData.category === 'Security' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="serial_order">Serial Order (Security Category)</Label>
+                      <Input 
+                        id="serial_order" 
+                        type="number" 
+                        placeholder="1" 
+                        value={formData.serial_order}
+                        onChange={(e) => setFormData({...formData, serial_order: e.target.value})}
+                      />
+                    </div>
+                  )}
                   <div className="col-span-2 space-y-2">
                     <Label htmlFor="description">Short Description</Label>
                     <Textarea 
@@ -742,8 +758,10 @@ const AdminProducts = () => {
             <button 
               className="px-4 py-2 text-gray-500 hover:text-gray-700"
               onClick={() => {
-                // Safe navigation using direct assignment
-                window.location.href = '/admin/categories';
+                const url = '/admin/categories';
+                if (url.match(/^\/[a-zA-Z0-9\/_-]*$/)) {
+                  window.location.href = url;
+                }
               }}
             >
               Product Categories
@@ -801,7 +819,20 @@ const AdminProducts = () => {
                   .filter(product => 
                     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     product.category.toLowerCase().includes(searchTerm.toLowerCase())
-                  ).length} products
+                  )
+                  .sort((a, b) => {
+                    const priorityProducts = ['Smart Security Box Kit (SP-01)', 'Security Panel Kit (SP-05)'];
+                    const aIsPriority = priorityProducts.includes(a.name);
+                    const bIsPriority = priorityProducts.includes(b.name);
+                    
+                    if (aIsPriority && !bIsPriority) return -1;
+                    if (!aIsPriority && bIsPriority) return 1;
+                    
+                    if (a.id && b.id) {
+                      return b.id.localeCompare(a.id);
+                    }
+                    return 0;
+                  }).length} products
               </Badge>
             </div>
             <div className="overflow-x-auto -mx-4 md:mx-0">
@@ -831,6 +862,21 @@ const AdminProducts = () => {
                   product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                   product.category.toLowerCase().includes(searchTerm.toLowerCase())
                 )
+                .sort((a, b) => {
+                  // Prioritize specific products first
+                  const priorityProducts = ['Smart Security Box Kit (SP-01)', 'Security Panel Kit (SP-05)'];
+                  const aIsPriority = priorityProducts.includes(a.name);
+                  const bIsPriority = priorityProducts.includes(b.name);
+                  
+                  if (aIsPriority && !bIsPriority) return -1;
+                  if (!aIsPriority && bIsPriority) return 1;
+                  
+                  // If both or neither are priority, sort by ID descending
+                  if (a.id && b.id) {
+                    return b.id.localeCompare(a.id);
+                  }
+                  return 0;
+                })
                 .map((product) => (
                 <TableRow key={product.id} className="hover:bg-gray-50 transition-colors">
                   <TableCell>
@@ -970,6 +1016,18 @@ const AdminProducts = () => {
                   onChange={(e) => setFormData({...formData, stock: e.target.value})}
                 />
               </div>
+              {formData.category === 'Security' && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-serial_order">Serial Order (Security Category)</Label>
+                  <Input 
+                    id="edit-serial_order" 
+                    type="number" 
+                    placeholder="1" 
+                    value={formData.serial_order}
+                    onChange={(e) => setFormData({...formData, serial_order: e.target.value})}
+                  />
+                </div>
+              )}
               <div className="col-span-2 space-y-2">
                 <Label htmlFor="edit-description">Short Description</Label>
                 <Textarea 

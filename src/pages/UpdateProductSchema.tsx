@@ -66,6 +66,7 @@ const UpdateProductSchema = () => {
             <div>ALTER TABLE products ADD COLUMN IF NOT EXISTS image3 TEXT;</div>
             <div>ALTER TABLE products ADD COLUMN IF NOT EXISTS image4 TEXT;</div>
             <div>ALTER TABLE products ADD COLUMN IF NOT EXISTS image5 TEXT;</div>
+            <div>ALTER TABLE products ADD COLUMN IF NOT EXISTS serial_order INTEGER;</div>
           </div>
         )}
         {!completed && (

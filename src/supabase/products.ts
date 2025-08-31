@@ -11,6 +11,7 @@ export interface Product {
   engraving_image?: string
   engraving_text_color?: string
   status: string
+  serial_order?: number
   created_at?: string
   updated_at?: string
 }
