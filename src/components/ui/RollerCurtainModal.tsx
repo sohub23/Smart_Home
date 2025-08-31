@@ -115,7 +115,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           {/* Left: Images */}
           <div className="flex gap-4 items-start">
             {allImages.length > 1 && (
-              <div className="flex flex-col gap-2 w-20 justify-center items-center h-full">
+              <div className="flex flex-col gap-2 w-20">
                 {allImages.map((image, index) => (
                   <button
                     key={index}
@@ -419,12 +419,56 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
 
 
             {/* Warranty */}
-            {product.warranty && (
-              <div className="flex-1 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                <div className="text-sm font-semibold text-blue-900">Warranty</div>
-                <div className="text-sm text-blue-700">{product.warranty}</div>
-              </div>
-            )}
+            <Accordion type="multiple" className="w-full">
+              <AccordionItem value="warranty" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                  Warranty
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-gray-700 pb-4">
+                  1 Year
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            
+            {/* Instruction Manual */}
+            <Accordion type="multiple" className="w-full">
+              <AccordionItem value="manual" className="border rounded-lg px-4">
+                <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                  Instruction Manual
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-700">Download or view the instruction manual:</p>
+                    <div className="bg-gray-50 p-4 rounded-lg border">
+                      <iframe
+                        src="/pdfs/roller-curtain-manual.pdf"
+                        width="100%"
+                        height="300"
+                        className="border rounded"
+                        title="Roller Curtain Manual"
+                      >
+                        <p className="text-sm text-gray-600">
+                          Your browser does not support PDFs. 
+                          <a href="/pdfs/roller-curtain-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
+                            Download the PDF
+                          </a>
+                        </p>
+                      </iframe>
+                    </div>
+                    <a 
+                      href="/pdfs/roller-curtain-manual.pdf" 
+                      target="_blank" 
+                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Download PDF Manual
+                    </a>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             {/* Actions */}
             <div className="space-y-4 pt-6 sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent border-t mt-6 -mx-6 px-6 py-6">
