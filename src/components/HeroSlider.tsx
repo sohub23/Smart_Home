@@ -10,7 +10,7 @@ const slides = [
     video: '/videos/Slide Curtain .mp4',
     image: heroSlidingImage, // Fallback image
     headline: "Every Home. A Smart Home.",
-    subtitle: "Transform your home into a world of safety, comfort, and effortless control.",
+    subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
     alt: "Smart curtain demonstration video"
   },
   {
@@ -18,7 +18,7 @@ const slides = [
     video: '/videos/Roller Curtain.mp4',
     image: heroRollerImage, // Fallback image
     headline: "Every Home. A Smart Home.",
-    subtitle: "Transform your home into a world of safety, comfort, and effortless control.",
+    subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
     alt: "Roller curtain demonstration video"
   }
 ];
