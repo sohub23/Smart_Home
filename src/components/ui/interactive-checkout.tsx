@@ -9,6 +9,7 @@ import NumberFlow from "@number-flow/react";
 import { BuyNowModal } from "@/components/ui/BuyNowModal";
 import { SliderCurtainModal } from "@/components/ui/SliderCurtainModal";
 import { RollerCurtainModal } from "@/components/ui/RollerCurtainModal";
+import { PDLCFilmModal } from "@/components/ui/PDLCFilmModal";
 import { productData } from "@/lib/productData";
 
 import { ServicesModal } from "@/components/ui/ServicesModal";
@@ -130,6 +131,7 @@ function InteractiveCheckout({
     const [selectedVariant, setSelectedVariant] = useState<any>(null);
     const [sliderCurtainModalOpen, setSliderCurtainModalOpen] = useState(false);
     const [rollerCurtainModalOpen, setRollerCurtainModalOpen] = useState(false);
+    const [pdlcFilmModalOpen, setPdlcFilmModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -323,7 +325,7 @@ function InteractiveCheckout({
             .map(p => ({
                 id: p.id,
                 name: p.name,
-                price: `${p.price.toLocaleString()}৳`,
+                price: `${p.price.toLocaleString()} BDT`,
                 gangType: p.category,
                 imageUrl: p.image || '/images/smart_switch/one gang.webp',
                 isSoldOut: p.stock === 0
@@ -604,7 +606,7 @@ function InteractiveCheckout({
                                 setSelectedVariant(variant);
                                 setSelectedProduct(categoryToIdMap[categoryGroup.category] || '3');
                                 
-                                // Check if it's a curtain product and determine type
+                                // Check product category and open appropriate modal
                                 if (categoryGroup.category === 'Smart Curtain') {
                                     if (product.name.toLowerCase().includes('slider')) {
                                         setSliderCurtainModalOpen(true);
@@ -614,6 +616,8 @@ function InteractiveCheckout({
                                         // Default to slider if no specific type found
                                         setSliderCurtainModalOpen(true);
                                     }
+                                } else if (categoryGroup.category === 'PDLC Film') {
+                                    setPdlcFilmModalOpen(true);
                                 } else {
                                     setModalOpen(true);
                                 }
@@ -645,7 +649,7 @@ function InteractiveCheckout({
                                     {product.name}
                                 </h3>
                                 <p className="text-green-600 text-xs font-semibold">
-                                    {typeof product.price === 'string' ? product.price : `৳${product.price}`}
+                                    {typeof product.price === 'string' ? product.price : `${product.price} BDT`}
                                 </p>
                             </div>
                             
@@ -1000,7 +1004,7 @@ function InteractiveCheckout({
                                                         )}
                                                         <div className="text-right">
                                                             <p className="text-sm lg:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                                                                {item.category === 'Services' ? 'Free' : `৳${(item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) ? item.price.toLocaleString() : (item.price * item.quantity).toLocaleString()}`}
+                                                                {item.category === 'Services' ? 'Free' : `${(item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) ? item.price.toLocaleString() : (item.price * item.quantity).toLocaleString()} BDT`}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1028,7 +1032,7 @@ function InteractiveCheckout({
                                             layout
                                             className="text-xl lg:text-2xl font-bold text-black"
                                         >
-                                            ৳<NumberFlow value={totalPrice} />
+                                            <NumberFlow value={totalPrice} /> BDT
                                         </motion.span>
                                     </div>
                                     <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
@@ -1084,12 +1088,12 @@ function InteractiveCheckout({
                                                                 <div class="item">
                                                                     <strong>${item.name}</strong><br>
                                                                     <span style="color: #666;">Quantity: ${item.quantity}</span><br>
-                                                                    <span style="color: #666;">Price: ৳${item.price.toLocaleString()}</span><br>
-                                                                    <span style="font-weight: bold;">Subtotal: ৳${(item.price * item.quantity).toLocaleString()}</span>
+                                                                    <span style="color: #666;">Price: ${item.price.toLocaleString()} BDT</span><br>
+                                                                    <span style="font-weight: bold;">Subtotal: ${(item.price * item.quantity).toLocaleString()} BDT</span>
                                                                 </div>
                                                             `).join('')}
                                                             <hr>
-                                                            <h3 class="total">Total: ৳${Math.max(0, totalPrice).toLocaleString()}</h3>
+                                                            <h3 class="total">Total: ${Math.max(0, totalPrice).toLocaleString()} BDT</h3>
                                                             <p class="footer">Generated on ${new Date().toLocaleDateString()}</p>
                                                         </body>
                                                         </html>
@@ -1392,6 +1396,59 @@ function InteractiveCheckout({
                     });
                 }}
             />
+            
+            {/* PDLC Film Modal */}
+            {selectedVariant && (
+                <PDLCFilmModal
+                    open={pdlcFilmModalOpen}
+                    onOpenChange={(open) => {
+                        setPdlcFilmModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: 'PDLC Film',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: productData?.description || '',
+                            detailed_description: productData?.detailed_description || '',
+                            features: productData?.features || '',
+                            specifications: productData?.specifications || '',
+                            warranty: productData?.warranty || '',
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId && payload.productName) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${payload.productName} (${payload.totalArea.toFixed(2)} sq ft)${payload.transformer ? ` + ${payload.transformer.name}` : ''}${payload.installationCharge && typeof payload.installationCharge === 'number' ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'PDLC Film',
+                                image: selectedVariant.imageUrl,
+                                color: 'PDLC Film',
+                                quantity: payload.quantity,
+                                totalArea: payload.totalArea,
+                                transformer: payload.transformer,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for PDLC film
+                    }}
+                />
+            )}
             
             {/* Save Email Modal */}
             <SaveEmailModal

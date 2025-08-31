@@ -3,11 +3,11 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Minus, Plus, ArrowLeft } from 'lucide-react';
+import { Plus, ArrowLeft, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 
-interface SliderCurtainModalProps {
+interface PDLCFilmModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   product: {
@@ -20,7 +20,6 @@ interface SliderCurtainModalProps {
     features?: string;
     specifications?: string;
     warranty?: string;
-    installation_included?: boolean;
     image?: string;
     image2?: string;
     image3?: string;
@@ -32,13 +31,10 @@ interface SliderCurtainModalProps {
   onBuyNow: (payload: any) => Promise<void>;
 }
 
-export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow }: SliderCurtainModalProps) {
+export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyNow }: PDLCFilmModalProps) {
   const [selectedImage, setSelectedImage] = useState(0);
-  const [trackSizes, setTrackSizes] = useState([0]);
-  const [trackQuantities, setTrackQuantities] = useState([1]);
+  const [dimensions, setDimensions] = useState([{ height: 0, width: 0, quantity: 1 }]);
   const [loading, setLoading] = useState(false);
-  const [includeInstallation, setIncludeInstallation] = useState(false);
-  const [connectionType, setConnectionType] = useState('zigbee');
   const [showInstallationSetup, setShowInstallationSetup] = useState(false);
   const [installationNotes, setInstallationNotes] = useState('');
   const [installationTBD, setInstallationTBD] = useState(false);
@@ -47,29 +43,52 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
   const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
 
-  const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
-  const smartCurtainInstallation = (includeInstallation && trackSizes.length > 0) ? totalQuantity * 3500 : 0;
-  const totalWithInstallation = (product.price * totalQuantity) + smartCurtainInstallation;
+  const totalArea = dimensions.reduce((sum, dim) => sum + ((dim.height * dim.width) * (dim.quantity || 1)), 0);
+  
+  const getTransformer = (area: number) => {
+    if (area <= 50) return { name: '30W Transformer', price: 9500, watt: '30W' };
+    if (area <= 85) return { name: '50W Transformer', price: 12500, watt: '50W' };
+    if (area <= 160) return { name: '100W Transformer', price: 23000, watt: '100W' };
+    if (area <= 300) return { name: '200W Transformer', price: 30000, watt: '200W' };
+    if (area <= 630) return { name: '500W Transformer', price: 40000, watt: '500W' };
+    return { name: '500W+ Transformer', price: 40000, watt: '500W+' };
+  };
+  
+  const getInstallationCharge = (filmAmount: number) => {
+    if (filmAmount >= 150000) return 20000;
+    if (filmAmount >= 100000) return 15000;
+    if (filmAmount >= 50000) return 8000;
+    return 5000;
+  };
+  
+  const transformer = getTransformer(totalArea);
+  const filmAmount = totalArea * product.price;
+  const installationCharge = getInstallationCharge(filmAmount);
+  const totalWithTransformer = filmAmount + transformer.price;
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      // Add each track configuration as separate cart item
-      const validTracks = trackSizes.filter((size, i) => size > 0 && trackQuantities[i] > 0);
+      // Add each glass panel configuration as separate cart item
+      const validPanels = dimensions.filter(dim => dim.height > 0 && dim.width > 0 && dim.quantity > 0);
       
-      for (let i = 0; i < trackSizes.length; i++) {
-        if (trackSizes[i] > 0 && trackQuantities[i] > 0) {
-          const installationForThisTrack = includeInstallation ? trackQuantities[i] * 3500 : 0;
-          const totalPriceForThisTrack = (product.price * trackQuantities[i]) + installationForThisTrack;
+      for (let i = 0; i < dimensions.length; i++) {
+        const dim = dimensions[i];
+        if (dim.height > 0 && dim.width > 0 && dim.quantity > 0) {
+          const panelArea = (dim.height * dim.width) * dim.quantity;
+          const filmAmount = panelArea * product.price;
+          const transformer = getTransformer(panelArea);
+          const totalPrice = filmAmount + transformer.price;
           
           const cartPayload = {
-            productId: `${product.id}_${trackSizes[i]}ft_${Date.now()}_${i}`,
-            productName: `${product.name} (${trackSizes[i]} feet)`,
-            quantity: trackQuantities[i],
-            trackSize: trackSizes[i],
-            connectionType: connectionType,
-            installationCharge: installationForThisTrack,
-            totalPrice: totalPriceForThisTrack,
+            productId: `${product.id}_${dim.height}x${dim.width}_qty${dim.quantity}_${Date.now()}_${i}`,
+            productName: `${product.name} (${dim.height}' x ${dim.width}' - Qty: ${dim.quantity})`,
+            quantity: dim.quantity,
+            height: dim.height,
+            width: dim.width,
+            totalArea: panelArea,
+            totalPrice: totalPrice,
+            transformer: transformer,
             unitPrice: product.price
           };
           
@@ -81,7 +100,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       
       toast({
         title: "Added to Cart",
-        description: `${validTracks.length} track configuration(s) added to your cart.`,
+        description: `${validPanels.length} glass panel configuration(s) added to your cart.`,
       });
       onOpenChange(false);
     } catch (error) {
@@ -114,6 +133,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
 
           {/* Left: Images */}
           <div className="flex gap-4 items-start">
+            {/* Additional Images on Left */}
             {allImages.length > 1 && (
               <div className="flex flex-col gap-2 w-20">
                 {allImages.map((image, index) => (
@@ -139,6 +159,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               </div>
             )}
             
+            {/* Main Image */}
             <div className="flex-1">
               <div className="aspect-square w-full rounded-lg overflow-hidden bg-gray-100">
                 <img
@@ -157,7 +178,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
           {/* Right: Details */}
           <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-200px)] scrollbar-hide">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium text-gray-600">Slider Curtain</span>
+              <span className="text-sm font-medium text-gray-600">PDLC Film</span>
               {product.stock <= 3 && product.stock > 0 && (
                 <Badge variant="secondary" className="text-xs">Low Stock</Badge>
               )}
@@ -171,9 +192,38 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
             </h1>
 
             <div className="text-3xl font-bold text-gray-900 tracking-tight">
-              {totalWithInstallation.toLocaleString()} BDT
-              <span className="text-base font-normal text-gray-500 ml-2">Total</span>
+              {product.price.toLocaleString()} BDT
+              <span className="text-base font-normal text-gray-500 ml-2">per sq ft</span>
             </div>
+            
+            {/* PDLC Film Price Breakdown */}
+            {totalArea > 0 && (
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mt-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Configuration</h4>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-900">PDLC Film</span>
+                      <span className="text-xs text-gray-500">{totalArea.toFixed(2)} sq ft</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">{filmAmount.toLocaleString()} BDT</span>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-gray-900">{transformer.name}</span>
+                      <span className="text-xs text-gray-500">Required for PDLC control • {transformer.watt}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-gray-900">{transformer.price.toLocaleString()} BDT</span>
+                  </div>
+
+
+                  <div className="flex items-center justify-between pt-4">
+                    <span className="text-base font-semibold text-gray-900">Total</span>
+                    <span className="text-lg font-bold text-gray-900">{totalWithTransformer.toLocaleString()} BDT</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Product Details Accordion */}
             <Accordion type="multiple" defaultValue={[]} className="w-full">
@@ -215,19 +265,19 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   <div className="text-sm text-gray-700 space-y-2">
                     <div className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Maximum track length: 326 inches (8.3 meters)
+                      Smart glass technology with instant opacity control
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Sliding curtain mechanism
+                      Voltage: 65V AC (transformer required)
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Compatible with smart home systems
+                      Power consumption: 5-7W per sq ft
                     </div>
                     <div className="flex items-start gap-2">
                       <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Includes motor and complete track system
+                      Operating temperature: -10°C to +60°C
                     </div>
                     {specifications.map((spec, index) => (
                       <div key={index} className="flex items-start gap-2">
@@ -240,79 +290,16 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               </AccordionItem>
             </Accordion>
 
-            {/* Connection Type Selection */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-3 block">
-                Connection Type
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                  <input 
-                    type="radio" 
-                    id="zigbee" 
-                    name="connection" 
-                    value="zigbee" 
-                    checked={connectionType === 'zigbee'}
-                    onChange={(e) => {
-                      setConnectionType(e.target.value);
-                      setTimeout(() => {
-                        const trackSection = document.querySelector('.track-configuration-section');
-                        if (trackSection) {
-                          trackSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                      }, 100);
-                    }}
-                    className="w-4 h-4"
-                  />
-                  <label htmlFor="zigbee" className="text-sm font-medium cursor-pointer flex-1">
-                    Zigbee
-                  </label>
-                </div>
-                <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
-                  <input 
-                    type="radio" 
-                    id="wifi" 
-                    name="connection" 
-                    value="wifi" 
-                    checked={connectionType === 'wifi'}
-                    onChange={(e) => {
-                      setConnectionType(e.target.value);
-                      setTimeout(() => {
-                        const trackSection = document.querySelector('.track-configuration-section');
-                        if (trackSection) {
-                          trackSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                      }, 100);
-                    }}
-                    className="w-4 h-4"
-                  />
-                  <label htmlFor="wifi" className="text-sm font-medium cursor-pointer flex-1">
-                    WiFi
-                  </label>
-                </div>
-              </div>
-              {connectionType === 'zigbee' && (
-                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mt-3">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Note:</strong> Zigbee connection requires a Zigbee hub for operation.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Track Configuration */}
-            <div className="space-y-4 track-configuration-section">
-              {trackSizes.map((size, index) => (
+            {/* Height and Width Configuration */}
+            <div className="space-y-4">
+              {dimensions.map((dim, index) => (
                 <div key={index} className="space-y-4 p-4 border border-gray-200 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium text-gray-700">Track {index + 1}</h4>
+                    <h4 className="text-sm font-medium text-gray-700">Glass Panel {index + 1}</h4>
                     {index > 0 && (
                       <button
                         onClick={() => {
-                          const newSizes = trackSizes.filter((_, i) => i !== index);
-                          const newQuantities = trackQuantities.filter((_, i) => i !== index);
-                          setTrackSizes(newSizes);
-                          setTrackQuantities(newQuantities);
+                          setDimensions(dimensions.filter((_, i) => i !== index));
                         }}
                         className="text-red-500 hover:text-red-700 text-sm"
                       >
@@ -320,25 +307,41 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       </button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Track Length (feet)
+                        Height (feet)
                       </label>
                       <input
                         type="number"
                         min="1"
-                        max="27"
                         step="0.5"
-                        value={size || ''}
+                        value={dim.height || ''}
                         onChange={(e) => {
-                          const value = parseFloat(e.target.value) || 0;
-                          const newSizes = [...trackSizes];
-                          newSizes[index] = value > 27 ? 27 : value;
-                          setTrackSizes(newSizes);
+                          const newDimensions = [...dimensions];
+                          newDimensions[index].height = parseFloat(e.target.value) || 0;
+                          setDimensions(newDimensions);
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter track length in feet (max 27)"
+                        placeholder="Height"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Width (feet)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        step="0.5"
+                        value={dim.width || ''}
+                        onChange={(e) => {
+                          const newDimensions = [...dimensions];
+                          newDimensions[index].width = parseFloat(e.target.value) || 0;
+                          setDimensions(newDimensions);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Width"
                       />
                     </div>
                     <div>
@@ -348,22 +351,22 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => {
-                            const newQuantities = [...trackQuantities];
-                            newQuantities[index] = Math.max(1, newQuantities[index] - 1);
-                            setTrackQuantities(newQuantities);
+                            const newDimensions = [...dimensions];
+                            newDimensions[index].quantity = Math.max(1, newDimensions[index].quantity - 1);
+                            setDimensions(newDimensions);
                           }}
                           className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
                         <span className="text-sm font-semibold text-gray-900 min-w-[2rem] text-center">
-                          {trackQuantities[index] || 1}
+                          {dim.quantity || 1}
                         </span>
                         <button
                           onClick={() => {
-                            const newQuantities = [...trackQuantities];
-                            newQuantities[index] = Math.min(10, (newQuantities[index] || 1) + 1);
-                            setTrackQuantities(newQuantities);
+                            const newDimensions = [...dimensions];
+                            newDimensions[index].quantity = Math.min(10, (newDimensions[index].quantity || 1) + 1);
+                            setDimensions(newDimensions);
                           }}
                           className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                         >
@@ -372,58 +375,67 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       </div>
                     </div>
                   </div>
+                  {dim.height > 0 && dim.width > 0 && (
+                    <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                      <p className="text-sm text-blue-800">
+                        <strong>Area per panel:</strong> {(dim.height * dim.width).toFixed(2)} sq ft
+                      </p>
+                      <p className="text-sm text-blue-800">
+                        <strong>Total area:</strong> {((dim.height * dim.width) * (dim.quantity || 1)).toFixed(2)} sq ft
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
               
               <Button
                 variant="outline"
                 onClick={() => {
-                  setTrackSizes([...trackSizes, 0]);
-                  setTrackQuantities([...trackQuantities, 1]);
+                  setDimensions([...dimensions, { height: 0, width: 0, quantity: 1 }]);
                 }}
-                className="w-full h-10 font-medium border-2 border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:border-gray-400 transition-all duration-300"
+                className="w-full h-12 font-semibold border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 rounded-xl shadow-sm"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Track
+                Add Glass Panel
               </Button>
               
               <Button
                 variant="outline"
                 onClick={() => setShowInstallationSetup(!showInstallationSetup)}
-                className="w-full h-10 font-medium border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 hover:border-blue-400 transition-all duration-300"
+                className="w-full h-12 font-semibold border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 rounded-xl shadow-sm"
               >
-                Installation and Setup (TBD)
+                Installation & Setup
               </Button>
               
               {showInstallationSetup && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
-                  <p className="text-sm text-blue-800 font-medium">
+                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 space-y-4">
+                  <p className="text-sm text-gray-800 font-medium leading-relaxed">
                     আপনি কি installation service নিতে চান? তাহলে আমাদের team আপনার সাথে কথা বলে installation service সম্পর্কে জানাবে।
                   </p>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-blue-700 mb-2 block">
+                      <label className="text-sm font-semibold text-gray-900 mb-3 block">
                         আপনার মন্তব্য বা বিশেষ প্রয়োজন:
                       </label>
                       <textarea
                         value={installationNotes}
                         onChange={(e) => setInstallationNotes(e.target.value)}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm bg-white shadow-sm resize-none"
                         placeholder="আপনার installation সম্পর্কে কোন বিশেষ প্রয়োজন বা মন্তব্য থাকলে এখানে লিখুন..."
                         rows={3}
                       />
                     </div>
                     
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
                       <input
                         type="checkbox"
-                        id="installation-tbd"
+                        id="pdlc-installation-tbd"
                         checked={installationTBD}
                         onChange={(e) => setInstallationTBD(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-500"
                       />
-                      <label htmlFor="installation-tbd" className="text-sm font-medium text-blue-700">
+                      <label htmlFor="pdlc-installation-tbd" className="text-sm font-medium text-gray-900">
                         TBD (To Be Decided) - পরে ঠিক করব
                       </label>
                     </div>
@@ -432,8 +444,6 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               )}
             </div>
 
-
-
             {/* Warranty */}
             <Accordion type="multiple" className="w-full">
               <AccordionItem value="warranty" className="border rounded-lg px-4">
@@ -441,7 +451,10 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   Warranty
                 </AccordionTrigger>
                 <AccordionContent className="text-sm text-gray-700 pb-4">
-                  1 Year
+                  <div className="space-y-2">
+                    <p>1 Year (Transformer only)</p>
+                    <p className="text-xs text-gray-600">*Film has no warranty - once applied, cannot be reused</p>
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -457,22 +470,22 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     <p className="text-sm text-gray-700">Download or view the instruction manual:</p>
                     <div className="bg-gray-50 p-4 rounded-lg border">
                       <iframe
-                        src="/pdfs/slider-curtain-manual.pdf"
+                        src="/pdfs/pdlc-film-manual.pdf"
                         width="100%"
                         height="300"
                         className="border rounded"
-                        title="Slider Curtain Manual"
+                        title="PDLC Film Manual"
                       >
                         <p className="text-sm text-gray-600">
                           Your browser does not support PDFs. 
-                          <a href="/pdfs/slider-curtain-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
+                          <a href="/pdfs/pdlc-film-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
                             Download the PDF
                           </a>
                         </p>
                       </iframe>
                     </div>
                     <a 
-                      href="/pdfs/slider-curtain-manual.pdf" 
+                      href="/pdfs/pdlc-film-manual.pdf" 
                       target="_blank" 
                       className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                     >
@@ -491,7 +504,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <Button
                 variant="outline"
                 onClick={handleAddToCart}
-                disabled={loading || product.stock === 0 || trackSizes[0] === 0}
+                disabled={loading || product.stock === 0 || totalArea === 0}
                 className="w-full h-12 font-semibold border-2 border-black bg-black text-white hover:bg-gray-900 hover:border-gray-900 hover:shadow-lg transition-all duration-300 shadow-md"
               >
                 {loading ? 'ADDING...' : product.stock === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}

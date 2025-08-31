@@ -54,34 +54,24 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      // Add each roller configuration as separate cart item
-      const validTracks = trackSizes.filter((size, i) => size > 0 && trackQuantities[i] > 0);
+      const installationForThisRoller = includeInstallation ? trackQuantities[0] * 3500 : 0;
+      const totalPriceForThisRoller = (product.price * trackQuantities[0]) + installationForThisRoller;
       
-      for (let i = 0; i < trackSizes.length; i++) {
-        if (trackSizes[i] > 0 && trackQuantities[i] > 0) {
-          const installationForThisRoller = includeInstallation ? trackQuantities[i] * 3500 : 0;
-          const totalPriceForThisRoller = (product.price * trackQuantities[i]) + installationForThisRoller;
-          
-          const cartPayload = {
-            productId: `${product.id}_${trackSizes[i]}ft_${Date.now()}_${i}`,
-            productName: `${product.name} (${trackSizes[i]} feet)`,
-            quantity: trackQuantities[i],
-            trackSize: trackSizes[i],
-            connectionType: connectionType,
-            installationCharge: installationForThisRoller,
-            totalPrice: totalPriceForThisRoller,
-            unitPrice: product.price
-          };
-          
-          await onAddToCart(cartPayload);
-          // Small delay to ensure each item is processed
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      }
+      const cartPayload = {
+        productId: `${product.id}_${Date.now()}`,
+        productName: product.name,
+        quantity: trackQuantities[0],
+        connectionType: connectionType,
+        installationCharge: installationForThisRoller,
+        totalPrice: totalPriceForThisRoller,
+        unitPrice: product.price
+      };
+      
+      await onAddToCart(cartPayload);
       
       toast({
         title: "Added to Cart",
-        description: `${validTracks.length} roller configuration(s) added to your cart.`,
+        description: `${product.name} added to your cart.`,
       });
       onOpenChange(false);
     } catch (error) {
@@ -171,7 +161,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
             </h1>
 
             <div className="text-3xl font-bold text-gray-900 tracking-tight">
-              ৳{totalWithInstallation.toLocaleString()}
+              {totalWithInstallation.toLocaleString()} BDT
               <span className="text-base font-normal text-gray-500 ml-2">Total</span>
             </div>
 
@@ -298,94 +288,47 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </p>
                 </div>
               )}
+              
+              {/* Important Note about Pipe Requirements */}
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mt-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Important:</strong> 32mm tube pipe needed. Pipe standard size is 8 feet. If size is larger than 8 feet, need 2 motors and two pipes.
+                </p>
+              </div>
             </div>
 
-            {/* Roller Configuration */}
-            <div className="space-y-4 track-configuration-section">
-              {trackSizes.map((size, index) => (
-                <div key={index} className="space-y-4 p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium text-gray-700">Roller {index + 1}</h4>
-                    {index > 0 && (
-                      <button
-                        onClick={() => {
-                          const newSizes = trackSizes.filter((_, i) => i !== index);
-                          const newQuantities = trackQuantities.filter((_, i) => i !== index);
-                          setTrackSizes(newSizes);
-                          setTrackQuantities(newQuantities);
-                        }}
-                        className="text-red-500 hover:text-red-700 text-sm"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Roller Width (feet)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        step="0.5"
-                        value={size || ''}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value) || 0;
-                          const newSizes = [...trackSizes];
-                          newSizes[index] = value > 10 ? 10 : value;
-                          setTrackSizes(newSizes);
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter roller width in feet (max 10)"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Quantity
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const newQuantities = [...trackQuantities];
-                            newQuantities[index] = Math.max(1, newQuantities[index] - 1);
-                            setTrackQuantities(newQuantities);
-                          }}
-                          className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="text-sm font-semibold text-gray-900 min-w-[2rem] text-center">
-                          {trackQuantities[index] || 1}
-                        </span>
-                        <button
-                          onClick={() => {
-                            const newQuantities = [...trackQuantities];
-                            newQuantities[index] = Math.min(10, (newQuantities[index] || 1) + 1);
-                            setTrackQuantities(newQuantities);
-                          }}
-                          className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+            {/* Quantity Selection */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Quantity
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const newQuantities = [...trackQuantities];
+                      newQuantities[0] = Math.max(1, newQuantities[0] - 1);
+                      setTrackQuantities(newQuantities);
+                    }}
+                    className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm font-semibold text-gray-900 min-w-[2rem] text-center">
+                    {trackQuantities[0] || 1}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const newQuantities = [...trackQuantities];
+                      newQuantities[0] = Math.min(10, (newQuantities[0] || 1) + 1);
+                      setTrackQuantities(newQuantities);
+                    }}
+                    className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
                 </div>
-              ))}
-              
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setTrackSizes([...trackSizes, 0]);
-                  setTrackQuantities([...trackQuantities, 1]);
-                }}
-                className="w-full h-10 font-medium border-2 border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:border-gray-400 transition-all duration-300"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Roller
-              </Button>
+              </div>
               
               <Button
                 variant="outline"
@@ -491,7 +434,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <Button
                 variant="outline"
                 onClick={handleAddToCart}
-                disabled={loading || product.stock === 0 || trackSizes[0] === 0}
+                disabled={loading || product.stock === 0}
                 className="w-full h-12 font-semibold border-2 border-black bg-black text-white hover:bg-gray-900 hover:border-gray-900 hover:shadow-lg transition-all duration-300 shadow-md"
               >
                 {loading ? 'ADDING...' : product.stock === 0 ? 'OUT OF STOCK' : 'ADD TO CART'}
