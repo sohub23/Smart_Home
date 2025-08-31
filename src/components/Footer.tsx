@@ -49,7 +49,7 @@ const Footer = () => {
                 className="h-8 w-auto mb-2"
               />
               <p className="text-sm text-gray-700 mb-2">
-                Smart Comfort. Designed for You.
+                
               </p>
               <p className="text-xs text-gray-600 mb-4">
                 Part of #BuiltForComfort

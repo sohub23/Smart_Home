@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
 import { BuyNowModal } from "@/components/ui/BuyNowModal";
+import { SliderCurtainModal } from "@/components/ui/SliderCurtainModal";
+import { RollerCurtainModal } from "@/components/ui/RollerCurtainModal";
 import { productData } from "@/lib/productData";
 
 import { ServicesModal } from "@/components/ui/ServicesModal";
@@ -126,6 +128,8 @@ function InteractiveCheckout({
     const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedVariant, setSelectedVariant] = useState<any>(null);
+    const [sliderCurtainModalOpen, setSliderCurtainModalOpen] = useState(false);
+    const [rollerCurtainModalOpen, setRollerCurtainModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -589,7 +593,20 @@ function InteractiveCheckout({
                                 const variant = categoryGroup.products.find(p => p.id === product.id);
                                 setSelectedVariant(variant);
                                 setSelectedProduct(categoryToIdMap[categoryGroup.category] || '3');
-                                setModalOpen(true);
+                                
+                                // Check if it's a curtain product and determine type
+                                if (categoryGroup.category === 'Smart Curtain') {
+                                    if (product.name.toLowerCase().includes('slider')) {
+                                        setSliderCurtainModalOpen(true);
+                                    } else if (product.name.toLowerCase().includes('roller')) {
+                                        setRollerCurtainModalOpen(true);
+                                    } else {
+                                        // Default to slider if no specific type found
+                                        setSliderCurtainModalOpen(true);
+                                    }
+                                } else {
+                                    setModalOpen(true);
+                                }
                             }}
                         >
                             {/* Badge */}
@@ -1094,6 +1111,124 @@ function InteractiveCheckout({
             </motion.div>
             </div>
             
+            {/* Slider Curtain Modal */}
+            {selectedVariant && (
+                <SliderCurtainModal
+                    open={sliderCurtainModalOpen}
+                    onOpenChange={(open) => {
+                        setSliderCurtainModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Product',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: productData?.description || '',
+                            detailed_description: productData?.detailed_description || '',
+                            features: productData?.features || '',
+                            specifications: productData?.specifications || '',
+                            warranty: productData?.warranty || '',
+                            installation_included: productData?.installation_included || false,
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant) {
+                            const basePrice = parseInt(selectedVariant.price.replace(/[^0-9]/g, ''), 10) || 0;
+                            let itemName = `${selectedVariant.name} (${payload.connectionType.toUpperCase()})`;
+                            if (payload.installationCharge && typeof payload.installationCharge === 'number' && payload.installationCharge > 0) {
+                                itemName += ` + Installation (৳${payload.installationCharge.toLocaleString()})`;
+                            }
+                            
+                            const cartItem = {
+                                id: selectedVariant.id,
+                                name: itemName,
+                                price: payload.totalPrice,
+                                category: selectedVariant.gangType || 'Product',
+                                image: selectedVariant.imageUrl,
+                                color: selectedVariant.gangType || 'Default',
+                                quantity: payload.quantity || 1,
+                                trackSizes: payload.trackSizes,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for slider curtain
+                    }}
+                />
+            )}
+            
+            {/* Roller Curtain Modal */}
+            {selectedVariant && (
+                <RollerCurtainModal
+                    open={rollerCurtainModalOpen}
+                    onOpenChange={(open) => {
+                        setRollerCurtainModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Product',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: productData?.description || '',
+                            detailed_description: productData?.detailed_description || '',
+                            features: productData?.features || '',
+                            specifications: productData?.specifications || '',
+                            warranty: productData?.warranty || '',
+                            installation_included: productData?.installation_included || false,
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant) {
+                            const basePrice = parseInt(selectedVariant.price.replace(/[^0-9]/g, ''), 10) || 0;
+                            let itemName = `${selectedVariant.name} (${payload.connectionType.toUpperCase()})`;
+                            if (payload.installationCharge && typeof payload.installationCharge === 'number' && payload.installationCharge > 0) {
+                                itemName += ` + Installation (৳${payload.installationCharge.toLocaleString()})`;
+                            }
+                            
+                            const cartItem = {
+                                id: selectedVariant.id,
+                                name: itemName,
+                                price: payload.totalPrice,
+                                category: selectedVariant.gangType || 'Product',
+                                image: selectedVariant.imageUrl,
+                                color: selectedVariant.gangType || 'Default',
+                                quantity: payload.quantity || 1,
+                                trackSizes: payload.trackSizes,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for roller curtain
+                    }}
+                />
+            )}
+
             {/* Buy Now Modal */}
             {selectedProduct && selectedVariant && (
                 <BuyNowModal

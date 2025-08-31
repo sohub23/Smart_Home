@@ -365,13 +365,33 @@ export function BuyNowModal({ open, onOpenChange, product, onAddToCart, onBuyNow
               )}
 
               {/* Specifications */}
-              {specifications.length > 0 && (
+              {(specifications.length > 0 || product.category === 'Smart Curtain') && (
                 <AccordionItem value="specifications" className="border rounded-lg px-4 mt-2">
                   <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
                     Specifications
                   </AccordionTrigger>
                   <AccordionContent className="pb-4">
                     <div className="text-sm text-gray-700 space-y-2">
+                      {product.category === 'Smart Curtain' && (
+                        <>
+                          <div className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Maximum track length: 326 inches (8.3 meters)
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Zigbee wireless control technology
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Compatible with smart home systems
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Includes motor and complete track system
+                          </div>
+                        </>
+                      )}
                       {specifications.map((spec, index) => (
                         <div key={index} className="flex items-start gap-2">
                           <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
@@ -411,12 +431,41 @@ export function BuyNowModal({ open, onOpenChange, product, onAddToCart, onBuyNow
             {/* Track Size for Smart Curtains */}
             {product.category === 'Smart Curtain' && (
               <div className="space-y-4">
-                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200">
-                  <div className="text-sm text-yellow-800 space-y-1">
-                    <p><strong>Important Notes:</strong></p>
-                    <p>• Must need 38mm tube pipe</p>
-                    <p>• Rail size standard 8 feet or less requires 1 motor</p>
-                    <p>• More than 8 feet requires 2 motors</p>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-3 block">
+                    Connection Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                      <input 
+                        type="radio" 
+                        id="zigbee" 
+                        name="connection" 
+                        value="zigbee" 
+                        defaultChecked
+                        className="w-4 h-4"
+                      />
+                      <label htmlFor="zigbee" className="text-sm font-medium cursor-pointer flex-1">
+                        Zigbee
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50">
+                      <input 
+                        type="radio" 
+                        id="wifi" 
+                        name="connection" 
+                        value="wifi" 
+                        className="w-4 h-4"
+                      />
+                      <label htmlFor="wifi" className="text-sm font-medium cursor-pointer flex-1">
+                        WiFi
+                      </label>
+                    </div>
+                  </div>
+                  <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mt-3">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Note:</strong> Zigbee connection requires a Zigbee hub for operation.
+                    </p>
                   </div>
                 </div>
                 {trackSizes.map((size, index) => (
@@ -438,22 +487,22 @@ export function BuyNowModal({ open, onOpenChange, product, onAddToCart, onBuyNow
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Curtain Track Size (feet)
+                        Track Length (feet)
                       </label>
                       <input
                         type="number"
                         min="1"
-                        max="8"
+                        max="27"
                         step="0.5"
                         value={size || ''}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value) || 0;
                           const newSizes = [...trackSizes];
-                          newSizes[index] = value > 8 ? 8 : value;
+                          newSizes[index] = value > 27 ? 27 : value;
                           setTrackSizes(newSizes);
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter track size in feet (max 8)"
+                        placeholder="Enter track length in feet (max 27)"
                       />
                     </div>
                   </div>
@@ -614,7 +663,7 @@ export function BuyNowModal({ open, onOpenChange, product, onAddToCart, onBuyNow
                   </label>
                 </div>
                 <p className="text-xs text-blue-700 mt-2 ml-7">
-                  Professional installation service inside Dhaka (৳3,500 per curtain)
+                  Professional installation service inside Dhaka (৳3,500 per Zigbee curtain motor)
                 </p>
               </div>
             )}
