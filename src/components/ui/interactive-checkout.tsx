@@ -340,10 +340,15 @@ function InteractiveCheckout({
     }, []);
 
     const addToCart = (product: Product | CartItem) => {
+        console.log('addToCart called with:', product);
         setCart((currentCart) => {
+            console.log('Current cart before adding:', currentCart);
+            
             // For Smart Curtain with specific track sizes, use the provided ID (already unique)
             if (product.category === 'Smart Curtain' && product.id.includes('_') && product.id.includes('ft')) {
-                return [...currentCart, { ...product, quantity: 'quantity' in product ? product.quantity : 1 }];
+                const newCart = [...currentCart, { ...product, quantity: 'quantity' in product ? product.quantity : 1 }];
+                console.log('New cart after adding Smart Curtain:', newCart);
+                return newCart;
             }
             
             // For PDLC Film and other Smart Curtain, always add as new item with unique ID
@@ -939,8 +944,8 @@ function InteractiveCheckout({
                                                             </h3>
                                                             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                                                                 {item.category}
-                                                                {item.trackSize ? ` • ${item.trackSize} ft track` : ''}
-                                                                {item.trackSizes ? ` • ${item.trackSizes.join(', ')} ft tracks` : ''}
+                                                                {item.trackSize ? ` • ${item.trackSize} ft` : ''}
+                                                                {item.trackSizes ? ` • ${item.trackSizes.join(', ')} ft` : ''}
                                                                 {item.height && item.width ? ` • ${item.quantity.toFixed(2)} sq ft (${item.height}' × ${item.width}')` : ''}
                                                             </p>
 
@@ -1148,22 +1153,16 @@ function InteractiveCheckout({
                         };
                     })()}
                     onAddToCart={async (payload) => {
-                        if (selectedVariant) {
-                            const basePrice = parseInt(selectedVariant.price.replace(/[^0-9]/g, ''), 10) || 0;
-                            let itemName = `${selectedVariant.name} (${payload.connectionType.toUpperCase()})`;
-                            if (payload.installationCharge && typeof payload.installationCharge === 'number' && payload.installationCharge > 0) {
-                                itemName += ` + Installation (৳${payload.installationCharge.toLocaleString()})`;
-                            }
-                            
+                        if (selectedVariant && payload.productId && payload.productName && payload.trackSize) {
                             const cartItem = {
-                                id: selectedVariant.id,
-                                name: itemName,
+                                id: payload.productId,
+                                name: `${payload.productName} (${payload.connectionType.toUpperCase()})${payload.installationCharge > 0 ? ` + Installation` : ''}`,
                                 price: payload.totalPrice,
-                                category: selectedVariant.gangType || 'Product',
+                                category: 'Smart Curtain',
                                 image: selectedVariant.imageUrl,
-                                color: selectedVariant.gangType || 'Default',
-                                quantity: payload.quantity || 1,
-                                trackSizes: payload.trackSizes,
+                                color: 'Smart Curtain',
+                                quantity: payload.quantity,
+                                trackSize: payload.trackSize,
                                 installationCharge: payload.installationCharge
                             };
                             addToCart(cartItem);
@@ -1207,22 +1206,16 @@ function InteractiveCheckout({
                         };
                     })()}
                     onAddToCart={async (payload) => {
-                        if (selectedVariant) {
-                            const basePrice = parseInt(selectedVariant.price.replace(/[^0-9]/g, ''), 10) || 0;
-                            let itemName = `${selectedVariant.name} (${payload.connectionType.toUpperCase()})`;
-                            if (payload.installationCharge && typeof payload.installationCharge === 'number' && payload.installationCharge > 0) {
-                                itemName += ` + Installation (৳${payload.installationCharge.toLocaleString()})`;
-                            }
-                            
+                        if (selectedVariant && payload.productId && payload.productName && payload.trackSize) {
                             const cartItem = {
-                                id: selectedVariant.id,
-                                name: itemName,
+                                id: payload.productId,
+                                name: `${payload.productName} (${payload.connectionType.toUpperCase()})${payload.installationCharge > 0 ? ` + Installation` : ''}`,
                                 price: payload.totalPrice,
-                                category: selectedVariant.gangType || 'Product',
+                                category: 'Smart Curtain',
                                 image: selectedVariant.imageUrl,
-                                color: selectedVariant.gangType || 'Default',
-                                quantity: payload.quantity || 1,
-                                trackSizes: payload.trackSizes,
+                                color: 'Smart Curtain',
+                                quantity: payload.quantity,
+                                trackSize: payload.trackSize,
                                 installationCharge: payload.installationCharge
                             };
                             addToCart(cartItem);

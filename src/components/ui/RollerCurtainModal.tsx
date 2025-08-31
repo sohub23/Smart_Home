@@ -39,6 +39,9 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [loading, setLoading] = useState(false);
   const [includeInstallation, setIncludeInstallation] = useState(false);
   const [connectionType, setConnectionType] = useState('zigbee');
+  const [showInstallationSetup, setShowInstallationSetup] = useState(false);
+  const [installationNotes, setInstallationNotes] = useState('');
+  const [installationTBD, setInstallationTBD] = useState(false);
 
   const features = product.features ? product.features.split('\n').filter(f => f.trim()) : [];
   const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
@@ -52,13 +55,15 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
     setLoading(true);
     try {
       // Add each roller configuration as separate cart item
+      const validTracks = trackSizes.filter((size, i) => size > 0 && trackQuantities[i] > 0);
+      
       for (let i = 0; i < trackSizes.length; i++) {
         if (trackSizes[i] > 0 && trackQuantities[i] > 0) {
           const installationForThisRoller = includeInstallation ? trackQuantities[i] * 3500 : 0;
           const totalPriceForThisRoller = (product.price * trackQuantities[i]) + installationForThisRoller;
           
-          await onAddToCart({
-            productId: `${product.id}_${trackSizes[i]}ft`,
+          const cartPayload = {
+            productId: `${product.id}_${trackSizes[i]}ft_${Date.now()}_${i}`,
             productName: `${product.name} (${trackSizes[i]} feet)`,
             quantity: trackQuantities[i],
             trackSize: trackSizes[i],
@@ -66,13 +71,17 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
             installationCharge: installationForThisRoller,
             totalPrice: totalPriceForThisRoller,
             unitPrice: product.price
-          });
+          };
+          
+          await onAddToCart(cartPayload);
+          // Small delay to ensure each item is processed
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
       
       toast({
         title: "Added to Cart",
-        description: `${trackSizes.length} roller configuration(s) added to your cart.`,
+        description: `${validTracks.length} roller configuration(s) added to your cart.`,
       });
       onOpenChange(false);
     } catch (error) {
@@ -361,6 +370,50 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 <Plus className="w-4 h-4 mr-2" />
                 Add Roller
               </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => setShowInstallationSetup(!showInstallationSetup)}
+                className="w-full h-10 font-medium border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 hover:border-blue-400 transition-all duration-300"
+              >
+                Installation and Setup (TBD)
+              </Button>
+              
+              {showInstallationSetup && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
+                  <p className="text-sm text-blue-800 font-medium">
+                    আপনি কি installation service নিতে চান? তাহলে আমাদের team আপনার সাথে কথা বলে installation service সম্পর্কে জানাবে।
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium text-blue-700 mb-2 block">
+                        আপনার মন্তব্য বা বিশেষ প্রয়োজন:
+                      </label>
+                      <textarea
+                        value={installationNotes}
+                        onChange={(e) => setInstallationNotes(e.target.value)}
+                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="আপনার installation সম্পর্কে কোন বিশেষ প্রয়োজন বা মন্তব্য থাকলে এখানে লিখুন..."
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        id="roller-installation-tbd"
+                        checked={installationTBD}
+                        onChange={(e) => setInstallationTBD(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="roller-installation-tbd" className="text-sm font-medium text-blue-700">
+                        TBD (To Be Decided) - পরে ঠিক করব
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Installation Service */}
