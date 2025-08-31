@@ -341,7 +341,12 @@ function InteractiveCheckout({
 
     const addToCart = (product: Product | CartItem) => {
         setCart((currentCart) => {
-            // For PDLC Film and Smart Curtain, always add as new item with unique ID
+            // For Smart Curtain with specific track sizes, use the provided ID (already unique)
+            if (product.category === 'Smart Curtain' && product.id.includes('_') && product.id.includes('ft')) {
+                return [...currentCart, { ...product, quantity: 'quantity' in product ? product.quantity : 1 }];
+            }
+            
+            // For PDLC Film and other Smart Curtain, always add as new item with unique ID
             if (product.category === 'PDLC Film' || product.category === 'Film' || product.category === 'Smart Curtain') {
                 const uniqueId = `${product.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
                 return [...currentCart, { ...product, id: uniqueId, quantity: 'quantity' in product ? product.quantity : 1 }];
