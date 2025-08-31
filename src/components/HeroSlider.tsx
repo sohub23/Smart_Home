@@ -7,7 +7,7 @@ import heroRollerImage from '@/assets/hero-roller-curtain.jpg';
 const slides = [
   {
     id: 1,
-    video: '/videos/Slide Curtain .mp4',
+    video: '/videos/Slide_Curtain .mp4',
     image: heroSlidingImage,
     headline: "Every Home. A Smart Home.",
     subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
@@ -15,7 +15,7 @@ const slides = [
   },
   {
     id: 2,
-    video: '/videos/Roller Curtain.mp4',
+    video: '/videos/Roller_Curtain.mp4',
     image: heroRollerImage,
     headline: "Every Home. A Smart Home.",
     subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",

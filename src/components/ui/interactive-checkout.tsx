@@ -317,19 +317,43 @@ function InteractiveCheckout({
             ];
         }
         
-        // Always return actual products from database for other categories
-        // Handle both 'Film' and 'PDLC Film' for backward compatibility
-        const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : [category];
-        return dbProducts
-            .filter(p => categoryFilter.includes(p.category) && p.stock > 0)
-            .map(p => ({
-                id: p.id,
-                name: p.name,
-                price: `${p.price.toLocaleString()} BDT`,
-                gangType: p.category,
-                imageUrl: p.image || '/images/smart_switch/one gang.webp',
-                isSoldOut: p.stock === 0
-            }));
+        // If we have database products, use them
+        if (dbProducts.length > 0) {
+            const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : [category];
+            return dbProducts
+                .filter(p => categoryFilter.includes(p.category) && p.stock > 0)
+                .map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    price: `${p.price.toLocaleString()} BDT`,
+                    gangType: p.category,
+                    imageUrl: p.image || '/images/smart_switch/one gang.webp',
+                    isSoldOut: p.stock === 0
+                }));
+        }
+        
+        // Fallback to default products with correct image paths
+        const defaultProductsByCategory = {
+            'Smart Curtain': [
+                { id: 'curtain-1', name: 'Smart Sliding Curtain', price: '25,000 BDT', gangType: 'Smart Curtain', imageUrl: '/images/smart_switch/3 gang mechanical.webp', isSoldOut: false },
+                { id: 'curtain-2', name: 'Smart Roller Curtain', price: '22,000 BDT', gangType: 'Smart Curtain', imageUrl: '/images/smart_switch/one gang.webp', isSoldOut: false }
+            ],
+            'Smart Switch': [
+                { id: 'switch-1', name: '3 Gang Smart Switch', price: '2,500 BDT', gangType: 'Smart Switch', imageUrl: '/images/smart_switch/3 gang mechanical.webp', isSoldOut: false },
+                { id: 'switch-2', name: '1 Gang Smart Switch', price: '1,800 BDT', gangType: 'Smart Switch', imageUrl: '/images/smart_switch/one gang.webp', isSoldOut: false },
+                { id: 'switch-3', name: '4 Gang Touch Switch', price: '3,200 BDT', gangType: 'Smart Switch', imageUrl: '/images/smart_switch/4 gang touch light.webp', isSoldOut: false }
+            ],
+            'Security': [
+                { id: 'security-1', name: 'Security Camera', price: '8,500 BDT', gangType: 'Security', imageUrl: '/images/sohub_protect/accesories/camera-c11.png', isSoldOut: false },
+                { id: 'security-2', name: 'Door Sensor', price: '1,200 BDT', gangType: 'Security', imageUrl: '/images/sohub_protect/accesories/door_Sensor_DS200.png', isSoldOut: false },
+                { id: 'security-3', name: 'Motion Sensor', price: '2,800 BDT', gangType: 'Security', imageUrl: '/images/sohub_protect/accesories/Motion_pr200.png', isSoldOut: false }
+            ],
+            'PDLC Film': [
+                { id: 'film-1', name: 'Smart Glass Film', price: '15,000 BDT', gangType: 'PDLC Film', imageUrl: '/images/engreving.webp', isSoldOut: false }
+            ]
+        };
+        
+        return defaultProductsByCategory[category] || [];
     };
 
     // Listen for back button event from BuyNowModal
@@ -418,7 +442,14 @@ function InteractiveCheckout({
         0
     );
 
-    const categories = dbProducts.length > 0 ? getCategoryProducts(dbProducts, categoryImages) : products;
+    // Always show categories, fallback to default if no DB products
+    const categories = dbProducts.length > 0 ? getCategoryProducts(dbProducts, categoryImages) : [
+        { id: '1', name: 'Smart Curtain', price: 25000, category: 'Smart Curtain', image: '/images/smart_switch/3 gang mechanical.webp', color: 'Available' },
+        { id: '2', name: 'Smart Switch', price: 2500, category: 'Smart Switch', image: '/images/smart_switch/3 gang mechanical.webp', color: 'Available' },
+        { id: '3', name: 'Security', price: 8500, category: 'Security', image: '/images/sohub_protect/accesories/camera-c11.png', color: 'Available' },
+        { id: '4', name: 'PDLC Film', price: 15000, category: 'PDLC Film', image: '/images/engreving.webp', color: 'Available' },
+        { id: '5', name: 'Services', price: 0, category: 'Services', image: '/images/services/services.png', color: 'Available' }
+    ];
     
     // Get all products grouped by category
     const allProductsByCategory = categories.map(category => {

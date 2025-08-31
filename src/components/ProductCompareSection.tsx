@@ -4,7 +4,7 @@ import { Check } from 'lucide-react';
 const products = [
   {
     name: 'Smart Sliding Curtain',
-    video: '/videos/Slide Curtain .mp4',
+    video: '/videos/Slide_Curtain .mp4',
     description: 'Traditional elegance meets smart technology',
     features: [
       'Traditional curtain appearance',
@@ -21,7 +21,7 @@ const products = [
   },
   {
     name: 'Smart Roller Curtain',
-    video: '/videos/Roller Curtain.mp4',
+    video: '/videos/Roller_Curtain.mp4',
     description: 'Minimal design with maximum control',
     features: [
       'Modern minimal aesthetic',
