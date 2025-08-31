@@ -35,6 +35,7 @@ interface SliderCurtainModalProps {
 export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow }: SliderCurtainModalProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [trackSizes, setTrackSizes] = useState([0]);
+  const [trackQuantities, setTrackQuantities] = useState([1]);
   const [loading, setLoading] = useState(false);
   const [includeInstallation, setIncludeInstallation] = useState(false);
   const [connectionType, setConnectionType] = useState('zigbee');
@@ -43,16 +44,18 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
   const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
 
-  const smartCurtainInstallation = (includeInstallation && trackSizes.length > 0) ? trackSizes.length * 3500 : 0;
-  const totalWithInstallation = (product.price * trackSizes.length) + smartCurtainInstallation;
+  const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
+  const smartCurtainInstallation = (includeInstallation && trackSizes.length > 0) ? totalQuantity * 3500 : 0;
+  const totalWithInstallation = (product.price * totalQuantity) + smartCurtainInstallation;
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
       await onAddToCart({
         productId: product.id,
-        quantity: trackSizes.length,
+        quantity: totalQuantity,
         trackSizes: trackSizes,
+        trackQuantities: trackQuantities,
         connectionType: connectionType,
         installationCharge: smartCurtainInstallation,
         totalPrice: totalWithInstallation
@@ -272,7 +275,9 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       <button
                         onClick={() => {
                           const newSizes = trackSizes.filter((_, i) => i !== index);
+                          const newQuantities = trackQuantities.filter((_, i) => i !== index);
                           setTrackSizes(newSizes);
+                          setTrackQuantities(newQuantities);
                         }}
                         className="text-red-500 hover:text-red-700 text-sm"
                       >
@@ -280,25 +285,57 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       </button>
                     )}
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">
-                      Track Length (feet)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="27"
-                      step="0.5"
-                      value={size || ''}
-                      onChange={(e) => {
-                        const value = parseFloat(e.target.value) || 0;
-                        const newSizes = [...trackSizes];
-                        newSizes[index] = value > 27 ? 27 : value;
-                        setTrackSizes(newSizes);
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="Enter track length in feet (max 27)"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Track Length (feet)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="27"
+                        step="0.5"
+                        value={size || ''}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0;
+                          const newSizes = [...trackSizes];
+                          newSizes[index] = value > 27 ? 27 : value;
+                          setTrackSizes(newSizes);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter track length in feet (max 27)"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">
+                        Quantity
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const newQuantities = [...trackQuantities];
+                            newQuantities[index] = Math.max(1, newQuantities[index] - 1);
+                            setTrackQuantities(newQuantities);
+                          }}
+                          className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                        <span className="text-sm font-semibold text-gray-900 min-w-[2rem] text-center">
+                          {trackQuantities[index] || 1}
+                        </span>
+                        <button
+                          onClick={() => {
+                            const newQuantities = [...trackQuantities];
+                            newQuantities[index] = Math.min(10, (newQuantities[index] || 1) + 1);
+                            setTrackQuantities(newQuantities);
+                          }}
+                          className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -307,6 +344,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 variant="outline"
                 onClick={() => {
                   setTrackSizes([...trackSizes, 0]);
+                  setTrackQuantities([...trackQuantities, 1]);
                 }}
                 className="w-full h-10 font-medium border-2 border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:border-gray-400 transition-all duration-300"
               >
@@ -327,7 +365,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="slider-installation" className="text-sm font-medium text-blue-900">
-                    Add Installation Service (+৳{(trackSizes.length * 3500).toLocaleString()})
+                    Add Installation Service (+৳{(totalQuantity * 3500).toLocaleString()})
                   </label>
                 </div>
                 <p className="text-xs text-blue-700 mt-2 ml-7">
