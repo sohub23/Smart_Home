@@ -51,18 +51,28 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      await onAddToCart({
-        productId: product.id,
-        quantity: totalQuantity,
-        trackSizes: trackSizes,
-        trackQuantities: trackQuantities,
-        connectionType: connectionType,
-        installationCharge: smartCurtainInstallation,
-        totalPrice: totalWithInstallation
-      });
+      // Add each track configuration as separate cart item
+      for (let i = 0; i < trackSizes.length; i++) {
+        if (trackSizes[i] > 0 && trackQuantities[i] > 0) {
+          const installationForThisTrack = includeInstallation ? trackQuantities[i] * 3500 : 0;
+          const totalPriceForThisTrack = (product.price * trackQuantities[i]) + installationForThisTrack;
+          
+          await onAddToCart({
+            productId: `${product.id}_${trackSizes[i]}ft`,
+            productName: `${product.name} (${trackSizes[i]} feet)`,
+            quantity: trackQuantities[i],
+            trackSize: trackSizes[i],
+            connectionType: connectionType,
+            installationCharge: installationForThisTrack,
+            totalPrice: totalPriceForThisTrack,
+            unitPrice: product.price
+          });
+        }
+      }
+      
       toast({
         title: "Added to Cart",
-        description: `${product.name} has been added to your cart.`,
+        description: `${trackSizes.length} track configuration(s) added to your cart.`,
       });
       onOpenChange(false);
     } catch (error) {
