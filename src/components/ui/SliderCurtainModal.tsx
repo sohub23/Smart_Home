@@ -98,19 +98,9 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <div className="fixed inset-0 z-[45] bg-black/50" />
-      <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden p-0 rounded-3xl fixed left-[50%] top-[50%] z-[50] translate-x-[-50%] translate-y-[-50%] bg-white shadow-2xl border-0">
-        <div className="grid md:grid-cols-[1fr,1fr] gap-8 p-8">
-          {/* Back Button */}
-          <div className="md:col-span-2 mb-4">
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="flex items-center gap-2 text-gray-600 hover:text-white hover:bg-gray-600 transition-all duration-300 px-4 py-2 rounded-lg"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-          </div>
+      <DialogContent className="max-w-[1100px] max-h-[95vh] overflow-hidden p-0 rounded-3xl fixed left-[50%] top-[50%] z-[50] translate-x-[-50%] translate-y-[-50%] bg-white shadow-2xl border-0">
+        <div className="grid md:grid-cols-[1fr,1fr] gap-6 p-4">
+
 
           {/* Left: Images */}
           <div className="flex gap-4 items-start">
@@ -155,9 +145,8 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
           </div>
 
           {/* Right: Details */}
-          <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-200px)] scrollbar-hide">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium text-gray-600">Slider Curtain</span>
+          <div className="space-y-4 overflow-y-auto overflow-x-hidden max-h-[calc(95vh-150px)] scrollbar-hide">
+            <div className="flex items-center gap-2 mb-1">
               {product.stock <= 3 && product.stock > 0 && (
                 <Badge variant="secondary" className="text-xs">Low Stock</Badge>
               )}
@@ -166,9 +155,12 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               )}
             </div>
 
-            <h1 className="text-xl font-semibold text-gray-900 mb-4">
+            <h1 className="text-xl font-semibold text-gray-900 mb-0">
               {product.name}
             </h1>
+            <p className="text-xs text-gray-600 mb-1">
+              App control
+            </p>
 
             <div className="text-3xl font-bold text-gray-900 tracking-tight">
               {totalWithInstallation.toLocaleString()} BDT
@@ -238,6 +230,63 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </div>
                 </AccordionContent>
               </AccordionItem>
+              
+            </Accordion>
+            
+            {/* Warranty and Manual in one row */}
+            <div className="grid grid-cols-2 gap-4">
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="warranty" className="border rounded-lg px-4">
+                  <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                    Warranty
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-gray-700 pb-4">
+                    1 Year
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+              
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="manual" className="border rounded-lg px-4">
+                  <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                    Instruction Manual
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4">
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-700">Download or view the instruction manual:</p>
+                      <div className="bg-gray-50 p-4 rounded-lg border">
+                        <iframe
+                          src="/pdfs/slider-curtain-manual.pdf"
+                          width="100%"
+                          height="300"
+                          className="border rounded"
+                          title="Slider Curtain Manual"
+                        >
+                          <p className="text-sm text-gray-600">
+                            Your browser does not support PDFs. 
+                            <a href="/pdfs/slider-curtain-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
+                              Download the PDF
+                            </a>
+                          </p>
+                        </iframe>
+                      </div>
+                      <a 
+                        href="/pdfs/slider-curtain-manual.pdf" 
+                        target="_blank" 
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF Manual
+                      </a>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
+            
+            <Accordion type="multiple" defaultValue={[]} className="w-full">
             </Accordion>
 
             {/* Connection Type Selection */}
@@ -387,13 +436,25 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 Add Track
               </Button>
               
-              <Button
-                variant="outline"
-                onClick={() => setShowInstallationSetup(!showInstallationSetup)}
-                className="w-full h-10 font-medium border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 hover:border-blue-400 transition-all duration-300"
-              >
-                Installation and Setup (TBD)
-              </Button>
+              <div className="border-4 border-gray-800 rounded-2xl p-6 bg-gradient-to-br from-gray-50 to-white shadow-lg">
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    id="installation-service"
+                    checked={includeInstallation}
+                    onChange={(e) => setIncludeInstallation(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 border-2 border-gray-400 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <label htmlFor="installation-service" className="text-base font-bold text-gray-900">
+                    Installation and Setup (TBD)
+                  </label>
+                </div>
+                {includeInstallation && (
+                  <p className="text-sm text-gray-700 mt-3 font-semibold leading-relaxed">
+                    <strong className="text-gray-900">Note:</strong> Our technical person will contact you for installation service.
+                  </p>
+                )}
+              </div>
               
               {showInstallationSetup && (
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
@@ -434,57 +495,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
 
 
 
-            {/* Warranty */}
-            <Accordion type="multiple" className="w-full">
-              <AccordionItem value="warranty" className="border rounded-lg px-4">
-                <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
-                  Warranty
-                </AccordionTrigger>
-                <AccordionContent className="text-sm text-gray-700 pb-4">
-                  1 Year
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-            
-            {/* Instruction Manual */}
-            <Accordion type="multiple" className="w-full">
-              <AccordionItem value="manual" className="border rounded-lg px-4">
-                <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
-                  Instruction Manual
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-700">Download or view the instruction manual:</p>
-                    <div className="bg-gray-50 p-4 rounded-lg border">
-                      <iframe
-                        src="/pdfs/slider-curtain-manual.pdf"
-                        width="100%"
-                        height="300"
-                        className="border rounded"
-                        title="Slider Curtain Manual"
-                      >
-                        <p className="text-sm text-gray-600">
-                          Your browser does not support PDFs. 
-                          <a href="/pdfs/slider-curtain-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
-                            Download the PDF
-                          </a>
-                        </p>
-                      </iframe>
-                    </div>
-                    <a 
-                      href="/pdfs/slider-curtain-manual.pdf" 
-                      target="_blank" 
-                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Download PDF Manual
-                    </a>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+
 
             {/* Actions */}
             <div className="space-y-4 pt-6 sticky bottom-0 bg-white border-t mt-6 -mx-6 px-6 py-6">

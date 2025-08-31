@@ -228,7 +228,61 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </div>
                 </AccordionContent>
               </AccordionItem>
+              
             </Accordion>
+            
+            {/* Warranty and Manual in one row */}
+            <div className="grid grid-cols-2 gap-4">
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="warranty" className="border rounded-lg px-4">
+                  <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                    Warranty
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-gray-700 pb-4">
+                    1 Year
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+              
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="manual" className="border rounded-lg px-4">
+                  <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                    Instruction Manual
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4">
+                    <div className="space-y-3">
+                      <p className="text-sm text-gray-700">Download or view the instruction manual:</p>
+                      <div className="bg-gray-50 p-4 rounded-lg border">
+                        <iframe
+                          src="/pdfs/roller-curtain-manual.pdf"
+                          width="100%"
+                          height="300"
+                          className="border rounded"
+                          title="Roller Curtain Manual"
+                        >
+                          <p className="text-sm text-gray-600">
+                            Your browser does not support PDFs. 
+                            <a href="/pdfs/roller-curtain-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
+                              Download the PDF
+                            </a>
+                          </p>
+                        </iframe>
+                      </div>
+                      <a 
+                        href="/pdfs/roller-curtain-manual.pdf" 
+                        target="_blank" 
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF Manual
+                      </a>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
 
             {/* Connection Type Selection */}
             <div>
@@ -330,104 +384,30 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 </div>
               </div>
               
-              <Button
-                variant="outline"
-                onClick={() => setShowInstallationSetup(!showInstallationSetup)}
-                className="w-full h-10 font-medium border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 hover:from-blue-100 hover:to-blue-200 hover:border-blue-400 transition-all duration-300"
-              >
-                Installation and Setup (TBD)
-              </Button>
-              
-              {showInstallationSetup && (
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 space-y-4">
-                  <p className="text-sm text-blue-800 font-medium">
-                    আপনি কি installation service নিতে চান? তাহলে আমাদের team আপনার সাথে কথা বলে installation service সম্পর্কে জানাবে।
-                  </p>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-sm font-medium text-blue-700 mb-2 block">
-                        আপনার মন্তব্য বা বিশেষ প্রয়োজন:
-                      </label>
-                      <textarea
-                        value={installationNotes}
-                        onChange={(e) => setInstallationNotes(e.target.value)}
-                        className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        placeholder="আপনার installation সম্পর্কে কোন বিশেষ প্রয়োজন বা মন্তব্য থাকলে এখানে লিখুন..."
-                        rows={3}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        id="roller-installation-tbd"
-                        checked={installationTBD}
-                        onChange={(e) => setInstallationTBD(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label htmlFor="roller-installation-tbd" className="text-sm font-medium text-blue-700">
-                        TBD (To Be Decided) - পরে ঠিক করব
-                      </label>
-                    </div>
-                  </div>
+              <div className="border-4 border-gray-800 rounded-2xl p-6 bg-gradient-to-br from-gray-50 to-white shadow-lg">
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    id="roller-installation-service"
+                    checked={includeInstallation}
+                    onChange={(e) => setIncludeInstallation(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 border-2 border-gray-400 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <label htmlFor="roller-installation-service" className="text-base font-bold text-gray-900">
+                    Installation and Setup (TBD)
+                  </label>
                 </div>
-              )}
+                {includeInstallation && (
+                  <p className="text-sm text-gray-700 mt-3 font-semibold leading-relaxed">
+                    <strong className="text-gray-900">Note:</strong> Our technical person will contact you for installation service.
+                  </p>
+                )}
+              </div>
             </div>
 
 
 
-            {/* Warranty */}
-            <Accordion type="multiple" className="w-full">
-              <AccordionItem value="warranty" className="border rounded-lg px-4">
-                <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
-                  Warranty
-                </AccordionTrigger>
-                <AccordionContent className="text-sm text-gray-700 pb-4">
-                  1 Year
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-            
-            {/* Instruction Manual */}
-            <Accordion type="multiple" className="w-full">
-              <AccordionItem value="manual" className="border rounded-lg px-4">
-                <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
-                  Instruction Manual
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-700">Download or view the instruction manual:</p>
-                    <div className="bg-gray-50 p-4 rounded-lg border">
-                      <iframe
-                        src="/pdfs/roller-curtain-manual.pdf"
-                        width="100%"
-                        height="300"
-                        className="border rounded"
-                        title="Roller Curtain Manual"
-                      >
-                        <p className="text-sm text-gray-600">
-                          Your browser does not support PDFs. 
-                          <a href="/pdfs/roller-curtain-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
-                            Download the PDF
-                          </a>
-                        </p>
-                      </iframe>
-                    </div>
-                    <a 
-                      href="/pdfs/roller-curtain-manual.pdf" 
-                      target="_blank" 
-                      className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      Download PDF Manual
-                    </a>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+
 
             {/* Actions */}
             <div className="space-y-4 pt-6 sticky bottom-0 bg-white border-t mt-6 -mx-6 px-6 py-6">
