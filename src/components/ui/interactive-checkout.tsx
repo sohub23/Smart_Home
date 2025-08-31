@@ -10,6 +10,8 @@ import { BuyNowModal } from "@/components/ui/BuyNowModal";
 import { SliderCurtainModal } from "@/components/ui/SliderCurtainModal";
 import { RollerCurtainModal } from "@/components/ui/RollerCurtainModal";
 import { PDLCFilmModal } from "@/components/ui/PDLCFilmModal";
+import { SohubProtectModal } from "@/components/ui/SohubProtectModal";
+import { SmartSwitchModal } from "@/components/ui/SmartSwitchModal";
 import { productData } from "@/lib/productData";
 
 import { ServicesModal } from "@/components/ui/ServicesModal";
@@ -132,6 +134,8 @@ function InteractiveCheckout({
     const [sliderCurtainModalOpen, setSliderCurtainModalOpen] = useState(false);
     const [rollerCurtainModalOpen, setRollerCurtainModalOpen] = useState(false);
     const [pdlcFilmModalOpen, setPdlcFilmModalOpen] = useState(false);
+    const [sohubProtectModalOpen, setSohubProtectModalOpen] = useState(false);
+    const [smartSwitchModalOpen, setSmartSwitchModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -651,6 +655,10 @@ function InteractiveCheckout({
                                     }
                                 } else if (categoryGroup.category === 'PDLC Film') {
                                     setPdlcFilmModalOpen(true);
+                                } else if (categoryGroup.category === 'Security') {
+                                    setSohubProtectModalOpen(true);
+                                } else if (categoryGroup.category === 'Smart Switch') {
+                                    setSmartSwitchModalOpen(true);
                                 } else {
                                     setModalOpen(true);
                                 }
@@ -1276,8 +1284,8 @@ function InteractiveCheckout({
                 />
             )}
 
-            {/* Buy Now Modal */}
-            {selectedProduct && selectedVariant && (
+            {/* Buy Now Modal - For non-Security and non-Smart Switch products */}
+            {selectedProduct && selectedVariant && selectedVariant.gangType !== 'Security' && selectedVariant.gangType !== 'Smart Switch' && (
                 <BuyNowModal
                     open={modalOpen}
                     onOpenChange={(open) => {
@@ -1322,9 +1330,9 @@ function InteractiveCheckout({
                             }
                             if (payload.installationCharge && typeof payload.installationCharge === 'number' && payload.installationCharge > 0) {
                                 if (selectedVariant.gangType === 'Smart Switch') {
-                                    itemName += ` + Installation (৳${payload.installationCharge.toLocaleString()})`;
+                                    itemName += ` + Installation (BDT ${payload.installationCharge.toLocaleString()})`;
                                 } else if (selectedVariant.gangType === 'Smart Curtain') {
-                                    itemName += ` + Installation (৳${payload.installationCharge.toLocaleString()})`;
+                                    itemName += ` + Installation (BDT ${payload.installationCharge.toLocaleString()})`;
                                 } else {
                                     itemName += ` + Installation`;
                                 }
@@ -1479,6 +1487,114 @@ function InteractiveCheckout({
                     }}
                     onBuyNow={async (payload) => {
                         // Handle buy now for PDLC film
+                    }}
+                />
+            )}
+            
+            {/* Smart Switch Modal */}
+            {selectedVariant && (
+                <SmartSwitchModal
+                    open={smartSwitchModalOpen}
+                    onOpenChange={(open) => {
+                        setSmartSwitchModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Smart Switch',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: productData?.description || '',
+                            detailed_description: productData?.detailed_description || '',
+                            features: productData?.features || '',
+                            specifications: productData?.specifications || '',
+                            engraving_available: productData?.engraving_available || false,
+                            engraving_price: productData?.engraving_price || 0,
+                            engraving_image: productData?.engraving_image || '',
+                            engraving_text_color: productData?.engraving_text_color || '#000000',
+                            warranty: productData?.warranty || '',
+                            installation_included: productData?.installation_included || false,
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                                category: 'Smart Switch',
+                                image: selectedVariant.imageUrl,
+                                color: 'Smart Switch',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Smart Switch products
+                    }}
+                />
+            )}
+            
+            {/* Sohub Protect Modal */}
+            {selectedVariant && (
+                <SohubProtectModal
+                    open={sohubProtectModalOpen}
+                    onOpenChange={(open) => {
+                        setSohubProtectModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Security',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: productData?.description || '',
+                            detailed_description: productData?.detailed_description || '',
+                            features: productData?.features || '',
+                            specifications: productData?.specifications || '',
+                            warranty: productData?.warranty || '',
+                            installation_included: productData?.installation_included || false,
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'Security',
+                                image: selectedVariant.imageUrl,
+                                color: 'Security',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Sohub Protect products
                     }}
                 />
             )}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,13 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [loading, setLoading] = useState(false);
   const [includeInstallation, setIncludeInstallation] = useState(false);
   const [connectionType, setConnectionType] = useState('zigbee');
+
+  // Reset to default when modal opens
+  useEffect(() => {
+    if (open) {
+      setConnectionType('zigbee');
+    }
+  }, [open]);
   const [showInstallationSetup, setShowInstallationSetup] = useState(false);
   const [installationNotes, setInstallationNotes] = useState('');
   const [installationTBD, setInstallationTBD] = useState(false);
@@ -48,14 +55,14 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
 
   const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
-  const smartCurtainInstallation = (includeInstallation && trackSizes.length > 0) ? totalQuantity * 3500 : 0;
-  const totalWithInstallation = (product.price * totalQuantity) + smartCurtainInstallation;
+  const smartCurtainInstallation = 0;
+  const totalWithInstallation = (product.price * totalQuantity);
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      const installationForThisRoller = includeInstallation ? trackQuantities[0] * 3500 : 0;
-      const totalPriceForThisRoller = (product.price * trackQuantities[0]) + installationForThisRoller;
+      const installationForThisRoller = 0;
+      const totalPriceForThisRoller = (product.price * trackQuantities[0]);
       
       const cartPayload = {
         productId: `${product.id}_${Date.now()}`,
@@ -88,19 +95,8 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <div className="fixed inset-0 z-[45] bg-black/50" />
-      <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden p-0 rounded-3xl fixed left-[50%] top-[50%] z-[50] translate-x-[-50%] translate-y-[-50%] bg-white shadow-2xl border-0">
+      <DialogContent className="max-w-[1100px] max-h-[95vh] overflow-hidden p-0 rounded-3xl fixed left-[50%] top-[50%] z-[50] translate-x-[-50%] translate-y-[-50%] bg-white shadow-2xl border-0">
         <div className="grid md:grid-cols-[1fr,1fr] gap-8 p-8">
-          {/* Back Button */}
-          <div className="md:col-span-2 mb-4">
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="flex items-center gap-2 text-gray-600 hover:text-white hover:bg-gray-600 transition-all duration-300 px-4 py-2 rounded-lg"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-          </div>
 
           {/* Left: Images */}
           <div className="flex gap-4 items-start">
@@ -145,9 +141,8 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           </div>
 
           {/* Right: Details */}
-          <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-200px)] scrollbar-hide">
+          <div className="space-y-4 overflow-y-auto max-h-[calc(95vh-200px)] scrollbar-hide">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium text-gray-600">Roller Curtain</span>
               {product.stock <= 3 && product.stock > 0 && (
                 <Badge variant="secondary" className="text-xs">Low Stock</Badge>
               )}
@@ -156,9 +151,13 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
               )}
             </div>
 
-            <h1 className="text-xl font-semibold text-gray-900 mb-4">
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">
               {product.name}
             </h1>
+            
+            <p className="text-xs text-gray-600 mb-4">
+              App Control
+            </p>
 
             <div className="text-3xl font-bold text-gray-900 tracking-tight">
               {totalWithInstallation.toLocaleString()} BDT
@@ -251,25 +250,10 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </AccordionTrigger>
                   <AccordionContent className="pb-4">
                     <div className="space-y-3">
-                      <p className="text-sm text-gray-700">Download or view the instruction manual:</p>
-                      <div className="bg-gray-50 p-4 rounded-lg border">
-                        <iframe
-                          src="/pdfs/roller-curtain-manual.pdf"
-                          width="100%"
-                          height="300"
-                          className="border rounded"
-                          title="Roller Curtain Manual"
-                        >
-                          <p className="text-sm text-gray-600">
-                            Your browser does not support PDFs. 
-                            <a href="/pdfs/roller-curtain-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
-                              Download the PDF
-                            </a>
-                          </p>
-                        </iframe>
-                      </div>
+
+
                       <a 
-                        href="/pdfs/roller-curtain-manual.pdf" 
+                        href="/user_manual/Sohub_Protect_Brochure.pdf" 
                         target="_blank" 
                         className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >

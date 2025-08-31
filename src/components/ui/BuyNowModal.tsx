@@ -81,13 +81,13 @@ export function BuyNowModal({ open, onOpenChange, product, onAddToCart, onBuyNow
   const installationCharge = (product.category === 'PDLC Film' || product.category === 'Film') ? getInstallationCharge(filmAmount) : 0;
   
   // Smart Switch installation charge
-  const smartSwitchInstallation = (product.category === 'Smart Switch' && includeInstallation && quantity >= 1 && quantity <= 3) ? 2000 : 0;
+  const smartSwitchInstallation = 0;
   
   // Smart Curtain installation charge
-  const smartCurtainInstallation = (product.category === 'Smart Curtain' && includeInstallation && trackSizes.length > 0) ? trackSizes.length * 3500 : 0;
+  const smartCurtainInstallation = 0;
   
   const totalWithTransformer = filmAmount + (transformer?.price || 0) + (typeof installationCharge === 'number' ? installationCharge : 0);
-  const totalWithInstallation = (product.price * quantity) + smartSwitchInstallation + smartCurtainInstallation;
+  const totalWithInstallation = (product.price * quantity);
 
   const handleAddToCart = async () => {
     setLoading(true);
@@ -115,8 +115,8 @@ export function BuyNowModal({ open, onOpenChange, product, onAddToCart, onBuyNow
           productId: product.id,
           quantity: quantity,
           trackSizes: product.category === 'Smart Curtain' ? trackSizes : undefined,
-          installationCharge: product.category === 'Smart Switch' ? smartSwitchInstallation : product.category === 'Smart Curtain' ? smartCurtainInstallation : undefined,
-          totalPrice: (product.category === 'Smart Switch' || product.category === 'Smart Curtain') ? totalWithInstallation : undefined,
+          installationCharge: 0,
+          totalPrice: undefined,
           engravingText: engravingText || undefined
         });
       }
@@ -159,7 +159,7 @@ export function BuyNowModal({ open, onOpenChange, product, onAddToCart, onBuyNow
           productId: product.id,
           quantity: quantity,
           trackSizes: product.category === 'Smart Curtain' ? trackSizes : undefined,
-          installationCharge: product.category === 'Smart Switch' ? smartSwitchInstallation : product.category === 'Smart Curtain' ? smartCurtainInstallation : undefined,
+          installationCharge: 0,
           engravingText: engravingText || undefined
         });
       }
@@ -404,28 +404,47 @@ export function BuyNowModal({ open, onOpenChange, product, onAddToCart, onBuyNow
               )}
             </Accordion>
 
-            {/* Warranty & Installation */}
-            <div className="flex gap-3">
-              {(product.category === 'PDLC Film' || product.category === 'Film') ? (
-                <div className="flex-1 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                  <div className="text-sm font-semibold text-blue-900">Warranty</div>
-                  <div className="text-sm text-blue-700">1 Year (Transformer only)</div>
-                  <div className="text-xs text-blue-600 mt-1">*Film has no warranty - once applied, cannot be reused</div>
-                </div>
-              ) : (
-                product.warranty && (
-                  <div className="flex-1 p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-                    <div className="text-sm font-semibold text-blue-900">Warranty</div>
-                    <div className="text-sm text-blue-700">{product.warranty}</div>
-                  </div>
-                )
-              )}
-              {product.installation_included && (
-                <div className="flex-1 p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
-                  <div className="text-sm font-semibold text-green-900">Installation</div>
-                  <div className="text-sm text-green-700">Included</div>
-                </div>
-              )}
+            {/* Warranty and Manual in one row */}
+            <div className="grid grid-cols-2 gap-4">
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="warranty" className="border rounded-lg px-4">
+                  <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                    Warranty
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-gray-700 pb-4">
+                    {(product.category === 'PDLC Film' || product.category === 'Film') ? (
+                      <div className="space-y-2">
+                        <p>1 Year (Transformer only)</p>
+                        <p className="text-xs text-gray-600">*Film has no warranty - once applied, cannot be reused</p>
+                      </div>
+                    ) : (
+                      product.warranty || '1 Year'
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+              
+              <Accordion type="multiple" className="w-full">
+                <AccordionItem value="manual" className="border rounded-lg px-4">
+                  <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                    Instruction Manual
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4">
+                    <div className="space-y-3">
+                      <a 
+                        href="/user_manual/Sohub_Protect_Brochure.pdf" 
+                        target="_blank" 
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF Manual
+                      </a>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
 
             {/* Track Size for Smart Curtains */}

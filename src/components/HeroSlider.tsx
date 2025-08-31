@@ -7,7 +7,7 @@ import heroRollerImage from '@/assets/hero-roller-curtain.jpg';
 const slides = [
   {
     id: 1,
-    video: '/videos/Slide_Curtain .mp4',
+    youtubeId: 'APm2EDVBljw',
     image: heroSlidingImage,
     headline: "Every Home. A Smart Home.",
     subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
@@ -15,7 +15,7 @@ const slides = [
   },
   {
     id: 2,
-    video: '/videos/Roller_Curtain.mp4',
+    youtubeId: 'K0MZDn2Tw_4',
     image: heroRollerImage,
     headline: "Every Home. A Smart Home.",
     subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
@@ -71,38 +71,28 @@ const HeroSlider = () => {
             }`}
           >
             <div className="relative w-full h-full">
-              {slide.video ? (
+              {slide.youtubeId ? (
                 <>
-                  <video
+                  <iframe
                     key={slide.id}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    className="w-full h-full object-cover"
-                    style={{ display: 'block' }}
-                    onError={(e) => {
-                      // Video failed to load, fallback handled by image
+                    src={`https://www.youtube-nocookie.com/embed/${slide.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${slide.youtubeId}`}
+                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                    style={{ 
+                      border: 'none',
+                      width: '177.78vh',
+                      height: '100vh',
+                      minWidth: '100vw',
+                      minHeight: '56.25vw'
                     }}
-                  >
-                    <source src={slide.video} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                  {/* Fallback image overlay - hidden when video loads */}
+                    allow="autoplay; encrypted-media"
+                    title={slide.alt}
+                  />
+                  {/* Fallback image overlay */}
                   <img
                     src={slide.image}
                     alt={slide.alt}
                     className="absolute inset-0 w-full h-full object-cover -z-10"
                     style={{ display: 'none' }}
-                    onLoad={() => {
-                      // Show image if video fails
-                      const video = document.querySelector(`video[src*="${slide.video.split('/').pop()}"]`) as HTMLVideoElement;
-                      if (video && video.readyState === 0) {
-                        (video.nextElementSibling as HTMLImageElement).style.display = 'block';
-                        video.style.display = 'none';
-                      }
-                    }}
                   />
                 </>
               ) : (

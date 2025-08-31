@@ -4,7 +4,7 @@ import { Check } from 'lucide-react';
 const products = [
   {
     name: 'Smart Sliding Curtain',
-    video: '/videos/Slide_Curtain .mp4',
+    youtubeId: 'APm2EDVBljw',
     description: 'Traditional elegance meets smart technology',
     features: [
       'Traditional curtain appearance',
@@ -21,7 +21,7 @@ const products = [
   },
   {
     name: 'Smart Roller Curtain',
-    video: '/videos/Roller_Curtain.mp4',
+    youtubeId: 'K0MZDn2Tw_4',
     description: 'Minimal design with maximum control',
     features: [
       'Modern minimal aesthetic',
@@ -57,17 +57,21 @@ const ProductCompareSection = () => {
           {products.map((product, index) => (
             <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500">
               {/* Product Video */}
-              <div className="aspect-[3/2] overflow-hidden">
-                <video
-                  src={product.video}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                >
-                  Your browser does not support the video tag.
-                </video>
+              <div className="h-[400px] overflow-hidden relative">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${product.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${product.youtubeId}`}
+                  className="absolute hover:scale-105 transition-transform duration-500"
+                  style={{ 
+                    border: 'none',
+                    width: '150%',
+                    height: '150%',
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                  allow="autoplay; encrypted-media"
+                  title={product.name}
+                />
               </div>
               
               {/* Product Content */}

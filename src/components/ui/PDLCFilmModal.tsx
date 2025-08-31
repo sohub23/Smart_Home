@@ -119,17 +119,6 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
       <div className="fixed inset-0 z-[45] bg-black/50" />
       <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden p-0 rounded-3xl fixed left-[50%] top-[50%] z-[50] translate-x-[-50%] translate-y-[-50%] bg-white shadow-2xl border-0">
         <div className="grid md:grid-cols-[1fr,1fr] gap-8 p-8">
-          {/* Back Button */}
-          <div className="md:col-span-2 mb-4">
-            <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="flex items-center gap-2 text-gray-600 hover:text-white hover:bg-gray-600 transition-all duration-300 px-4 py-2 rounded-lg"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </Button>
-          </div>
 
           {/* Left: Images */}
           <div className="flex gap-4 items-start">
@@ -288,6 +277,41 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                   </div>
                 </AccordionContent>
               </AccordionItem>
+              
+              {/* Warranty and Manual in one row */}
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <AccordionItem value="warranty" className="border rounded-lg px-4">
+                  <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                    Warranty
+                  </AccordionTrigger>
+                  <AccordionContent className="text-sm text-gray-700 pb-4">
+                    <div className="space-y-2">
+                      <p>1 Year (Transformer only)</p>
+                      <p className="text-xs text-gray-600">*Film has no warranty - once applied, cannot be reused</p>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="manual" className="border rounded-lg px-4">
+                  <AccordionTrigger className="text-left font-medium text-gray-900 hover:no-underline">
+                    Instruction Manual
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-4">
+                    <div className="space-y-3">
+                      <a 
+                        href="/user_manual/Sohub_Protect_Brochure.pdf" 
+                        target="_blank" 
+                        className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Download PDF Manual
+                      </a>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </div>
             </Accordion>
 
             {/* Height and Width Configuration */}
@@ -399,49 +423,25 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                 Add Glass Panel
               </Button>
               
-              <Button
-                variant="outline"
-                onClick={() => setShowInstallationSetup(!showInstallationSetup)}
-                className="w-full h-12 font-semibold border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 rounded-xl shadow-sm"
-              >
-                Installation & Setup
-              </Button>
-              
-              {showInstallationSetup && (
-                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 space-y-4">
-                  <p className="text-sm text-gray-800 font-medium leading-relaxed">
-                    আপনি কি installation service নিতে চান? তাহলে আমাদের team আপনার সাথে কথা বলে installation service সম্পর্কে জানাবে।
-                  </p>
-                  
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-semibold text-gray-900 mb-3 block">
-                        আপনার মন্তব্য বা বিশেষ প্রয়োজন:
-                      </label>
-                      <textarea
-                        value={installationNotes}
-                        onChange={(e) => setInstallationNotes(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm bg-white shadow-sm resize-none"
-                        placeholder="আপনার installation সম্পর্কে কোন বিশেষ প্রয়োজন বা মন্তব্য থাকলে এখানে লিখুন..."
-                        rows={3}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200">
-                      <input
-                        type="checkbox"
-                        id="pdlc-installation-tbd"
-                        checked={installationTBD}
-                        onChange={(e) => setInstallationTBD(e.target.checked)}
-                        className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-500"
-                      />
-                      <label htmlFor="pdlc-installation-tbd" className="text-sm font-medium text-gray-900">
-                        TBD (To Be Decided) - পরে ঠিক করব
-                      </label>
-                    </div>
-                  </div>
+              <div className="border-4 border-gray-800 rounded-2xl p-6 bg-gradient-to-br from-gray-50 to-white shadow-lg">
+                <div className="flex items-center gap-4">
+                  <input
+                    type="checkbox"
+                    id="pdlc-installation-service"
+                    checked={showInstallationSetup}
+                    onChange={(e) => setShowInstallationSetup(e.target.checked)}
+                    className="w-5 h-5 text-blue-600 border-2 border-gray-400 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <label htmlFor="pdlc-installation-service" className="text-base font-bold text-gray-900">
+                    Installation and Setup (TBD)
+                  </label>
                 </div>
-              )}
+                {showInstallationSetup && (
+                  <p className="text-sm text-gray-700 mt-3 font-semibold leading-relaxed">
+                    <strong className="text-gray-900">Note:</strong> Our technical person will contact you for installation service.
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Warranty */}

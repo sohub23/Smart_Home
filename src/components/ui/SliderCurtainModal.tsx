@@ -48,8 +48,8 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
 
   const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
-  const smartCurtainInstallation = (includeInstallation && trackSizes.length > 0) ? totalQuantity * 3500 : 0;
-  const totalWithInstallation = (product.price * totalQuantity) + smartCurtainInstallation;
+  const smartCurtainInstallation = 0;
+  const totalWithInstallation = (product.price * totalQuantity);
 
   const handleAddToCart = async () => {
     setLoading(true);
@@ -59,8 +59,8 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       
       for (let i = 0; i < trackSizes.length; i++) {
         if (trackSizes[i] > 0 && trackQuantities[i] > 0) {
-          const installationForThisTrack = includeInstallation ? trackQuantities[i] * 3500 : 0;
-          const totalPriceForThisTrack = (product.price * trackQuantities[i]) + installationForThisTrack;
+          const installationForThisTrack = 0;
+          const totalPriceForThisTrack = (product.price * trackQuantities[i]);
           
           const cartPayload = {
             productId: `${product.id}_${trackSizes[i]}ft_${Date.now()}_${i}`,
@@ -253,25 +253,10 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </AccordionTrigger>
                   <AccordionContent className="pb-4">
                     <div className="space-y-3">
-                      <p className="text-sm text-gray-700">Download or view the instruction manual:</p>
-                      <div className="bg-gray-50 p-4 rounded-lg border">
-                        <iframe
-                          src="/pdfs/slider-curtain-manual.pdf"
-                          width="100%"
-                          height="300"
-                          className="border rounded"
-                          title="Slider Curtain Manual"
-                        >
-                          <p className="text-sm text-gray-600">
-                            Your browser does not support PDFs. 
-                            <a href="/pdfs/slider-curtain-manual.pdf" target="_blank" className="text-blue-600 hover:underline">
-                              Download the PDF
-                            </a>
-                          </p>
-                        </iframe>
-                      </div>
+
+
                       <a 
-                        href="/pdfs/slider-curtain-manual.pdf" 
+                        href="/user_manual/Sohub_Protect_Brochure.pdf" 
                         target="_blank" 
                         className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
                       >

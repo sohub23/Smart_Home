@@ -75,12 +75,14 @@ const NarrativeSection = () => {
           {/* Visual */}
           <div className="relative">
             <div className="aspect-[4/3] rounded-[var(--radius-large)] overflow-hidden shadow-medium">
-              <img
-                src="/images/sohub_protect/banner/2nd_image.jpg"
-                alt="Manual curtains vs smart curtains comparison"
+              <video
+                src="http://202.59.208.112/smart_curtain/videos/ati_bazar.mp4"
+                autoPlay
+                muted
+                loop
+                playsInline
                 className="w-full h-full object-cover"
               />
-
             </div>
             
             {/* Floating card */}
