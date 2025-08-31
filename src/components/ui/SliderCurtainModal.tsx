@@ -98,7 +98,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <div className="fixed inset-0 z-[45] bg-black/50" />
-      <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-y-auto p-0 rounded-3xl fixed left-[50%] top-[50%] z-[50] translate-x-[-50%] translate-y-[-50%] bg-white shadow-2xl border-0">
+      <DialogContent className="max-w-[1100px] max-h-[90vh] overflow-hidden p-0 rounded-3xl fixed left-[50%] top-[50%] z-[50] translate-x-[-50%] translate-y-[-50%] bg-white shadow-2xl border-0">
         <div className="grid md:grid-cols-[1fr,1fr] gap-8 p-8">
           {/* Back Button */}
           <div className="md:col-span-2 mb-4">
@@ -155,7 +155,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
           </div>
 
           {/* Right: Details */}
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-200px)] scrollbar-hide">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-sm font-medium text-gray-600">Slider Curtain</span>
               {product.stock <= 3 && product.stock > 0 && (
@@ -253,7 +253,15 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     name="connection" 
                     value="zigbee" 
                     checked={connectionType === 'zigbee'}
-                    onChange={(e) => setConnectionType(e.target.value)}
+                    onChange={(e) => {
+                      setConnectionType(e.target.value);
+                      setTimeout(() => {
+                        const trackSection = document.querySelector('.track-configuration-section');
+                        if (trackSection) {
+                          trackSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }, 100);
+                    }}
                     className="w-4 h-4"
                   />
                   <label htmlFor="zigbee" className="text-sm font-medium cursor-pointer flex-1">
@@ -267,7 +275,15 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     name="connection" 
                     value="wifi" 
                     checked={connectionType === 'wifi'}
-                    onChange={(e) => setConnectionType(e.target.value)}
+                    onChange={(e) => {
+                      setConnectionType(e.target.value);
+                      setTimeout(() => {
+                        const trackSection = document.querySelector('.track-configuration-section');
+                        if (trackSection) {
+                          trackSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }, 100);
+                    }}
                     className="w-4 h-4"
                   />
                   <label htmlFor="wifi" className="text-sm font-medium cursor-pointer flex-1">
@@ -285,7 +301,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
             </div>
 
             {/* Track Configuration */}
-            <div className="space-y-4">
+            <div className="space-y-4 track-configuration-section">
               {trackSizes.map((size, index) => (
                 <div key={index} className="space-y-4 p-4 border border-gray-200 rounded-lg">
                   <div className="flex items-center justify-between">
@@ -471,7 +487,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
             </Accordion>
 
             {/* Actions */}
-            <div className="space-y-4 pt-6 sticky bottom-0 bg-gradient-to-t from-white via-white to-transparent border-t mt-6 -mx-6 px-6 py-6">
+            <div className="space-y-4 pt-6 sticky bottom-0 bg-white border-t mt-6 -mx-6 px-6 py-6">
               <Button
                 variant="outline"
                 onClick={handleAddToCart}

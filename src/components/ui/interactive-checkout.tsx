@@ -1055,54 +1055,66 @@ function InteractiveCheckout({
                                             disabled={cart.length === 0}
                                             onClick={() => {
                                                 try {
-                                                    // Sanitize all cart data before printing
+                                                    // Sanitize all cart data before generating PDF
                                                     const sanitizedCartItems = cart.map(item => ({
                                                         name: sanitizeDbInput(item.name),
                                                         quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
                                                         price: Math.max(0, Number(item.price) || 0)
                                                     }));
                                                     
-                                                    const printContent = `
-                                                        <div style="font-family: Arial, sans-serif; padding: 20px;">
-                                                            <h1 style="text-align: center; color: #333;">Smart Home Quote</h1>
-                                                            <hr style="margin: 20px 0;">
+                                                    const pdfContent = `
+                                                        <!DOCTYPE html>
+                                                        <html>
+                                                        <head>
+                                                            <title>Smart Home Quote</title>
+                                                            <style>
+                                                                body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+                                                                h1 { text-align: center; color: #333; margin-bottom: 30px; }
+                                                                .item { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
+                                                                .total { text-align: right; color: #333; font-size: 20px; margin: 20px 0; }
+                                                                .footer { text-align: center; margin-top: 40px; color: #666; font-size: 12px; }
+                                                                hr { margin: 20px 0; border: 1px solid #ddd; }
+                                                            </style>
+                                                        </head>
+                                                        <body>
+                                                            <h1>Smart Home Quote</h1>
+                                                            <hr>
                                                             <h3>Items:</h3>
                                                             ${sanitizedCartItems.map(item => `
-                                                                <div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd;">
+                                                                <div class="item">
                                                                     <strong>${item.name}</strong><br>
-                                                                    Quantity: ${item.quantity}<br>
-                                                                    Price: ৳${item.price.toLocaleString()}<br>
-                                                                    Subtotal: ৳${(item.price * item.quantity).toLocaleString()}
+                                                                    <span style="color: #666;">Quantity: ${item.quantity}</span><br>
+                                                                    <span style="color: #666;">Price: ৳${item.price.toLocaleString()}</span><br>
+                                                                    <span style="font-weight: bold;">Subtotal: ৳${(item.price * item.quantity).toLocaleString()}</span>
                                                                 </div>
                                                             `).join('')}
-                                                            <hr style="margin: 20px 0;">
-                                                            <h3 style="text-align: right;">Total: ৳${Math.max(0, totalPrice).toLocaleString()}</h3>
-                                                            <p style="text-align: center; margin-top: 30px; color: #666;">
-                                                                Generated on ${new Date().toLocaleDateString()}
-                                                            </p>
-                                                        </div>
+                                                            <hr>
+                                                            <h3 class="total">Total: ৳${Math.max(0, totalPrice).toLocaleString()}</h3>
+                                                            <p class="footer">Generated on ${new Date().toLocaleDateString()}</p>
+                                                        </body>
+                                                        </html>
                                                     `;
-                                                    const printWindow = window.open('', '_blank');
-                                                    if (printWindow) {
-                                                        printWindow.document.write(printContent);
-                                                        printWindow.document.close();
-                                                        printWindow.print();
-                                                    } else {
-                                                        toast({
-                                                            title: "Print Failed",
-                                                            description: "Please allow popups to print the quote.",
-                                                        });
-                                                    }
+                                                    
+                                                    const blob = new Blob([pdfContent], { type: 'text/html' });
+                                                    const url = URL.createObjectURL(blob);
+                                                    window.open(url, '_blank');
+                                                    
+                                                    toast({
+                                                        title: "Quote Opened",
+                                                        description: "Quote opened in new tab. Use Ctrl+P to save as PDF.",
+                                                    });
                                                 } catch (error) {
                                                     toast({
-                                                        title: "Print Error",
-                                                        description: "Failed to generate print preview.",
+                                                        title: "Error",
+                                                        description: "Failed to open quote.",
                                                     });
                                                 }
                                             }}
                                         >
-                                            <Printer className="w-4 h-4" />
-                                            Print
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            View PDF
                                         </Button>
                                     </div>
                                     <Button 
