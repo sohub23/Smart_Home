@@ -74,7 +74,6 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm" />
         <DialogPrimitive.Content
           className="fixed left-[50%] top-[50%] z-[60] w-[95vw] sm:w-[90vw] max-w-md max-h-[90vh] sm:max-h-[85vh] translate-x-[-50%] translate-y-[-50%] bg-white rounded-2xl shadow-2xl overflow-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
         >
@@ -178,7 +177,6 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
       
       {/* Minimum Order Alert */}
       <AlertDialog open={showMinOrderAlert} onOpenChange={setShowMinOrderAlert}>
-        <div className="fixed inset-0 z-[65] bg-black/60" />
         <AlertDialogContent className="max-w-md fixed left-[50%] top-[50%] z-[70] translate-x-[-50%] translate-y-[-50%]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-xl font-semibold text-gray-900">

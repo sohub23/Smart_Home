@@ -11,6 +11,8 @@ import { SliderCurtainModal } from "@/components/ui/SliderCurtainModal";
 import { RollerCurtainModal } from "@/components/ui/RollerCurtainModal";
 import { PDLCFilmModal } from "@/components/ui/PDLCFilmModal";
 import { SohubProtectModal } from "@/components/ui/SohubProtectModal";
+import { SmartSecurityBoxModal } from "@/components/ui/SmartSecurityBoxModal";
+import { SecurityPanelModal } from "@/components/ui/SecurityPanelModal";
 import { SmartSwitchModal } from "@/components/ui/SmartSwitchModal";
 import { productData } from "@/lib/productData";
 
@@ -43,6 +45,7 @@ interface CartItem extends Product {
     height?: number;
     width?: number;
     installationCharge?: number;
+    accessories?: any[];
 }
 
 interface InteractiveCheckoutProps {
@@ -135,6 +138,8 @@ function InteractiveCheckout({
     const [rollerCurtainModalOpen, setRollerCurtainModalOpen] = useState(false);
     const [pdlcFilmModalOpen, setPdlcFilmModalOpen] = useState(false);
     const [sohubProtectModalOpen, setSohubProtectModalOpen] = useState(false);
+    const [smartSecurityBoxModalOpen, setSmartSecurityBoxModalOpen] = useState(false);
+    const [securityPanelModalOpen, setSecurityPanelModalOpen] = useState(false);
     const [smartSwitchModalOpen, setSmartSwitchModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
@@ -277,6 +282,14 @@ function InteractiveCheckout({
     useEffect(() => {
         loadProducts();
         loadCategoryImages();
+        
+        // Listen for cart updates to force re-render
+        const handleCartUpdate = () => {
+            setCart(prevCart => [...prevCart]);
+        };
+        
+        window.addEventListener('cartUpdated', handleCartUpdate);
+        return () => window.removeEventListener('cartUpdated', handleCartUpdate);
     }, []);
 
     const loadProducts = async () => {
@@ -396,6 +409,12 @@ function InteractiveCheckout({
                 return [...currentCart, { ...product, id: uniqueId, quantity: 'quantity' in product ? product.quantity : 1 }];
             }
             
+            // For Security products with accessories, always add as new item with unique ID
+            if (product.category === 'Security' && 'accessories' in product && product.accessories && product.accessories.length > 0) {
+                const uniqueId = `${product.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                return [...currentCart, { ...product, id: uniqueId, quantity: 'quantity' in product ? product.quantity : 1 }];
+            }
+            
             // For other products, check for existing items
             const existingItem = currentCart.find(
                 (item) => item.id === product.id
@@ -446,11 +465,22 @@ function InteractiveCheckout({
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cart.reduce(
         (sum, item) => {
+            let itemTotal = 0;
+            
             // For items with pre-calculated totals (Smart Curtains with tracks or Smart Switches with installation)
             if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge)) {
-                return sum + item.price;
+                itemTotal = item.price;
+            } else {
+                itemTotal = item.price * item.quantity;
             }
-            return sum + item.price * item.quantity;
+            
+            // Add accessories price if they exist (only once, not multiplied by quantity)
+            if (item.accessories && item.accessories.length > 0) {
+                const accessoriesTotal = item.accessories.reduce((accSum, acc) => accSum + (Number(acc.price) || 0), 0);
+                itemTotal += accessoriesTotal;
+            }
+            
+            return sum + itemTotal;
         },
         0
     );
@@ -656,7 +686,14 @@ function InteractiveCheckout({
                                 } else if (categoryGroup.category === 'PDLC Film') {
                                     setPdlcFilmModalOpen(true);
                                 } else if (categoryGroup.category === 'Security') {
-                                    setSohubProtectModalOpen(true);
+                                    // Check product name to determine which modal to open
+                                    if (product.name.includes('Smart Security Box') || product.name.includes('SP-01')) {
+                                        setSmartSecurityBoxModalOpen(true);
+                                    } else if (product.name.includes('Security Panel') || product.name.includes('SP-05')) {
+                                        setSecurityPanelModalOpen(true);
+                                    } else {
+                                        setSohubProtectModalOpen(true);
+                                    }
                                 } else if (categoryGroup.category === 'Smart Switch') {
                                     setSmartSwitchModalOpen(true);
                                 } else {
@@ -993,6 +1030,17 @@ function InteractiveCheckout({
                                                                 {item.trackSizes ? ` • ${item.trackSizes.join(', ')} ft` : ''}
                                                                 {item.height && item.width ? ` • ${item.quantity.toFixed(2)} sq ft (${item.height}' × ${item.width}')` : ''}
                                                             </p>
+                                                            {item.accessories && item.accessories.length > 0 && (
+                                                                <div className="mt-2">
+                                                                    <p className="text-xs font-medium text-zinc-600 mb-1">Accessories:</p>
+                                                                    {item.accessories.map((accessory, index) => (
+                                                                        <div key={index} className="flex justify-between items-center text-xs text-zinc-500 mb-1">
+                                                                            <span>• {accessory.name}</span>
+                                                                            <span>+{Number(accessory.price).toLocaleString()} BDT</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
 
                                                         </div>
                                                         <motion.button
@@ -1005,9 +1053,9 @@ function InteractiveCheckout({
                                                         </motion.button>
                                                     </div>
                                                     <div className="flex items-center justify-between">
-                                                        {item.category === 'Services' ? (
+                                                        {item.category === 'Services' || item.category === 'Installation Service' ? (
                                                             <div className="text-sm text-gray-600">
-                                                                Consultation Service
+                                                                {item.category === 'Installation Service' ? 'Professional Installation Service (TBD)' : 'Consultation Service'}
                                                             </div>
                                                         ) : (
                                                             <div className="flex items-center gap-2 bg-gray-100 dark:bg-zinc-700 rounded-lg p-1">
@@ -1045,7 +1093,19 @@ function InteractiveCheckout({
                                                         )}
                                                         <div className="text-right">
                                                             <p className="text-sm lg:text-base font-bold text-zinc-900 dark:text-zinc-100">
-                                                                {item.category === 'Services' ? 'Free' : `${(item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) ? item.price.toLocaleString() : (item.price * item.quantity).toLocaleString()} BDT`}
+                                                                {item.category === 'Services' ? 'Free' : item.category === 'Installation Service' ? 'TBD' : (() => {
+                                                                    let itemTotal = 0;
+                                                                    if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge)) {
+                                                                        itemTotal = item.price;
+                                                                    } else {
+                                                                        itemTotal = item.price * item.quantity;
+                                                                    }
+                                                                    if (item.accessories && item.accessories.length > 0) {
+                                                                        const accessoriesTotal = item.accessories.reduce((sum, acc) => sum + (Number(acc.price) || 0), 0);
+                                                                        itemTotal += accessoriesTotal;
+                                                                    }
+                                                                    return `${itemTotal.toLocaleString()} BDT`;
+                                                                })()}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -1595,6 +1655,94 @@ function InteractiveCheckout({
                     }}
                     onBuyNow={async (payload) => {
                         // Handle buy now for Sohub Protect products
+                    }}
+                />
+            )}
+            
+            {/* Smart Security Box Modal */}
+            {selectedVariant && (
+                <SmartSecurityBoxModal
+                    open={smartSecurityBoxModalOpen}
+                    onOpenChange={(open) => {
+                        setSmartSecurityBoxModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const basePrice = parseInt(selectedVariant.price.replace(/[^0-9]/g, ''));
+                            const cartItem = {
+                                id: payload.productId,
+                                name: selectedVariant.name,
+                                price: basePrice,
+                                category: 'Security',
+                                image: selectedVariant.imageUrl,
+                                color: 'Security',
+                                quantity: payload.quantity,
+                                accessories: payload.accessories || []
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                />
+            )}
+            
+            {/* Security Panel Modal */}
+            {selectedVariant && (
+                <SecurityPanelModal
+                    open={securityPanelModalOpen}
+                    onOpenChange={(open) => {
+                        setSecurityPanelModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const basePrice = parseInt(selectedVariant.price.replace(/[^0-9]/g, ''));
+                            const cartItem = {
+                                id: payload.productId,
+                                name: selectedVariant.name,
+                                price: basePrice,
+                                category: 'Security',
+                                image: selectedVariant.imageUrl,
+                                color: 'Security',
+                                quantity: payload.quantity,
+                                accessories: payload.accessories || []
+                            };
+                            addToCart(cartItem);
+                        }
                     }}
                 />
             )}
