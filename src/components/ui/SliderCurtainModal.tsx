@@ -30,14 +30,16 @@ interface SliderCurtainModalProps {
   };
   onAddToCart: (payload: any) => Promise<void>;
   onBuyNow: (payload: any) => Promise<void>;
+  addToCart?: (item: any) => void;
 }
 
-export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow }: SliderCurtainModalProps) {
+export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: SliderCurtainModalProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [trackSizes, setTrackSizes] = useState([0]);
   const [trackQuantities, setTrackQuantities] = useState([1]);
   const [loading, setLoading] = useState(false);
   const [includeInstallation, setIncludeInstallation] = useState(false);
+  const [installationSelected, setInstallationSelected] = useState(false);
   const [connectionType, setConnectionType] = useState('zigbee');
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
@@ -69,16 +71,18 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       for (let i = 0; i < trackSizes.length; i++) {
         if (trackSizes[i] > 0 && trackQuantities[i] > 0) {
           const installationForThisTrack = 0;
-          const totalPriceForThisTrack = (product.price * trackQuantities[i]);
+          const basePriceForThisTrack = (product.price * trackQuantities[i]);
+          const modalTotalPrice = connectionType === 'wifi' ? (product.price * totalQuantity) + 2000 : (product.price * totalQuantity);
+          const proportionalPrice = (modalTotalPrice / totalQuantity) * trackQuantities[i];
           
           const cartPayload = {
             productId: `${product.id}_${trackSizes[i]}ft_${Date.now()}_${i}`,
-            productName: `${product.name} (${trackSizes[i]} feet)`,
+            productName: `${product.name} (${connectionType.toUpperCase()}) (${trackSizes[i]} feet)`,
             quantity: trackQuantities[i],
             trackSize: trackSizes[i],
             connectionType: connectionType,
             installationCharge: installationForThisTrack,
-            totalPrice: totalPriceForThisTrack,
+            totalPrice: Math.round(proportionalPrice),
             unitPrice: product.price
           };
           
@@ -87,6 +91,26 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
           await new Promise(resolve => setTimeout(resolve, 50));
         }
       }
+      
+      // Add installation service if selected
+      if (installationSelected && addToCart) {
+        addToCart({
+          id: `${product.id}_installation`,
+          name: 'Installation and setup',
+          price: 0,
+          category: 'Installation Service',
+          image: '/images/sohub_protect/installation-icon.png',
+          color: 'Service',
+          quantity: 1
+        });
+      }
+      
+      // Force cart update
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('cartUpdated'));
+        }
+      }, 100);
       
       toast({
         title: "Added to Cart",
@@ -338,7 +362,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                           newSizes[index] = value > 27 ? 27 : value;
                           setTrackSizes(newSizes);
                         }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white hover:bg-orange-500 hover:text-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900 transition-colors"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
                         placeholder="Enter track length in feet (max 27)"
                       />
                     </div>
@@ -397,10 +421,11 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <input 
-                    type="radio" 
+                    type="checkbox" 
                     id="installation-service" 
                     name="installation" 
-                    defaultChecked
+                    checked={installationSelected}
+                    onChange={(e) => setInstallationSelected(e.target.checked)}
                     className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500 mt-1"
                   />
                   <div className="flex-1">
@@ -411,20 +436,21 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Help Section */}
-            <div className="mb-6">
-              <div 
-                onClick={() => setHelpModalOpen(true)}
-                className="flex items-center gap-2 text-sm text-blue-600 cursor-pointer hover:text-blue-700"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Need help deciding?</span>
+              
+              <div className="mt-4">
+                <div 
+                  onClick={() => setHelpModalOpen(true)}
+                  className="flex items-center gap-2 text-sm text-orange-600 cursor-pointer hover:text-orange-700"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Need help deciding?</span>
+                </div>
               </div>
             </div>
+
+
 
             {/* Collapsed Details */}
             <details className="mb-20">

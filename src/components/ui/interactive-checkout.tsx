@@ -1269,6 +1269,7 @@ function InteractiveCheckout({
                             stock: productData?.stock || 0
                         };
                     })()}
+                    addToCart={addToCart}
                     onAddToCart={async (payload) => {
                         if (selectedVariant && payload.productId && payload.productName && payload.trackSize) {
                             const cartItem = {
@@ -1322,11 +1323,12 @@ function InteractiveCheckout({
                             stock: productData?.stock || 0
                         };
                     })()}
+                    addToCart={addToCart}
                     onAddToCart={async (payload) => {
                         if (selectedVariant && payload.productId && payload.productName && payload.trackSize) {
                             const cartItem = {
                                 id: payload.productId,
-                                name: `${payload.productName} (${payload.connectionType.toUpperCase()})${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                name: `${payload.productName}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
                                 price: payload.totalPrice,
                                 category: 'Smart Curtain',
                                 image: selectedVariant.imageUrl,
@@ -1528,6 +1530,7 @@ function InteractiveCheckout({
                             stock: productData?.stock || 0
                         };
                     })()}
+                    addToCart={addToCart}
                     onAddToCart={async (payload) => {
                         if (selectedVariant && payload.productId && payload.productName) {
                             const cartItem = {
@@ -1586,12 +1589,13 @@ function InteractiveCheckout({
                             stock: productData?.stock || 0
                         };
                     })()}
+                    addToCart={addToCart}
                     onAddToCart={async (payload) => {
                         if (selectedVariant && payload.productId) {
                             const cartItem = {
                                 id: payload.productId,
                                 name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                                price: payload.totalPrice,
                                 category: 'Smart Switch',
                                 image: selectedVariant.imageUrl,
                                 color: 'Smart Switch',
@@ -1638,6 +1642,7 @@ function InteractiveCheckout({
                             stock: productData?.stock || 0
                         };
                     })()}
+                    addToCart={addToCart}
                     onAddToCart={async (payload) => {
                         if (selectedVariant && payload.productId) {
                             const cartItem = {

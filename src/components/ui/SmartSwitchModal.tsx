@@ -36,15 +36,17 @@ interface SmartSwitchModalProps {
   };
   onAddToCart: (payload: any) => Promise<void>;
   onBuyNow: (payload: any) => Promise<void>;
+  addToCart?: (item: any) => void;
 }
 
-export function SmartSwitchModal({ open, onOpenChange, product, onAddToCart, onBuyNow }: SmartSwitchModalProps) {
+export function SmartSwitchModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: SmartSwitchModalProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [engravingText, setEngravingText] = useState('');
   const [engravingModalOpen, setEngravingModalOpen] = useState(false);
   const [includeInstallation, setIncludeInstallation] = useState(false);
+  const [installationSelected, setInstallationSelected] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
 
@@ -59,7 +61,8 @@ export function SmartSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
   const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
 
-  const totalPrice = product.price * quantity;
+  const engravingPrice = engravingText && product.engraving_price ? product.engraving_price * quantity : 0;
+  const totalPrice = (product.price * quantity) + engravingPrice;
 
   const handleAddToCart = async () => {
     setLoading(true);
@@ -68,8 +71,30 @@ export function SmartSwitchModal({ open, onOpenChange, product, onAddToCart, onB
         productId: product.id,
         quantity: quantity,
         installationCharge: 0,
-        engravingText: engravingText || undefined
+        engravingText: engravingText || undefined,
+        totalPrice: totalPrice
       });
+      
+      // Add installation service if selected
+      if (installationSelected && addToCart) {
+        addToCart({
+          id: `${product.id}_installation`,
+          name: 'Installation and setup',
+          price: 0,
+          category: 'Installation Service',
+          image: '/images/sohub_protect/installation-icon.png',
+          color: 'Service',
+          quantity: 1
+        });
+      }
+      
+      // Force cart update
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('cartUpdated'));
+        }
+      }, 100);
+      
       toast({
         title: "Added to Cart",
         description: `${product.name} has been added to your cart.`,
@@ -272,10 +297,14 @@ export function SmartSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                       <span className="text-2xl">🎨</span>
                       <div className="text-left">
                         <div className="font-semibold text-gray-900">Customize Your Switch</div>
-                        <div className="text-sm text-gray-600">Add personal text engraving</div>
+                        <div className="text-sm text-gray-600">
+                          {engravingText ? `Engraving: "${engravingText}"` : 'Add personal text engraving'}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-900 font-semibold">+{product.engraving_price || 200} BDT</div>
+                    <div className="text-sm text-gray-900 font-semibold">
+                      +{((product.engraving_price || 200) * quantity).toLocaleString()} BDT
+                    </div>
                   </div>
                 </div>
               </div>
@@ -315,10 +344,11 @@ export function SmartSwitchModal({ open, onOpenChange, product, onAddToCart, onB
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <input 
-                    type="radio" 
+                    type="checkbox" 
                     id="installation-service" 
                     name="installation" 
-                    defaultChecked
+                    checked={installationSelected}
+                    onChange={(e) => setInstallationSelected(e.target.checked)}
                     className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500 mt-1"
                   />
                   <div className="flex-1">
@@ -329,20 +359,21 @@ export function SmartSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Help Section */}
-            <div className="mb-6">
-              <div 
-                onClick={() => setHelpModalOpen(true)}
-                className="flex items-center gap-2 text-sm text-blue-600 cursor-pointer hover:text-blue-700"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Need help deciding?</span>
+              
+              <div className="mt-4">
+                <div 
+                  onClick={() => setHelpModalOpen(true)}
+                  className="flex items-center gap-2 text-sm text-orange-600 cursor-pointer hover:text-orange-700"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Need help deciding?</span>
+                </div>
               </div>
             </div>
+
+
 
             {/* Collapsed Details */}
             <details className="mb-20">
@@ -441,19 +472,22 @@ export function SmartSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       
       {/* Engraving Modal */}
       {product.engraving_available && engravingModalOpen && (
-        <EngravingModal
-          open={engravingModalOpen}
-          onOpenChange={setEngravingModalOpen}
-          productImage={allImages[selectedImage] || product.image || ''}
-          engravingImage={product.engraving_image}
-          productName={product.name}
-          engravingTextColor={product.engraving_text_color}
-          initialText={engravingText}
-          currentQuantity={quantity}
-          onSave={({ text }) => {
-            setEngravingText(text);
-          }}
-        />
+        <>
+          <div className="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm" />
+          <EngravingModal
+            open={engravingModalOpen}
+            onOpenChange={setEngravingModalOpen}
+            productImage={allImages[selectedImage] || product.image || ''}
+            engravingImage={product.engraving_image}
+            productName={product.name}
+            engravingTextColor={product.engraving_text_color}
+            initialText={engravingText}
+            currentQuantity={quantity}
+            onSave={({ text }) => {
+              setEngravingText(text);
+            }}
+          />
+        </>
       )}
     </Dialog>
   );

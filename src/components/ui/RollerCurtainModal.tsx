@@ -30,14 +30,16 @@ interface RollerCurtainModalProps {
   };
   onAddToCart: (payload: any) => Promise<void>;
   onBuyNow: (payload: any) => Promise<void>;
+  addToCart?: (item: any) => void;
 }
 
-export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow }: RollerCurtainModalProps) {
+export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: RollerCurtainModalProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [trackSizes, setTrackSizes] = useState([0]);
   const [trackQuantities, setTrackQuantities] = useState([1]);
   const [loading, setLoading] = useState(false);
   const [includeInstallation, setIncludeInstallation] = useState(false);
+  const [installationSelected, setInstallationSelected] = useState(false);
   const [connectionType, setConnectionType] = useState('zigbee');
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
@@ -68,16 +70,36 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
       
       const cartPayload = {
         productId: `${product.id}_${Date.now()}`,
-        productName: product.name,
+        productName: `${product.name} (${connectionType.toUpperCase()})`,
         quantity: trackQuantities[0],
         trackSize: 8, // Default size for roller curtain
         connectionType: connectionType,
         installationCharge: installationForThisRoller,
-        totalPrice: totalPriceForThisRoller,
+        totalPrice: connectionType === 'wifi' ? totalPriceForThisRoller + 2000 : totalPriceForThisRoller,
         unitPrice: product.price
       };
       
       await onAddToCart(cartPayload);
+      
+      // Add installation service if selected
+      if (installationSelected && addToCart) {
+        addToCart({
+          id: `${product.id}_installation`,
+          name: 'Installation and setup',
+          price: 0,
+          category: 'Installation Service',
+          image: '/images/sohub_protect/installation-icon.png',
+          color: 'Service',
+          quantity: 1
+        });
+      }
+      
+      // Force cart update
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('cartUpdated'));
+        }
+      }, 100);
       
       toast({
         title: "Added to Cart",
@@ -316,10 +338,11 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <input 
-                      type="radio" 
+                      type="checkbox" 
                       id="installation-service" 
                       name="installation" 
-                      defaultChecked
+                      checked={installationSelected}
+                      onChange={(e) => setInstallationSelected(e.target.checked)}
                       className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500 mt-1"
                     />
                     <div className="flex-1">
@@ -330,21 +353,22 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     </div>
                   </div>
                 </div>
+                
+                <div className="mt-4">
+                  <div 
+                    onClick={() => setHelpModalOpen(true)}
+                    className="flex items-center gap-2 text-sm text-orange-600 cursor-pointer hover:text-orange-700"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Need help deciding?</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Help Section */}
-            <div className="mb-6">
-              <div 
-                onClick={() => setHelpModalOpen(true)}
-                className="flex items-center gap-2 text-sm text-blue-600 cursor-pointer hover:text-blue-700"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Need help deciding?</span>
-              </div>
-            </div>
+
             
 
 
