@@ -88,25 +88,27 @@ const defaultProducts: Product[] = [
 ];
 
 const getCategoryProducts = (dbProducts: any[], categoryImages: any[]) => {
-    const categories = ['Smart Curtain', 'Smart Switch', 'Security', 'PDLC Film', 'Services'];
+    const categories = ['Curtain', 'Switch', 'Security', 'PDLC Film', 'Services'];
     return categories.map((category, index) => {
         // Handle both 'Film' and 'PDLC Film' for category images
         const categoryImagesForCategory = categoryImages.filter(img => 
-            img.category === category || (category === 'PDLC Film' && img.category === 'Film')
+            img.category === category || 
+            (category === 'PDLC Film' && (img.category === 'Film' || img.category === 'PDLC Film')) ||
+            (category === 'Curtain' && (img.category === 'Smart Curtain' || img.category === 'Curtain')) ||
+            (category === 'Switch' && (img.category === 'Smart Switch' || img.category === 'Switch')) ||
+            (category === 'Security' && img.category === 'Security')
         );
         const firstCategoryImage = categoryImagesForCategory[0];
         
         // Handle both 'Film' and 'PDLC Film' for products
-        const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : [category];
+        const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
+                             category === 'Curtain' ? ['Smart Curtain', 'Curtain'] : 
+                             category === 'Switch' ? ['Smart Switch', 'Switch'] : [category];
         const categoryProducts = dbProducts.filter(p => categoryFilter.includes(p.category));
         const firstProduct = categoryProducts[0];
         
         const getImageForCategory = () => {
             if (category === 'Services') return '/images/services/services.png';
-            if (category === 'Smart Curtain') return firstCategoryImage?.image_url || '/assets/hero-sliding-curtain.jpg';
-            if (category === 'Smart Switch') return firstCategoryImage?.image_url || '/images/smart_switch/3 gang mechanical.webp';
-            if (category === 'Security') return firstCategoryImage?.image_url || '/assets/gallery-1.jpg';
-            if (category === 'PDLC Film') return firstCategoryImage?.image_url || '/assets/window.jpeg';
             return firstCategoryImage?.image_url || firstProduct?.image || '/images/smart_switch/3 gang mechanical.webp';
         };
         
@@ -152,15 +154,15 @@ function InteractiveCheckout({
     });
     const [paymentMethod, setPaymentMethod] = useState('cod');
     const [orderLoading, setOrderLoading] = useState(false);
-    const [activeCategory, setActiveCategory] = useState('Smart Curtain');
+    const [activeCategory, setActiveCategory] = useState('Curtain');
     const [isManualSelection, setIsManualSelection] = useState(false);
     const [activeField, setActiveField] = useState('name');
     const [saveEmailModalOpen, setSaveEmailModalOpen] = useState(false);
     const [showMobileCart, setShowMobileCart] = useState(false);
 
     const categoryToIdMap: { [key: string]: string } = {
-        'Smart Curtain': '1',
-        'Smart Switch': '2',
+        'Curtain': '1',
+        'Switch': '2',
         'Security': '3',
         'PDLC Film': '4'
     };
@@ -336,7 +338,9 @@ function InteractiveCheckout({
         
         // If we have database products, use them
         if (dbProducts.length > 0) {
-            const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : [category];
+            const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
+                                 category === 'Curtain' ? ['Smart Curtain'] : 
+                                 category === 'Switch' ? ['Smart Switch'] : [category];
             const filteredProducts = dbProducts.filter(p => categoryFilter.includes(p.category) && p.stock > 0);
             
             // Sort Security products by serial_order, others by default
@@ -358,28 +362,8 @@ function InteractiveCheckout({
             }));
         }
         
-        // Fallback to default products with correct image paths
-        const defaultProductsByCategory = {
-            'Smart Curtain': [
-                { id: 'curtain-1', name: 'Smart Sliding Curtain', price: '25,000 BDT', gangType: 'Smart Curtain', imageUrl: '/images/smart_switch/3 gang mechanical.webp', isSoldOut: false },
-                { id: 'curtain-2', name: 'Smart Roller Curtain', price: '22,000 BDT', gangType: 'Smart Curtain', imageUrl: '/images/smart_switch/one gang.webp', isSoldOut: false }
-            ],
-            'Smart Switch': [
-                { id: 'switch-1', name: '3 Gang Smart Switch', price: '2,500 BDT', gangType: 'Smart Switch', imageUrl: '/images/smart_switch/3 gang mechanical.webp', isSoldOut: false },
-                { id: 'switch-2', name: '1 Gang Smart Switch', price: '1,800 BDT', gangType: 'Smart Switch', imageUrl: '/images/smart_switch/one gang.webp', isSoldOut: false },
-                { id: 'switch-3', name: '4 Gang Touch Switch', price: '3,200 BDT', gangType: 'Smart Switch', imageUrl: '/images/smart_switch/4 gang touch light.webp', isSoldOut: false }
-            ],
-            'Security': [
-                { id: 'security-1', name: 'Security Camera', price: '8,500 BDT', gangType: 'Security', imageUrl: '/images/sohub_protect/accesories/camera-c11.png', isSoldOut: false },
-                { id: 'security-2', name: 'Door Sensor', price: '1,200 BDT', gangType: 'Security', imageUrl: '/images/sohub_protect/accesories/door_Sensor_DS200.png', isSoldOut: false },
-                { id: 'security-3', name: 'Motion Sensor', price: '2,800 BDT', gangType: 'Security', imageUrl: '/images/sohub_protect/accesories/Motion_pr200.png', isSoldOut: false }
-            ],
-            'PDLC Film': [
-                { id: 'film-1', name: 'Smart Glass Film', price: '15,000 BDT', gangType: 'PDLC Film', imageUrl: '/images/engreving.webp', isSoldOut: false }
-            ]
-        };
-        
-        return defaultProductsByCategory[category] || [];
+        // No fallback products - only show admin panel products
+        return [];
     };
 
     // Listen for back button event from BuyNowModal
@@ -562,14 +546,27 @@ function InteractiveCheckout({
             {/* Left Side - Scrollable Products */}
             <div className="flex-1 overflow-y-auto products-scroll-container h-[60vh] lg:h-[calc(100vh-200px)] min-h-[400px]">
                 {/* Category Tabs */}
-                <div className="mb-4 lg:mb-6 sticky top-0 lg:top-0 bg-white z-40 pb-3 lg:pb-4 pt-1 lg:pt-2">
-                    <div className="grid grid-cols-5 gap-1 lg:gap-3 px-2 lg:px-4">
+                <div className="mb-6 lg:mb-8 sticky top-0 lg:top-0 bg-white/95 backdrop-blur-md z-40 pt-10 pb-4 lg:pt-12 lg:pb-4 shadow-lg border-b border-gray-100">
+                    <div className="flex overflow-x-auto scrollbar-hide gap-3 lg:gap-4 px-4 lg:px-6">
                         {categories.map((category) => (
                             <motion.button
                                 key={category.id}
+                                data-category={category.category}
                                 onClick={() => {
                                     setIsManualSelection(true);
                                     setActiveCategory(category.category);
+                                    
+                                    // Center the selected tab in the category bar
+                                    setTimeout(() => {
+                                        const categoryBar = document.querySelector('.flex.overflow-x-auto.scrollbar-hide');
+                                        const clickedButton = document.querySelector(`[data-category="${category.category}"]`);
+                                        if (categoryBar && clickedButton) {
+                                            const barRect = categoryBar.getBoundingClientRect();
+                                            const buttonRect = clickedButton.getBoundingClientRect();
+                                            const scrollLeft = categoryBar.scrollLeft + (buttonRect.left - barRect.left) - (barRect.width / 2) + (buttonRect.width / 2);
+                                            categoryBar.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                                        }
+                                    }, 50);
                                     
                                     setTimeout(() => {
                                         const targetId = `category-${category.category.replace(/\s+/g, '-')}`;
@@ -607,30 +604,50 @@ function InteractiveCheckout({
                                     }, 10);
                                 }}
                                 className={cn(
-                                    "flex flex-col items-center justify-center rounded-lg lg:rounded-xl transition-all duration-300 aspect-square relative overflow-hidden p-1 lg:p-2",
+                                    "flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-300 min-w-fit border-2 group relative overflow-hidden",
                                     activeCategory === category.category
-                                        ? "bg-white text-blue-800 border-2 lg:border-4 border-black"
-                                        : "bg-white hover:bg-white text-gray-700 border border-gray-200"
+                                        ? "bg-gradient-to-r from-green-500 to-blue-500 text-white border-transparent shadow-lg"
+                                        : "bg-white text-gray-700 border-gray-200 hover:border-green-300 hover:shadow-md hover:bg-green-50"
                                 )}
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
+
+                                whileTap={{ scale: 0.95 }}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: category.id * 0.1 }}
                             >
-                                <div className="flex flex-col items-center justify-center h-full relative">
-                                    <div className="w-10 h-10 lg:w-20 lg:h-20 bg-white rounded-full shadow-md flex items-center justify-center">
-                                        <img
-                                            src={category.image}
-                                            alt={category.name}
-                                            className="w-7 h-7 lg:w-16 lg:h-16 object-contain"
-                                            onError={(e) => {
-                                                const target = e.target as HTMLImageElement;
-                                                target.src = '/images/smart_switch/3 gang mechanical.webp';
-                                            }}
-                                        />
-                                    </div>
-                                    <span className="text-[8px] lg:text-xs font-bold text-center leading-tight text-gray-800 absolute -bottom-1 whitespace-nowrap px-1">
-                                        {category.name}
-                                    </span>
+                                {/* Animated background */}
+                                {activeCategory === category.category && (
+                                    <motion.div
+                                        className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-400/20 rounded-full"
+                                        layoutId="activeTab"
+                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                    />
+                                )}
+                                
+                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center relative z-10">
+                                    <img
+                                        src={category.image || '/images/smart_switch/3 gang mechanical.webp'}
+                                        alt={category.name}
+                                        className="w-6 h-6 lg:w-8 lg:h-8 object-contain transition-transform group-hover:scale-110"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = '/images/smart_switch/3 gang mechanical.webp';
+                                        }}
+                                    />
                                 </div>
+                                
+                                <span className="text-sm lg:text-base font-medium whitespace-nowrap relative z-10">
+                                    {category.name}
+                                </span>
+                                
+                                {/* Pulse effect for active */}
+                                {activeCategory === category.category && (
+                                    <motion.div
+                                        className="absolute inset-0 rounded-full border-2 border-white/30"
+                                        animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0, 0.5] }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    />
+                                )}
                             </motion.button>
                         ))}
                     </div>
@@ -674,7 +691,7 @@ function InteractiveCheckout({
                                 setSelectedProduct(categoryToIdMap[categoryGroup.category] || '3');
                                 
                                 // Check product category and open appropriate modal
-                                if (categoryGroup.category === 'Smart Curtain') {
+                                if (categoryGroup.category === 'Curtain') {
                                     if (product.name.toLowerCase().includes('slider')) {
                                         setSliderCurtainModalOpen(true);
                                     } else if (product.name.toLowerCase().includes('roller')) {
@@ -694,7 +711,7 @@ function InteractiveCheckout({
                                     } else {
                                         setSohubProtectModalOpen(true);
                                     }
-                                } else if (categoryGroup.category === 'Smart Switch') {
+                                } else if (categoryGroup.category === 'Switch') {
                                     setSmartSwitchModalOpen(true);
                                 } else {
                                     setModalOpen(true);
@@ -1764,3 +1781,12 @@ function InteractiveCheckout({
 }
 
 export { InteractiveCheckout, type Product };
+<style jsx>{`
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+`}</style>
