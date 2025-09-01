@@ -546,8 +546,8 @@ function InteractiveCheckout({
             {/* Left Side - Scrollable Products */}
             <div className="flex-1 overflow-y-auto products-scroll-container h-[60vh] lg:h-[calc(100vh-200px)] min-h-[400px]">
                 {/* Category Tabs */}
-                <div className="mb-6 lg:mb-8 sticky top-0 lg:top-0 bg-white/95 backdrop-blur-md z-40 pt-10 pb-4 lg:pt-12 lg:pb-4 shadow-lg border-b border-gray-100">
-                    <div className="flex overflow-x-auto scrollbar-hide gap-3 lg:gap-4 px-4 lg:px-6">
+                <div className="mb-6 lg:mb-8 sticky top-0 lg:top-0 bg-white/95 backdrop-blur-md z-40 pt-4 pb-3 lg:pt-6 lg:pb-3 shadow-lg border-b border-gray-100">
+                    <div className="flex overflow-x-auto gap-3 lg:gap-4 px-4 lg:px-6 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         {categories.map((category) => (
                             <motion.button
                                 key={category.id}
@@ -558,7 +558,7 @@ function InteractiveCheckout({
                                     
                                     // Center the selected tab in the category bar
                                     setTimeout(() => {
-                                        const categoryBar = document.querySelector('.flex.overflow-x-auto.scrollbar-hide');
+                                        const categoryBar = document.querySelector('.category-bar-container');
                                         const clickedButton = document.querySelector(`[data-category="${category.category}"]`);
                                         if (categoryBar && clickedButton) {
                                             const barRect = categoryBar.getBoundingClientRect();
@@ -624,11 +624,11 @@ function InteractiveCheckout({
                                     />
                                 )}
                                 
-                                <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center relative z-10">
+                                <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center relative z-10">
                                     <img
                                         src={category.image || '/images/smart_switch/3 gang mechanical.webp'}
                                         alt={category.name}
-                                        className="w-6 h-6 lg:w-8 lg:h-8 object-contain transition-transform group-hover:scale-110"
+                                        className="w-4 h-4 lg:w-6 lg:h-6 object-contain transition-transform group-hover:scale-110"
                                         onError={(e) => {
                                             const target = e.target as HTMLImageElement;
                                             target.src = '/images/smart_switch/3 gang mechanical.webp';
@@ -669,13 +669,13 @@ function InteractiveCheckout({
 
                             {/* Product Grid or No Products Message */}
                             {categoryGroup.products.length > 0 ? (
-                                <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 lg:gap-3 px-3 lg:px-4 relative z-0">
+                                <div className="grid grid-cols-4 lg:grid-cols-5 gap-1.5 lg:gap-2 px-3 lg:px-4 relative z-0">
                                     {categoryGroup.products.map((product) => (
                         <motion.div
                             key={product.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 p-2 relative cursor-pointer border border-gray-100 hover:border-green-200 group aspect-square flex flex-col"
+                            className="bg-white rounded-md shadow-sm hover:shadow-md transition-all duration-300 p-1.5 relative cursor-pointer border border-gray-100 hover:border-green-200 group aspect-square flex flex-col"
                             whileHover={{ y: -2, scale: 1.01 }}
                             onClick={() => {
                                 if (product.id === 'service-1') {
@@ -726,7 +726,7 @@ function InteractiveCheckout({
                             )}
                             
                             {/* Product Image */}
-                            <div className="flex-1 flex items-center justify-center bg-white rounded-md overflow-hidden transition-all duration-300 p-1 mb-1">
+                            <div className="flex-1 flex items-center justify-center bg-white rounded-sm overflow-hidden transition-all duration-300 p-0.5 mb-1">
                                 <img
                                     src={product.imageUrl}
                                     alt={product.name}
@@ -739,18 +739,18 @@ function InteractiveCheckout({
                             </div>
                             
                             {/* Product Info */}
-                            <div className="space-y-0.5 mt-auto">
-                                <h3 className="font-medium text-gray-900 text-xs leading-tight truncate">
+                            <div className="space-y-0 mt-auto">
+                                <h3 className="font-medium text-gray-900 text-[10px] leading-tight truncate">
                                     {product.name}
                                 </h3>
-                                <p className="text-green-600 text-xs font-semibold">
+                                <p className="text-green-600 text-[10px] font-semibold">
                                     {typeof product.price === 'string' ? product.price : `${product.price} BDT`}
                                 </p>
                             </div>
                             
                             {/* Add Button */}
                             <motion.button
-                                className="absolute bottom-1 right-1 w-5 h-5 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300"
+                                className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300"
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={(e) => {
@@ -1781,6 +1781,22 @@ function InteractiveCheckout({
 }
 
 export { InteractiveCheckout, type Product };
+
+// Add CSS to hide category bar scrollbar
+const style = document.createElement('style');
+style.textContent = `
+  .category-bar-container::-webkit-scrollbar {
+    display: none;
+  }
+  .category-bar-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`;
+if (typeof document !== 'undefined' && !document.head.querySelector('style[data-category-bar]')) {
+  style.setAttribute('data-category-bar', 'true');
+  document.head.appendChild(style);
+}
 <style jsx>{`
   .scrollbar-hide {
     -ms-overflow-style: none;
