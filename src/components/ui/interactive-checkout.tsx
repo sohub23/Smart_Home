@@ -631,8 +631,8 @@ function InteractiveCheckout({
         <>
             <div className="w-full max-w-7xl mx-auto min-h-screen grid lg:grid-cols-5 gap-6 lg:gap-8 sticky-checkout-section">
             {/* Product Selection Section */}
-            <div className="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-gray-200/60 overflow-hidden">
-                <div className="overflow-y-auto products-scroll-container h-[70vh] lg:h-[calc(100vh-180px)] min-h-[500px]" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-gray-200/60 overflow-hidden h-[calc(100vh-120px)]">
+                <div className="overflow-y-auto products-scroll-container h-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {/* Category Tabs */}
                 <div className="mb-6 lg:mb-8 sticky top-0 lg:top-0 bg-white/95 backdrop-blur-md z-40 pt-4 pb-3 lg:pt-6 lg:pb-3 shadow-lg border-b border-gray-100">
                     <div className="flex overflow-x-auto gap-3 lg:gap-4 px-4 lg:px-6 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -867,7 +867,7 @@ function InteractiveCheckout({
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className={cn(
-                    "lg:col-span-2 flex flex-col lg:sticky lg:top-6",
+                    "lg:col-span-2 flex flex-col",
                     "fixed bottom-0 left-0 right-0 lg:relative",
                     showCheckout ? "top-0 lg:top-6" : "",
                     "p-5 rounded-t-2xl lg:rounded-2xl",
@@ -876,8 +876,8 @@ function InteractiveCheckout({
                     !showMobileCart && "hidden lg:flex"
                 )}
                 style={{ 
-                    height: showCheckout ? (window.innerWidth < 1024 ? '100vh' : 'auto') : 'auto', 
-                    minHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '600px') : '400px', 
+                    height: showCheckout ? (window.innerWidth < 1024 ? '100vh' : 'auto') : 'calc(100vh - 120px)', 
+                    minHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '600px') : 'calc(100vh - 120px)', 
                     maxHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '85vh') : 'calc(100vh - 120px)'
                 }}
             >
