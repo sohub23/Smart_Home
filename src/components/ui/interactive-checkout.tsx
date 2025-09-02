@@ -460,7 +460,7 @@ function InteractiveCheckout({
             }
             return [...currentCart, { ...product, id: sanitizedProductId, quantity: quantityToAdd }];
         });
-        setShowMobileCart(true);
+        // Don't auto-open mobile cart on add
     };
 
     const removeFromCart = (productId: string) => {
@@ -630,13 +630,13 @@ function InteractiveCheckout({
 
     return (
         <>
-            <div className="w-full max-w-7xl mx-auto px-4 lg:px-6 min-h-screen flex lg:flex-row flex-col gap-4 lg:gap-6 sticky-checkout-section">
+            <div className="w-full lg:max-w-7xl lg:mx-auto px-0 lg:px-6 min-h-screen flex lg:flex-row flex-col gap-0 lg:gap-6 sticky-checkout-section">
             {/* Product Selection Section */}
-            <div className="flex-1 lg:w-[65%] bg-white rounded-xl shadow-lg border border-gray-200/60 overflow-hidden h-[calc(100vh-120px)]">
+            <div className="flex-1 lg:w-[65%] bg-white rounded-none lg:rounded-xl shadow-lg border-0 lg:border border-gray-200/60 overflow-hidden h-[60vh] lg:h-[calc(100vh-120px)]">
                 <div className="overflow-y-auto products-scroll-container h-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {/* Category Tabs */}
-                <div className="mb-4 lg:mb-6 sticky top-0 bg-gray-100 z-40 pt-3 pb-2 lg:pt-4 lg:pb-3 shadow-sm border-b border-gray-300">
-                    <div className="flex overflow-x-auto gap-2 lg:gap-3 px-3 lg:px-4 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div className="mb-3 lg:mb-6 sticky top-0 bg-gray-100 z-40 pt-2 pb-2 lg:pt-4 lg:pb-3 shadow-sm border-b border-gray-300">
+                    <div className="flex overflow-x-auto gap-1.5 lg:gap-3 px-0 lg:px-4 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         {categories.map((category) => (
                             <motion.button
                                 key={category.id}
@@ -666,7 +666,7 @@ function InteractiveCheckout({
                                     }, 10);
                                 }}
                                 className={cn(
-                                    "flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 min-w-fit border group relative overflow-hidden",
+                                    "flex-shrink-0 flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-1 lg:py-1.5 rounded-lg transition-all duration-300 min-w-fit border group relative overflow-hidden text-xs lg:text-sm",
                                     activeCategory === category.category
                                         ? "bg-[#0a1d3a] text-white border-[#0a1d3a] shadow-md"
                                         : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
@@ -682,7 +682,7 @@ function InteractiveCheckout({
                                 
 
                                 
-                                <span className="text-sm lg:text-base font-medium whitespace-nowrap relative z-10">
+                                <span className="text-xs lg:text-base font-medium whitespace-nowrap relative z-10">
                                     {category.name}
                                 </span>
                                 
@@ -704,24 +704,24 @@ function InteractiveCheckout({
                     {allProductsByCategory.map((categoryGroup, index) => (
                         <div key={categoryGroup.category} id={`category-${categoryGroup.category.replace(/\s+/g, '-')}`} className="mb-8">
                             {/* Section Title - Always Show */}
-                            <div className="mb-4 lg:mb-6 px-3 lg:px-4">
-                                <h2 className="text-2xl font-bold text-gray-900 border-b-2 border-green-500 pb-2 inline-block">
+                            <div className="mb-3 lg:mb-6 px-0 lg:px-4">
+                                <h2 className="text-lg lg:text-2xl font-bold text-gray-900 border-b-2 border-green-500 pb-1 lg:pb-2 inline-block">
                                     {categoryGroup.category}
                                 </h2>
-                                <p className="text-sm text-gray-600 mt-2">
+                                <p className="text-xs lg:text-sm text-gray-600 mt-1 lg:mt-2">
                                     {categoryGroup.products.length} products available
                                 </p>
                             </div>
 
                             {/* Product Grid or No Products Message */}
                             {categoryGroup.products.length > 0 ? (
-                                <div className="grid grid-cols-4 gap-1.5 lg:gap-2 px-3 lg:px-4 relative z-0">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 lg:gap-2 px-0 lg:px-4 relative z-0">
                                     {categoryGroup.products.map((product) => (
                         <motion.div
                             key={product.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-white rounded-md shadow-sm hover:shadow-md transition-all duration-300 p-1.5 relative cursor-pointer border border-gray-100 hover:border-green-200 group aspect-square flex flex-col"
+                            className="bg-white rounded-none lg:rounded-md shadow-sm hover:shadow-md transition-all duration-300 p-2 lg:p-1.5 relative cursor-pointer border-0 lg:border border-gray-100 hover:border-green-200 group aspect-square flex flex-col"
                             whileHover={{ y: -2, scale: 1.01 }}
                             onWheel={(e) => {
                                 const container = document.querySelector('.products-scroll-container');
@@ -772,7 +772,7 @@ function InteractiveCheckout({
                             )}
                             
                             {/* Product Image */}
-                            <div className="flex-1 flex items-center justify-center bg-white rounded-sm overflow-hidden transition-all duration-300 p-0.5 mb-1">
+                            <div className="flex-1 flex items-center justify-center bg-white rounded-sm overflow-hidden transition-all duration-300 p-1 lg:p-0.5 mb-1 lg:mb-1">
                                 <img
                                     src={product.imageUrl}
                                     alt={product.name}
@@ -786,17 +786,17 @@ function InteractiveCheckout({
                             
                             {/* Product Info */}
                             <div className="space-y-0 mt-auto">
-                                <h3 className="font-medium text-gray-900 text-sm leading-tight truncate font-apple">
+                                <h3 className="font-medium text-gray-900 text-xs lg:text-sm leading-tight truncate font-apple">
                                     {product.name}
                                 </h3>
-                                <p className="text-black text-sm font-semibold font-apple">
+                                <p className="text-black text-xs lg:text-sm font-semibold font-apple">
                                     {typeof product.price === 'string' ? product.price : `${product.price} BDT`}
                                 </p>
                             </div>
                             
                             {/* Add Button */}
                             <motion.button
-                                className={`absolute top-1 right-1 w-6 h-6 ${cart.some(cartItem => cartItem.id.includes(product.id) || cartItem.name.includes(product.name)) ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 hover:bg-gray-500'} text-white rounded-full flex items-center justify-center text-lg font-bold shadow-md transition-all duration-300`}
+                                className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 lg:w-6 lg:h-6 ${cart.some(cartItem => cartItem.id.includes(product.id) || cartItem.name.includes(product.name)) ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 hover:bg-gray-500'} text-white rounded-full flex items-center justify-center text-sm lg:text-lg font-bold shadow-none lg:shadow-md transition-all duration-300`}
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={(e) => {
@@ -820,9 +820,10 @@ function InteractiveCheckout({
                                     };
                                     addToCart(cartItem);
                                     toast({
-                                        title: "Added to Cart",
-                                        description: `${product.name} has been added to your cart.`,
+                                        title: "✓ Added to Cart",
+                                        description: `${product.name}`,
                                         duration: 2000,
+                                        className: "bg-green-50 border border-green-200 text-green-800 shadow-lg",
                                     });
                                 }}
                             >
@@ -857,6 +858,11 @@ function InteractiveCheckout({
                 </motion.button>
             )}
 
+            {/* Mobile Cart Backdrop */}
+            {showMobileCart && (
+                <div className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={() => setShowMobileCart(false)} />
+            )}
+            
             {/* Cart Section */}
             <motion.div
                 initial={{ opacity: 0, x: 20 }}
@@ -866,13 +872,13 @@ function InteractiveCheckout({
                     "fixed bottom-0 left-0 right-0 lg:relative",
                     showCheckout ? "top-0" : "",
                     "p-4 lg:p-5 rounded-t-2xl lg:rounded-xl",
-                    "bg-gray-100 shadow-xl border border-gray-300",
+                    "bg-white lg:bg-gray-100 shadow-2xl border-t-2 border-gray-200 lg:border lg:border-gray-300",
                     "z-50 lg:z-auto overflow-hidden",
                     !showMobileCart && "hidden lg:flex"
                 )}
                 style={{ 
-                    height: showCheckout ? (window.innerWidth < 1024 ? '100vh' : 'auto') : 'calc(100vh - 120px)', 
-                    minHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '600px') : 'calc(100vh - 120px)', 
+                    height: showCheckout ? (window.innerWidth < 1024 ? '100vh' : 'auto') : (window.innerWidth < 1024 ? '80vh' : 'calc(100vh - 120px)'), 
+                    minHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '600px') : (window.innerWidth < 1024 ? '80vh' : 'calc(100vh - 120px)'), 
                     maxHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '85vh') : 'calc(100vh - 120px)'
                 }}
             >
@@ -1035,7 +1041,7 @@ function InteractiveCheckout({
                                 </Button>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto min-h-0 max-h-[200px] lg:max-h-none space-y-2 bg-gray-50 rounded-lg p-2 cart-scroll">
+                            <div className="flex-1 overflow-y-auto min-h-0 max-h-[60vh] lg:max-h-none space-y-3 bg-gray-50 lg:bg-white rounded-xl p-4 cart-scroll border border-gray-200 shadow-inner">
                                 <AnimatePresence initial={false} mode="popLayout">
                                     {cart.length === 0 ? (
                                         <div className="text-center py-12 text-gray-500">
@@ -1057,7 +1063,7 @@ function InteractiveCheckout({
                                                     opacity: { duration: 0.2 },
                                                     layout: { duration: 0.2 },
                                                 }}
-                                                className="flex items-start gap-2 p-2 rounded-lg bg-white border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-300 transition-all duration-200"
+                                                className="flex items-start gap-4 p-4 rounded-xl bg-white border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-300 shadow-sm"
                                             >
                                                 <div className="w-12 h-12 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
                                                     <img
