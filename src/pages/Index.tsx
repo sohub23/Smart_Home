@@ -15,17 +15,19 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <main>
+      <main className="space-y-0">
         <HeroSlider />
-        <NarrativeSection />
-        <ProblemSolutionSection />
-        <SpecificationsSection />
-        <TrustedBySection />
-        <InteractiveDemoSection />
-        <AutoGallerySection />
-        <ProductCompareSection />
-        <OrderSection />
-        <FAQSection />
+        <div className="space-y-16 md:space-y-20 lg:space-y-24">
+          <NarrativeSection />
+          <ProblemSolutionSection />
+          <SpecificationsSection />
+          <TrustedBySection />
+          <InteractiveDemoSection />
+          <AutoGallerySection />
+          <ProductCompareSection />
+          <OrderSection />
+          <FAQSection />
+        </div>
       </main>
       <Footer />
     </div>

@@ -5,10 +5,10 @@ const NarrativeSection = () => {
   return (
     <section className="section-padding bg-gradient-section">
       <div className="container-width px-4 md:px-6">
-        <div className="grid lg:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-center">
+        <div className="grid lg:grid-cols-2 gap-12 md:gap-16 lg:gap-20 items-center">
           {/* Content */}
-          <div className="space-y-8">
-            <div className="space-y-4">
+          <div className="space-y-10 md:space-y-12">
+            <div className="space-y-6 md:space-y-8">
               <h2 className="text-headline text-primary">
                 Control Your Comfort
               </h2>
@@ -18,57 +18,57 @@ const NarrativeSection = () => {
             </div>
 
             {/* Benefits List */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 p-4 rounded-[var(--radius-card)] bg-surface border border-border">
-                <div className="flex-shrink-0 w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
-                  <Volume className="w-6 h-6 text-accent-soft" />
+            <div className="space-y-6">
+              <div className="flex items-center space-x-6 p-6 rounded-[var(--radius-card)] bg-surface border border-border">
+                <div className="flex-shrink-0 w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center">
+                  <Volume className="w-7 h-7 text-accent-soft" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-primary">No more tug & pull</h3>
-                  <p className="text-sm text-muted-foreground">Silent, effortless operation</p>
+                  <h3 className="text-lg font-semibold text-primary mb-1">No more tug & pull</h3>
+                  <p className="text-body-small text-muted-foreground">Silent, effortless operation</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4 p-4 rounded-[var(--radius-card)] bg-surface border border-border">
-                <div className="flex-shrink-0 w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
-                  <Smartphone className="w-6 h-6 text-accent-soft" />
+              <div className="flex items-center space-x-6 p-6 rounded-[var(--radius-card)] bg-surface border border-border">
+                <div className="flex-shrink-0 w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center">
+                  <Smartphone className="w-7 h-7 text-accent-soft" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-primary">One-tap open/close</h3>
-                  <p className="text-sm text-muted-foreground">Control from anywhere with the app</p>
+                  <h3 className="text-lg font-semibold text-primary mb-1">One-tap open/close</h3>
+                  <p className="text-body-small text-muted-foreground">Control from anywhere with the app</p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4 p-4 rounded-[var(--radius-card)] bg-surface border border-border">
-                <div className="flex-shrink-0 w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-accent-soft" />
+              <div className="flex items-center space-x-6 p-6 rounded-[var(--radius-card)] bg-surface border border-border">
+                <div className="flex-shrink-0 w-14 h-14 bg-accent/10 rounded-full flex items-center justify-center">
+                  <Clock className="w-7 h-7 text-accent-soft" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-primary">Schedules & scenes</h3>
-                  <p className="text-sm text-muted-foreground">Automated comfort, exactly when you need it</p>
+                  <h3 className="text-lg font-semibold text-primary mb-1">Schedules & scenes</h3>
+                  <p className="text-body-small text-muted-foreground">Automated comfort, exactly when you need it</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-6">
               <Button 
                 onClick={() => document.getElementById('specs')?.scrollIntoView({ behavior: 'smooth' })}
-                className="btn-primary"
+                className="btn-primary text-base py-3 px-6"
               >
                 Learn More
               </Button>
               <Button 
                 onClick={() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })}
-                className="btn-secondary"
+                className="btn-secondary text-base py-3 px-6"
               >
                 Buy Now
               </Button>
             </div>
 
             {/* Comfort Badge */}
-            <div className="inline-flex items-center px-4 py-2 bg-accent/10 rounded-full border border-accent/20">
-              <Check className="w-4 h-4 text-accent-soft mr-2" />
-              <span className="text-sm font-medium text-accent-soft">#BuiltForComfort</span>
+            <div className="inline-flex items-center px-6 py-3 bg-accent/10 rounded-full border border-accent/20">
+              <Check className="w-5 h-5 text-accent-soft mr-3" />
+              <span className="text-base font-medium text-accent-soft">#BuiltForComfort</span>
             </div>
           </div>
 

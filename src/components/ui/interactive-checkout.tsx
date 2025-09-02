@@ -607,6 +607,20 @@ function InteractiveCheckout({
                 .products-scroll-container::-webkit-scrollbar { display: none; }
                 .cart-scroll-through { overscroll-behavior: none; }
                 .font-apple { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+                .cart-scroll::-webkit-scrollbar {
+                  width: 6px;
+                }
+                .cart-scroll::-webkit-scrollbar-track {
+                  background: #f1f5f9;
+                  border-radius: 3px;
+                }
+                .cart-scroll::-webkit-scrollbar-thumb {
+                  background: #0a1d3a;
+                  border-radius: 3px;
+                }
+                .cart-scroll::-webkit-scrollbar-thumb:hover {
+                  background: rgba(10, 29, 58, 0.8);
+                }
             `;
             style.setAttribute('data-category-bar', 'true');
             document.head.appendChild(style);
@@ -615,17 +629,10 @@ function InteractiveCheckout({
 
     return (
         <>
-            <div className="w-full max-w-7xl mx-auto min-h-screen flex flex-col lg:flex-row gap-2 lg:gap-6 bg-white rounded-none lg:rounded-2xl overflow-hidden sticky-checkout-section">
-            {/* Left Side - Scrollable Products */}
-            <div className="flex-1 overflow-y-auto products-scroll-container h-[70vh] lg:h-[calc(100vh-180px)] min-h-[500px] scroll-lock-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} onWheel={(e) => {
-                const container = e.currentTarget;
-                const isAtTop = container.scrollTop === 0;
-                const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 1;
-                
-                if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
-                    return; // Allow page scroll when at boundaries
-                }
-            }}>
+            <div className="w-full max-w-7xl mx-auto min-h-screen grid lg:grid-cols-5 gap-6 lg:gap-8 sticky-checkout-section">
+            {/* Product Selection Section */}
+            <div className="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-gray-200/60 overflow-hidden">
+                <div className="overflow-y-auto products-scroll-container h-[70vh] lg:h-[calc(100vh-180px)] min-h-[500px]" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {/* Category Tabs */}
                 <div className="mb-6 lg:mb-8 sticky top-0 lg:top-0 bg-white/95 backdrop-blur-md z-40 pt-4 pb-3 lg:pt-6 lg:pb-3 shadow-lg border-b border-gray-100">
                     <div className="flex overflow-x-auto gap-3 lg:gap-4 px-4 lg:px-6 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -838,6 +845,7 @@ function InteractiveCheckout({
                     ))}
                 </div>
             </div>
+            </div>
 
             {/* Mobile Cart Toggle Button */}
             {!showMobileCart && cart.length > 0 && (
@@ -854,24 +862,22 @@ function InteractiveCheckout({
                 </motion.button>
             )}
 
-            {/* Right Side - Fixed Cart */}
+            {/* Cart Section */}
             <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className={cn(
-                    "w-full lg:w-[480px] flex flex-col lg:sticky lg:top-6 cart-scroll-through",
+                    "lg:col-span-2 flex flex-col lg:sticky lg:top-6",
                     "fixed bottom-0 left-0 right-0 lg:relative",
                     showCheckout ? "top-0 lg:top-6" : "",
-                    "p-3 lg:p-4 md:p-6 rounded-t-xl lg:rounded-xl",
-                    showCheckout ? "rounded-none lg:rounded-xl" : "",
-                    "bg-white dark:bg-zinc-900",
-                    "border-t lg:border border-zinc-200 dark:border-zinc-800",
-                    "shadow-2xl lg:shadow-lg z-50 lg:z-auto",
+                    "p-5 rounded-t-2xl lg:rounded-2xl",
+                    "bg-white shadow-xl border border-gray-200/60",
+                    "z-50 lg:z-auto overflow-hidden",
                     !showMobileCart && "hidden lg:flex"
                 )}
                 style={{ 
                     height: showCheckout ? (window.innerWidth < 1024 ? '100vh' : 'auto') : 'auto', 
-                    minHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '70vh') : '300px', 
+                    minHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '600px') : '400px', 
                     maxHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '85vh') : 'calc(100vh - 120px)'
                 }}
             >
@@ -996,7 +1002,7 @@ function InteractiveCheckout({
                                 {totalPrice > 0 && (
                                     <div className="flex justify-between items-center mb-4">
                                         <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Total</span>
-                                        <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">৳{totalPrice.toLocaleString()}</span>
+                                        <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{totalPrice.toLocaleString()} BDT</span>
                                     </div>
                                 )}
                                 {totalPrice === 0 && (
@@ -1016,37 +1022,33 @@ function InteractiveCheckout({
                         </div>
                     ) : (
                         <>
-                            <div className="flex items-center justify-between gap-3 mb-4">
+                            <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-3">
-                                    <ShoppingCart className="w-5 h-5 text-zinc-500" />
-                                    <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">
-                                        Cart ({totalItems})
-                                    </h2>
+                                    <div className="p-2 bg-[#0a1d3a]/10 rounded-lg">
+                                        <ShoppingCart className="w-5 h-5 text-[#0a1d3a]" />
+                                    </div>
+                                    <h2 className="text-lg font-semibold text-gray-900 leading-none">Shopping Cart</h2>
                                 </div>
+                                <p className="text-sm text-gray-500 leading-none italic">{totalItems} item{totalItems !== 1 ? 's' : ''}</p>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => setShowMobileCart(false)}
-                                    className="lg:hidden p-1 h-8 w-8"
+                                    className="lg:hidden p-2 h-8 w-8 hover:bg-gray-100 rounded-lg"
                                 >
                                     <X className="w-4 h-4" />
                                 </Button>
                             </div>
 
-                            <motion.div
-                                className={cn(
-                                    "flex-1 overflow-y-auto",
-                                    "min-h-0 max-h-[120px] lg:max-h-none",
-                                    "-mx-4 px-4",
-                                    "space-y-3"
-                                )}
-                            >
+                            <div className="flex-1 overflow-y-auto min-h-0 max-h-[200px] lg:max-h-none space-y-2 bg-gray-50 rounded-lg p-2 cart-scroll">
                                 <AnimatePresence initial={false} mode="popLayout">
                                     {cart.length === 0 ? (
                                         <div className="text-center py-12 text-gray-500">
-                                            <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                                            <p className="text-sm font-medium">Your cart is empty</p>
-                                            <p className="text-xs text-gray-400 mt-1">Add products to get started</p>
+                                            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                                                <ShoppingCart className="w-8 h-8 text-gray-400" />
+                                            </div>
+                                            <h3 className="text-base font-medium text-gray-700 mb-1">Cart is empty</h3>
+                                            <p className="text-sm text-gray-500">Add products to get started</p>
                                         </div>
                                     ) : (
                                         cart.map((item) => (
@@ -1060,16 +1062,9 @@ function InteractiveCheckout({
                                                     opacity: { duration: 0.2 },
                                                     layout: { duration: 0.2 },
                                                 }}
-                                                className={cn(
-                                                    "flex items-start gap-3 lg:gap-4",
-                                                    "p-3 lg:p-4 rounded-xl",
-                                                    "bg-white dark:from-zinc-800 dark:to-zinc-800/50",
-                                                    "border border-gray-200 dark:border-zinc-700",
-                                                    "hover:shadow-md transition-all duration-200",
-                                                    "mb-3"
-                                                )}
+                                                className="flex items-start gap-2 p-2 rounded-lg bg-white border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-300 transition-all duration-200"
                                             >
-                                                <div className="w-12 h-12 lg:w-16 lg:h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                                <div className="w-12 h-12 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-gray-200">
                                                     <img
                                                         src={item.image}
                                                         alt={item.name}
@@ -1105,14 +1100,12 @@ function InteractiveCheckout({
                                                             )}
 
                                                         </div>
-                                                        <motion.button
-                                                            whileHover={{ scale: 1.1 }}
-                                                            whileTap={{ scale: 0.95 }}
+                                                        <button
                                                             onClick={() => removeFromCart(item.id)}
-                                                            className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-500 transition-colors"
+                                                            className="p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                                                         >
                                                             <X className="w-4 h-4" />
-                                                        </motion.button>
+                                                        </button>
                                                     </div>
                                                     <div className="flex items-center justify-between">
                                                         {item.category === 'Services' || item.category === 'Installation Service' ? (
@@ -1120,37 +1113,32 @@ function InteractiveCheckout({
                                                                 {item.category === 'Installation Service' ? 'Professional Installation Service (TBD)' : 'Consultation Service'}
                                                             </div>
                                                         ) : (
-                                                            <div className="flex items-center gap-2 bg-gray-100 dark:bg-zinc-700 rounded-lg p-1">
-                                                                <motion.button
-                                                                    whileHover={{ scale: 1.1 }}
-                                                                    whileTap={{ scale: 0.95 }}
+                                                            <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200">
+                                                                <button
                                                                     onClick={() => updateQuantity(item.id, -1)}
-                                                                    className="w-6 h-6 lg:w-8 lg:h-8 rounded-md bg-white dark:bg-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-500 flex items-center justify-center transition-colors"
+                                                                    className="w-6 h-6 rounded-md bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                                                                 >
-                                                                    <Minus className="w-3 h-3 lg:w-4 lg:h-4" />
-                                                                </motion.button>
-                                                                <span className="text-sm lg:text-base font-semibold text-zinc-900 dark:text-zinc-100 min-w-[2rem] text-center">
+                                                                    <Minus className="w-3 h-3 text-gray-600" />
+                                                                </button>
+                                                                <span className="text-sm font-medium text-gray-900 min-w-[2rem] text-center">
                                                                     {item.quantity}
                                                                 </span>
-                                                                <motion.button
-                                                                    whileHover={{ scale: 1.1 }}
-                                                                    whileTap={{ scale: 0.95 }}
+                                                                <button
                                                                     onClick={() => {
                                                                         if (item.category === 'Smart Switch' && item.installationCharge && item.quantity >= 3) {
                                                                             toast({
                                                                                 title: "Installation Limit",
                                                                                 description: "For more than 3 switches, site visit required. Please contact us.",
-                                                                                variant: "destructive",
-                                                                                className: "bg-white border border-red-200 shadow-lg"
+                                                                                variant: "destructive"
                                                                             });
                                                                             return;
                                                                         }
                                                                         updateQuantity(item.id, 1);
                                                                     }}
-                                                                    className="w-6 h-6 lg:w-8 lg:h-8 rounded-md bg-white dark:bg-zinc-600 hover:bg-gray-50 dark:hover:bg-zinc-500 flex items-center justify-center transition-colors"
+                                                                    className="w-6 h-6 rounded-md bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                                                                 >
-                                                                    <Plus className="w-3 h-3 lg:w-4 lg:h-4" />
-                                                                </motion.button>
+                                                                    <Plus className="w-3 h-3 text-gray-600" />
+                                                                </button>
                                                             </div>
                                                         )}
                                                         <div className="text-right">
@@ -1176,53 +1164,41 @@ function InteractiveCheckout({
                                         ))
                                     )}
                                 </AnimatePresence>
-                            </motion.div>
+                            </div>
                             
-                            <motion.div
-                                layout
-                                className={cn(
-                                    "pt-3 mt-3",
-                                    "border-t border-zinc-200 dark:border-zinc-800",
-                                    "bg-white dark:bg-zinc-900"
-                                )}
-                            >
-                                <div className="bg-white rounded-xl p-4 mb-4 border border-gray-200">
+                            <div className="pt-2 mt-2 border-t border-gray-300">
+                                <div className="bg-white rounded-lg p-3 mb-2 border border-gray-200 shadow-sm">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                            Total
-                                        </span>
-                                        <motion.span
-                                            layout
-                                            className="text-xl lg:text-2xl font-bold text-black"
-                                        >
+                                        <span className="text-base font-semibold text-gray-900 leading-none">Total</span>
+                                        <span className="text-xl font-bold text-[#0a1d3a] leading-none">
                                             <NumberFlow value={totalPrice} /> BDT
-                                        </motion.span>
+                                        </span>
                                     </div>
-                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                                        {totalItems} item{totalItems !== 1 ? 's' : ''} in cart
-                                    </p>
+                                    <div className="flex items-center justify-between text-sm text-gray-600 mt-1">
+                                        <span className="leading-none">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
+                                        <span className="text-green-600 leading-none">Free Delivery</span>
+                                    </div>
                                 </div>
                                 
                                 <div className="space-y-2">
-                                    <div className="flex gap-2">
+                                    <div className="grid grid-cols-2 gap-2">
                                         <Button 
                                             size="sm" 
                                             variant="outline"
-                                            className="flex-1 gap-2 bg-white border-blue-200 text-blue-700 hover:bg-white hover:border-blue-300" 
+                                            className="gap-2 text-[#0a1d3a] border-[#0a1d3a]/30 hover:bg-[#0a1d3a]/10" 
                                             disabled={cart.length === 0}
                                             onClick={() => setSaveEmailModalOpen(true)}
                                         >
                                             <Mail className="w-4 h-4" />
-                                            Save/Email
+                                            Save
                                         </Button>
                                         <Button 
                                             size="sm" 
                                             variant="outline"
-                                            className="flex-1 gap-2 bg-white border-green-200 text-green-700 hover:bg-white hover:border-green-300" 
+                                            className="gap-2 text-green-600 border-green-200 hover:bg-green-50" 
                                             disabled={cart.length === 0}
                                             onClick={() => {
                                                 try {
-                                                    // Sanitize all cart data before generating PDF
                                                     const sanitizedCartItems = cart.map(item => ({
                                                         name: sanitizeDbInput(item.name),
                                                         quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
@@ -1268,12 +1244,12 @@ function InteractiveCheckout({
                                                     
                                                     toast({
                                                         title: "Quote Opened",
-                                                        description: "Quote opened in new tab. Use Ctrl+P to save as PDF.",
+                                                        description: "Quote opened in new tab. Use Ctrl+P to save as PDF."
                                                     });
                                                 } catch (error) {
                                                     toast({
                                                         title: "Error",
-                                                        description: "Failed to open quote.",
+                                                        description: "Failed to open quote."
                                                     });
                                                 }
                                             }}
@@ -1281,12 +1257,11 @@ function InteractiveCheckout({
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
-                                            View PDF
+                                            PDF
                                         </Button>
                                     </div>
                                     <Button 
-                                        size="sm" 
-                                        className="w-full gap-2 border-2 border-black bg-black text-white hover:bg-gray-900 hover:border-gray-900 hover:shadow-lg transition-all duration-300" 
+                                        className="w-full gap-2 bg-[#0a1d3a] hover:bg-[#0a1d3a]/90 text-white" 
                                         disabled={cart.length === 0}
                                         onClick={() => setShowCheckout(true)}
                                     >
@@ -1294,7 +1269,7 @@ function InteractiveCheckout({
                                         Checkout
                                     </Button>
                                 </div>
-                            </motion.div>
+                            </div>
                         </>
                     )}
             </motion.div>

@@ -4,12 +4,12 @@ const OrderSection = () => {
   return (
     <section 
       id="order" 
-      className="min-h-screen bg-background py-12 md:py-16 pt-20 md:pt-24"
+      className="min-h-screen bg-background section-padding"
     >
       <div className="container-width px-4 md:px-6">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-headline text-primary mb-4 px-4">Build Your Smart Home</h2>
-          <p className="text-body text-muted-foreground px-4">
+        <div className="text-center section-gap">
+          <h2 className="text-headline text-primary content-gap px-4">Build Your Smart Home</h2>
+          <p className="text-body-large text-muted-foreground px-4">
             Add products to your cart and checkout with ease.
           </p>
         </div>

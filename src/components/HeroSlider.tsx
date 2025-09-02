@@ -133,26 +133,26 @@ const HeroSlider = () => {
       <div className="absolute inset-0 flex items-center justify-center z-10">
         <div className="container-width px-4 md:px-6">
           <div className="text-center text-black max-w-4xl mx-auto">
-            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 fade-in leading-tight">
+            <h1 className="text-display mb-6 md:mb-8 fade-in">
               {slides[currentSlide].headline}
             </h1>
-            <p className="text-sm sm:text-base md:text-lg lg:text-xl mb-6 md:mb-8 max-w-2xl mx-auto opacity-90 fade-in-delay px-4">
+            <p className="text-body-large mb-8 md:mb-10 max-w-3xl mx-auto opacity-90 fade-in-delay px-4">
               {slides[currentSlide].subtitle}
             </p>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 justify-center fade-in-delay px-4">
-              <Button onClick={scrollToOrder} className="btn-cta w-full sm:w-auto text-sm md:text-base py-2 md:py-3 px-4 md:px-6">
+            <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center fade-in-delay px-4">
+              <Button onClick={scrollToOrder} className="btn-cta w-full sm:w-auto text-base md:text-lg py-3 md:py-4 px-6 md:px-8">
                 Build Your Smart Home
               </Button>
               <Button 
                 onClick={() => document.getElementById('specs')?.scrollIntoView({ behavior: 'smooth' })}
-                className="btn-cta w-full sm:w-auto text-sm md:text-base py-2 md:py-3 px-4 md:px-6"
+                className="btn-cta w-full sm:w-auto text-base md:text-lg py-3 md:py-4 px-6 md:px-8"
               >
                 Watch How It Works
               </Button>
             </div>
             {/* Built for Comfort Badge */}
-            <div className="mt-6 md:mt-8 fade-in-delay">
-              <span className="inline-flex items-center px-2 sm:px-3 md:px-4 py-1.5 md:py-2 bg-black/80 backdrop-blur-sm rounded-full text-xs md:text-sm font-medium text-white border border-black">
+            <div className="mt-8 md:mt-10 fade-in-delay">
+              <span className="inline-flex items-center px-4 md:px-6 py-2 md:py-3 bg-black/80 backdrop-blur-sm rounded-full text-sm md:text-base font-medium text-white border border-black">
                 #BuiltForComfort
               </span>
             </div>
