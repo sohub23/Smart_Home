@@ -796,7 +796,7 @@ function InteractiveCheckout({
                             
                             {/* Add Button */}
                             <motion.button
-                                className="absolute bottom-0.5 right-0.5 w-4 h-4 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300"
+                                className={`absolute top-1 right-1 w-6 h-6 ${cart.some(cartItem => cartItem.id.includes(product.id) || cartItem.name.includes(product.name)) ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 hover:bg-gray-500'} text-white rounded-full flex items-center justify-center text-lg font-bold shadow-md transition-all duration-300`}
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={(e) => {
@@ -826,7 +826,7 @@ function InteractiveCheckout({
                                     });
                                 }}
                             >
-                                +
+                                {cart.some(cartItem => cartItem.id.includes(product.id) || cartItem.name.includes(product.name)) ? '✓' : '+'}
                             </motion.button>
                                     </motion.div>
                                     ))}
