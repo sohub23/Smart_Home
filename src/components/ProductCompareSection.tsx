@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
+import sliderThumbnail from '@/assets/default_images/slider_thumbnail.png';
+import rollerThumbnail from '@/assets/default_images/roller_thumbnail.png';
 
 const products = [
   {
     name: 'Smart Sliding Curtain',
     youtubeId: 'APm2EDVBljw',
+    thumbnail: sliderThumbnail,
     description: 'Traditional elegance meets smart technology',
     features: [
       'Traditional curtain appearance',
@@ -22,6 +26,7 @@ const products = [
   {
     name: 'Smart Roller Curtain',
     youtubeId: 'K0MZDn2Tw_4',
+    thumbnail: rollerThumbnail,
     description: 'Minimal design with maximum control',
     features: [
       'Modern minimal aesthetic',
@@ -39,6 +44,7 @@ const products = [
 ];
 
 const ProductCompareSection = () => {
+  const [videoLoaded, setVideoLoaded] = useState<{[key: string]: boolean}>({});
   return (
     <section id="compare" className="py-12 md:py-16 bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
@@ -58,9 +64,12 @@ const ProductCompareSection = () => {
             <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500">
               {/* Product Video */}
               <div className="h-[400px] overflow-hidden relative">
+                {/* YouTube video - hidden initially */}
                 <iframe
                   src={`https://www.youtube-nocookie.com/embed/${product.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${product.youtubeId}`}
-                  className="absolute hover:scale-105 transition-transform duration-500"
+                  className={`absolute hover:scale-105 transition-all duration-500 ${
+                    videoLoaded[product.youtubeId] ? 'opacity-100' : 'opacity-0'
+                  }`}
                   style={{ 
                     border: 'none',
                     width: '150%',
@@ -71,7 +80,23 @@ const ProductCompareSection = () => {
                   }}
                   allow="autoplay; encrypted-media"
                   title={product.name}
+                  onLoad={() => {
+                    setTimeout(() => {
+                      setVideoLoaded(prev => ({ ...prev, [product.youtubeId]: true }));
+                    }, 3000);
+                  }}
                 />
+                
+                {/* Default thumbnail overlay - covers everything until video is ready */}
+                <div className={`absolute inset-0 transition-opacity duration-500 ${
+                  videoLoaded[product.youtubeId] ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                }`}>
+                  <img
+                    src={product.thumbnail}
+                    alt={product.name}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  />
+                </div>
               </div>
               
               {/* Product Content */}

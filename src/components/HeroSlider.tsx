@@ -3,12 +3,15 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import heroSlidingImage from '@/assets/hero-sliding-curtain.jpg';
 import heroRollerImage from '@/assets/hero-roller-curtain.jpg';
+import sliderThumbnail from '@/assets/default_images/slider_thumbnail.png';
+import rollerThumbnail from '@/assets/default_images/roller_thumbnail.png';
 
 const slides = [
   {
     id: 1,
     youtubeId: 'APm2EDVBljw',
     image: heroSlidingImage,
+    thumbnail: sliderThumbnail,
     headline: "Every Home. A Smart Home.",
     subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
     alt: "Smart curtain demonstration video"
@@ -17,6 +20,7 @@ const slides = [
     id: 2,
     youtubeId: 'K0MZDn2Tw_4',
     image: heroRollerImage,
+    thumbnail: rollerThumbnail,
     headline: "Every Home. A Smart Home.",
     subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
     alt: "Roller curtain demonstration video"
@@ -26,6 +30,7 @@ const slides = [
 const HeroSlider = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [videoLoaded, setVideoLoaded] = useState<{[key: number]: boolean}>({});
 
   useEffect(() => {
     if (!isAutoPlaying) return;
@@ -73,10 +78,13 @@ const HeroSlider = () => {
             <div className="relative w-full h-full">
               {slide.youtubeId ? (
                 <>
+                  {/* YouTube video - hidden initially */}
                   <iframe
                     key={slide.id}
                     src={`https://www.youtube-nocookie.com/embed/${slide.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${slide.youtubeId}`}
-                    className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+                    className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 ${
+                      videoLoaded[slide.id] ? 'opacity-100' : 'opacity-0'
+                    }`}
                     style={{ 
                       border: 'none',
                       width: '177.78vh',
@@ -86,14 +94,23 @@ const HeroSlider = () => {
                     }}
                     allow="autoplay; encrypted-media"
                     title={slide.alt}
+                    onLoad={() => {
+                      setTimeout(() => {
+                        setVideoLoaded(prev => ({ ...prev, [slide.id]: true }));
+                      }, 3000);
+                    }}
                   />
-                  {/* Fallback image overlay */}
-                  <img
-                    src={slide.image}
-                    alt={slide.alt}
-                    className="absolute inset-0 w-full h-full object-cover -z-10"
-                    style={{ display: 'none' }}
-                  />
+                  
+                  {/* Default thumbnail overlay - covers everything until video is ready */}
+                  <div className={`absolute inset-0 transition-opacity duration-500 ${
+                    videoLoaded[slide.id] ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                  }`}>
+                    <img
+                      src={slide.thumbnail}
+                      alt={slide.alt}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </>
               ) : (
                 <img
