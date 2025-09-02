@@ -28,6 +28,7 @@ import { useNavigate } from "react-router-dom";
 import { SaveEmailModal } from "@/components/ui/SaveEmailModal";
 import { Mail, Printer } from "lucide-react";
 import { sanitizeLogInput, sanitizeDbInput } from "@/utils/sanitize";
+import { useMemo, useCallback } from "react";
 
 interface Product {
     id: string;
@@ -86,6 +87,49 @@ const defaultProducts: Product[] = [
         color: "Clear",
     },
 ];
+
+// Helper function to safely parse price
+const safeParsePrice = (priceString: string): number => {
+    const parsed = parseInt(priceString.replace(/[^0-9]/g, ''), 10);
+    return isNaN(parsed) ? 0 : parsed;
+};
+
+// Helper function to transform product data for modals
+const transformProductForModal = (selectedVariant: any, dbProducts: any[]) => {
+    const sanitizedId = sanitizeDbInput(selectedVariant.id);
+    const productData = dbProducts.find(p => p.id === sanitizedId);
+    return {
+        id: sanitizedId,
+        name: selectedVariant.name,
+        category: selectedVariant.gangType || 'Product',
+        price: safeParsePrice(selectedVariant.price),
+        description: productData?.description || '',
+        detailed_description: productData?.detailed_description || '',
+        features: productData?.features || '',
+        specifications: productData?.specifications || '',
+        warranty: productData?.warranty || '',
+        installation_included: productData?.installation_included || false,
+        image: selectedVariant.imageUrl,
+        image2: productData?.image2 || '',
+        image3: productData?.image3 || '',
+        image4: productData?.image4 || '',
+        image5: productData?.image5 || '',
+        stock: productData?.stock || 0
+    };
+};
+
+// Helper function to determine modal type
+const getModalType = (category: string, productName: string) => {
+    if (category === 'Curtain') {
+        return productName.toLowerCase().includes('roller') ? 'roller' : 'slider';
+    }
+    if (category === 'Security') {
+        if (productName.includes('Smart Security Box') || productName.includes('SP-01')) return 'securityBox';
+        if (productName.includes('Security Panel') || productName.includes('SP-05')) return 'securityPanel';
+        return 'sohubProtect';
+    }
+    return category.toLowerCase();
+};
 
 const getCategoryProducts = (dbProducts: any[], categoryImages: any[]) => {
     const categories = ['Curtain', 'Switch', 'Security', 'PDLC Film', 'Services'];
@@ -322,8 +366,9 @@ function InteractiveCheckout({
     };
 
     const getProductsByCategory = (category: string) => {
+        const sanitizedCategory = sanitizeDbInput(category);
         // Handle Services category separately
-        if (category === 'Services') {
+        if (sanitizedCategory === 'Services') {
             return [
                 {
                     id: 'service-1',
@@ -338,13 +383,13 @@ function InteractiveCheckout({
         
         // If we have database products, use them
         if (dbProducts.length > 0) {
-            const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
-                                 category === 'Curtain' ? ['Smart Curtain'] : 
-                                 category === 'Switch' ? ['Smart Switch'] : [category];
+            const categoryFilter = sanitizedCategory === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
+                                 sanitizedCategory === 'Curtain' ? ['Smart Curtain'] : 
+                                 sanitizedCategory === 'Switch' ? ['Smart Switch'] : [sanitizedCategory];
             const filteredProducts = dbProducts.filter(p => categoryFilter.includes(p.category) && p.stock > 0);
             
             // Sort Security products by serial_order, others by default
-            const sortedProducts = category === 'Security' 
+            const sortedProducts = sanitizedCategory === 'Security' 
                 ? filteredProducts.sort((a, b) => {
                     const aOrder = a.serial_order || 999;
                     const bOrder = b.serial_order || 999;
@@ -376,56 +421,59 @@ function InteractiveCheckout({
     }, []);
 
     const addToCart = (product: Product | CartItem) => {
-        console.log('addToCart called with:', product);
+        console.log('addToCart called with:', sanitizeLogInput(product));
         setCart((currentCart) => {
-            console.log('Current cart before adding:', currentCart);
+            console.log('Current cart before adding:', sanitizeLogInput(currentCart));
             
             // For Smart Curtain with specific track sizes, use the provided ID (already unique)
             if (product.category === 'Smart Curtain' && product.id.includes('_') && product.id.includes('ft')) {
                 const newCart = [...currentCart, { ...product, quantity: 'quantity' in product ? product.quantity : 1 }];
-                console.log('New cart after adding Smart Curtain:', newCart);
+                console.log('New cart after adding Smart Curtain:', sanitizeLogInput(newCart));
                 return newCart;
             }
             
             // For PDLC Film and other Smart Curtain, always add as new item with unique ID
             if (product.category === 'PDLC Film' || product.category === 'Film' || product.category === 'Smart Curtain') {
-                const uniqueId = `${product.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                const uniqueId = `${sanitizeDbInput(product.id)}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
                 return [...currentCart, { ...product, id: uniqueId, quantity: 'quantity' in product ? product.quantity : 1 }];
             }
             
             // For Security products with accessories, always add as new item with unique ID
             if (product.category === 'Security' && 'accessories' in product && product.accessories && product.accessories.length > 0) {
-                const uniqueId = `${product.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                const uniqueId = `${sanitizeDbInput(product.id)}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
                 return [...currentCart, { ...product, id: uniqueId, quantity: 'quantity' in product ? product.quantity : 1 }];
             }
             
             // For other products, check for existing items
+            const sanitizedProductId = sanitizeDbInput(product.id);
             const existingItem = currentCart.find(
-                (item) => item.id === product.id
+                (item) => item.id === sanitizedProductId
             );
             const quantityToAdd = 'quantity' in product ? product.quantity : 1;
             if (existingItem) {
                 return currentCart.map((item) =>
-                    item.id === product.id
+                    item.id === sanitizedProductId
                         ? { ...item, quantity: item.quantity + quantityToAdd }
                         : item
                 );
             }
-            return [...currentCart, { ...product, quantity: quantityToAdd }];
+            return [...currentCart, { ...product, id: sanitizedProductId, quantity: quantityToAdd }];
         });
         setShowMobileCart(true);
     };
 
     const removeFromCart = (productId: string) => {
+        const sanitizedId = sanitizeDbInput(productId);
         setCart((currentCart) =>
-            currentCart.filter((item) => item.id !== productId)
+            currentCart.filter((item) => item.id !== sanitizedId)
         );
     };
 
     const updateQuantity = (productId: string, delta: number) => {
+        const sanitizedId = sanitizeDbInput(productId);
         setCart((currentCart) =>
             currentCart.map((item) => {
-                if (item.id === productId) {
+                if (item.id === sanitizedId) {
                     const newQuantity = item.quantity + delta;
                     if (newQuantity > 0) {
                         // For items with installation, recalculate price based on new quantity
@@ -471,29 +519,35 @@ function InteractiveCheckout({
 
     const categories = dbProducts.length > 0 ? getCategoryProducts(dbProducts, categoryImages) : products;
     
-    // Get all products grouped by category
-    const allProductsByCategory = categories.map(category => {
-        const products = getProductsByCategory(category.category);
-        // Debug: Category products loaded
-        return {
-            category: category.category,
-            products: products
-        };
-    });
+    // Memoize products by category for better performance
+    const allProductsByCategory = useMemo(() => {
+        return categories.map(category => {
+            const products = getProductsByCategory(category.category);
+            return {
+                category: category.category,
+                products: products
+            };
+        });
+    }, [categories, dbProducts]);
+
+    // Memoize selected product data
+    const selectedProductData = useMemo(() => {
+        if (!selectedVariant || !dbProducts.length) return null;
+        return transformProductForModal(selectedVariant, dbProducts);
+    }, [selectedVariant, dbProducts]);
+
+
+
+
 
     // Auto-select category based on scroll position
     useEffect(() => {
         let throttleTimer: NodeJS.Timeout | null = null;
         
         const handleScroll = () => {
-            if (throttleTimer) return;
+            if (throttleTimer || isManualSelection) return;
             
             throttleTimer = setTimeout(() => {
-                if (isManualSelection) {
-                    throttleTimer = null;
-                    return;
-                }
-                
                 const container = document.querySelector('.products-scroll-container');
                 if (!container) {
                     throttleTimer = null;
@@ -501,7 +555,7 @@ function InteractiveCheckout({
                 }
                 
                 const containerRect = container.getBoundingClientRect();
-                const headerOffset = 140;
+                const headerOffset = 200;
                 
                 let visibleCategory = activeCategory;
                 let maxVisibility = 0;
@@ -540,11 +594,38 @@ function InteractiveCheckout({
         }
     }, [allProductsByCategory, activeCategory, isManualSelection]);
 
+    // Add CSS styles via useEffect for proper lifecycle management
+    useEffect(() => {
+        if (typeof document !== 'undefined' && !document.head.querySelector('style[data-category-bar]')) {
+            const style = document.createElement('style');
+            style.textContent = `
+                .category-bar-container::-webkit-scrollbar { display: none; }
+                .category-bar-container { -ms-overflow-style: none; scrollbar-width: none; }
+                .sticky-checkout-section { position: relative; }
+                .scroll-lock-container { overscroll-behavior: contain; }
+                .products-scroll-container { overscroll-behavior: auto; }
+                .products-scroll-container::-webkit-scrollbar { display: none; }
+                .cart-scroll-through { overscroll-behavior: none; }
+                .font-apple { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+            `;
+            style.setAttribute('data-category-bar', 'true');
+            document.head.appendChild(style);
+        }
+    }, []);
+
     return (
         <>
-            <div className="w-full max-w-7xl mx-auto min-h-screen flex flex-col lg:flex-row gap-2 lg:gap-6 bg-white rounded-none lg:rounded-2xl overflow-hidden">
+            <div className="w-full max-w-7xl mx-auto min-h-screen flex flex-col lg:flex-row gap-2 lg:gap-6 bg-white rounded-none lg:rounded-2xl overflow-hidden sticky-checkout-section">
             {/* Left Side - Scrollable Products */}
-            <div className="flex-1 overflow-y-auto products-scroll-container h-[60vh] lg:h-[calc(100vh-200px)] min-h-[400px]">
+            <div className="flex-1 overflow-y-auto products-scroll-container h-[70vh] lg:h-[calc(100vh-180px)] min-h-[500px] scroll-lock-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} onWheel={(e) => {
+                const container = e.currentTarget;
+                const isAtTop = container.scrollTop === 0;
+                const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 1;
+                
+                if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
+                    return; // Allow page scroll when at boundaries
+                }
+            }}>
                 {/* Category Tabs */}
                 <div className="mb-6 lg:mb-8 sticky top-0 lg:top-0 bg-white/95 backdrop-blur-md z-40 pt-4 pb-3 lg:pt-6 lg:pb-3 shadow-lg border-b border-gray-100">
                     <div className="flex overflow-x-auto gap-3 lg:gap-4 px-4 lg:px-6 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -556,85 +637,49 @@ function InteractiveCheckout({
                                     setIsManualSelection(true);
                                     setActiveCategory(category.category);
                                     
-                                    // Center the selected tab in the category bar
-                                    setTimeout(() => {
-                                        const categoryBar = document.querySelector('.category-bar-container');
-                                        const clickedButton = document.querySelector(`[data-category="${category.category}"]`);
-                                        if (categoryBar && clickedButton) {
-                                            const barRect = categoryBar.getBoundingClientRect();
-                                            const buttonRect = clickedButton.getBoundingClientRect();
-                                            const scrollLeft = categoryBar.scrollLeft + (buttonRect.left - barRect.left) - (barRect.width / 2) + (buttonRect.width / 2);
-                                            categoryBar.scrollTo({ left: scrollLeft, behavior: 'smooth' });
-                                        }
-                                    }, 50);
-                                    
+                                    // Scroll to the category section
                                     setTimeout(() => {
                                         const targetId = `category-${category.category.replace(/\s+/g, '-')}`;
                                         const element = document.getElementById(targetId);
                                         const container = document.querySelector('.products-scroll-container');
                                         
                                         if (element && container) {
-                                            const isMobile = window.innerWidth < 1024;
-                                            
-                                            if (isMobile) {
-                                                // Get the sticky header height
-                                                const stickyHeader = container.querySelector('.sticky');
-                                                const headerHeight = stickyHeader ? stickyHeader.offsetHeight : 120;
-                                                
-                                                // Calculate scroll position
-                                                const elementPosition = element.offsetTop;
-                                                const scrollPosition = elementPosition - headerHeight - 10;
-                                                
-                                                container.scrollTo({
-                                                    top: Math.max(0, scrollPosition),
-                                                    behavior: 'smooth'
-                                                });
-                                            } else {
-                                                const containerRect = container.getBoundingClientRect();
-                                                const elementRect = element.getBoundingClientRect();
-                                                const scrollOffset = container.scrollTop + (elementRect.top - containerRect.top) - 180;
-                                                container.scrollTo({
-                                                    top: Math.max(0, scrollOffset),
-                                                    behavior: 'smooth'
-                                                });
-                                            }
+                                            const stickyHeader = container.querySelector('.sticky');
+                                            const headerHeight = stickyHeader ? stickyHeader.offsetHeight : 140;
+                                            const elementPosition = element.offsetTop;
+                                            const scrollPosition = elementPosition - headerHeight - 20;
+                                            container.scrollTo({
+                                                top: Math.max(0, scrollPosition),
+                                                behavior: 'smooth'
+                                            });
                                         }
                                         
                                         setTimeout(() => setIsManualSelection(false), 800);
                                     }, 10);
                                 }}
                                 className={cn(
-                                    "flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-300 min-w-fit border-2 group relative overflow-hidden",
+                                    "flex-shrink-0 flex items-center gap-3 px-4 py-1 rounded-[5px] transition-all duration-300 min-w-fit border-2 group relative overflow-hidden",
                                     activeCategory === category.category
-                                        ? "bg-gradient-to-r from-green-500 to-blue-500 text-white border-transparent shadow-lg"
-                                        : "bg-white text-gray-700 border-gray-200 hover:border-green-300 hover:shadow-md hover:bg-green-50"
+                                        ? "bg-[#0a1d3a] text-white border-transparent shadow-lg"
+                                        : "bg-white text-gray-700 border-gray-200"
                                 )}
 
+                                whileHover={{ y: -2, scale: 1.01, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                                 whileTap={{ scale: 0.95 }}
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: category.id * 0.1 }}
+                                transition={{ delay: category.id * 0.1, duration: 0.15 }}
                             >
                                 {/* Animated background */}
                                 {activeCategory === category.category && (
                                     <motion.div
-                                        className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-400/20 rounded-full"
+                                        className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-400/20 rounded-[5px]"
                                         layoutId="activeTab"
                                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                     />
                                 )}
                                 
-                                <div className="w-6 h-6 lg:w-8 lg:h-8 rounded-full flex items-center justify-center relative z-10">
-                                    <img
-                                        src={category.image || '/images/smart_switch/3 gang mechanical.webp'}
-                                        alt={category.name}
-                                        className="w-4 h-4 lg:w-6 lg:h-6 object-contain transition-transform group-hover:scale-110"
-                                        onError={(e) => {
-                                            const target = e.target as HTMLImageElement;
-                                            target.src = '/images/smart_switch/3 gang mechanical.webp';
-                                        }}
-                                    />
-                                </div>
+
                                 
                                 <span className="text-sm lg:text-base font-medium whitespace-nowrap relative z-10">
                                     {category.name}
@@ -643,7 +688,7 @@ function InteractiveCheckout({
                                 {/* Pulse effect for active */}
                                 {activeCategory === category.category && (
                                     <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-white/30"
+                                        className="absolute inset-0 rounded-[5px] border-2 border-white/30"
                                         animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0, 0.5] }}
                                         transition={{ duration: 2, repeat: Infinity }}
                                     />
@@ -669,7 +714,7 @@ function InteractiveCheckout({
 
                             {/* Product Grid or No Products Message */}
                             {categoryGroup.products.length > 0 ? (
-                                <div className="grid grid-cols-4 lg:grid-cols-5 gap-1.5 lg:gap-2 px-3 lg:px-4 relative z-0">
+                                <div className="grid grid-cols-4 gap-1.5 lg:gap-2 px-3 lg:px-4 relative z-0">
                                     {categoryGroup.products.map((product) => (
                         <motion.div
                             key={product.id}
@@ -677,6 +722,20 @@ function InteractiveCheckout({
                             animate={{ opacity: 1, y: 0 }}
                             className="bg-white rounded-md shadow-sm hover:shadow-md transition-all duration-300 p-1.5 relative cursor-pointer border border-gray-100 hover:border-green-200 group aspect-square flex flex-col"
                             whileHover={{ y: -2, scale: 1.01 }}
+                            onWheel={(e) => {
+                                const container = document.querySelector('.products-scroll-container');
+                                if (container) {
+                                    const isAtTop = container.scrollTop === 0;
+                                    const isAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 1;
+                                    
+                                    if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
+                                        return; // Allow page scroll
+                                    }
+                                    
+                                    e.preventDefault();
+                                    container.scrollTop += e.deltaY;
+                                }
+                            }}
                             onClick={() => {
                                 if (product.id === 'service-1') {
                                     setServicesModalOpen(true);
@@ -690,31 +749,17 @@ function InteractiveCheckout({
                                 setSelectedVariant(variant);
                                 setSelectedProduct(categoryToIdMap[categoryGroup.category] || '3');
                                 
-                                // Check product category and open appropriate modal
-                                if (categoryGroup.category === 'Curtain') {
-                                    if (product.name.toLowerCase().includes('slider')) {
-                                        setSliderCurtainModalOpen(true);
-                                    } else if (product.name.toLowerCase().includes('roller')) {
-                                        setRollerCurtainModalOpen(true);
-                                    } else {
-                                        // Default to slider if no specific type found
-                                        setSliderCurtainModalOpen(true);
-                                    }
-                                } else if (categoryGroup.category === 'PDLC Film') {
-                                    setPdlcFilmModalOpen(true);
-                                } else if (categoryGroup.category === 'Security') {
-                                    // Check product name to determine which modal to open
-                                    if (product.name.includes('Smart Security Box') || product.name.includes('SP-01')) {
-                                        setSmartSecurityBoxModalOpen(true);
-                                    } else if (product.name.includes('Security Panel') || product.name.includes('SP-05')) {
-                                        setSecurityPanelModalOpen(true);
-                                    } else {
-                                        setSohubProtectModalOpen(true);
-                                    }
-                                } else if (categoryGroup.category === 'Switch') {
-                                    setSmartSwitchModalOpen(true);
-                                } else {
-                                    setModalOpen(true);
+                                // Open appropriate modal based on category and product
+                                const modalType = getModalType(categoryGroup.category, product.name);
+                                switch (modalType) {
+                                    case 'slider': setSliderCurtainModalOpen(true); break;
+                                    case 'roller': setRollerCurtainModalOpen(true); break;
+                                    case 'pdlc film': setPdlcFilmModalOpen(true); break;
+                                    case 'securityBox': setSmartSecurityBoxModalOpen(true); break;
+                                    case 'securityPanel': setSecurityPanelModalOpen(true); break;
+                                    case 'sohubProtect': setSohubProtectModalOpen(true); break;
+                                    case 'switch': setSmartSwitchModalOpen(true); break;
+                                    default: setModalOpen(true);
                                 }
                             }}
                         >
@@ -740,10 +785,10 @@ function InteractiveCheckout({
                             
                             {/* Product Info */}
                             <div className="space-y-0 mt-auto">
-                                <h3 className="font-medium text-gray-900 text-[10px] leading-tight truncate">
+                                <h3 className="font-medium text-gray-900 text-sm leading-tight truncate font-apple">
                                     {product.name}
                                 </h3>
-                                <p className="text-green-600 text-[10px] font-semibold">
+                                <p className="text-black text-sm font-semibold font-apple">
                                     {typeof product.price === 'string' ? product.price : `${product.price} BDT`}
                                 </p>
                             </div>
@@ -764,9 +809,9 @@ function InteractiveCheckout({
                                         return;
                                     }
                                     const cartItem: CartItem = {
-                                        id: product.id,
-                                        name: product.name,
-                                        price: parseInt(product.price.toString().replace(/[^0-9]/g, '')) || 0,
+                                        id: sanitizeDbInput(product.id),
+                                        name: sanitizeDbInput(product.name),
+                                        price: safeParsePrice(product.price.toString()),
                                         category: product.gangType || 'Product',
                                         image: product.imageUrl,
                                         color: product.gangType || 'Default',
@@ -814,7 +859,7 @@ function InteractiveCheckout({
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className={cn(
-                    "w-full lg:w-[480px] flex flex-col lg:sticky lg:top-6",
+                    "w-full lg:w-[480px] flex flex-col lg:sticky lg:top-6 cart-scroll-through",
                     "fixed bottom-0 left-0 right-0 lg:relative",
                     showCheckout ? "top-0 lg:top-6" : "",
                     "p-3 lg:p-4 md:p-6 rounded-t-xl lg:rounded-xl",
@@ -826,8 +871,8 @@ function InteractiveCheckout({
                 )}
                 style={{ 
                     height: showCheckout ? (window.innerWidth < 1024 ? '100vh' : 'auto') : 'auto', 
-                    minHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '60vh') : '200px', 
-                    maxHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '80vh') : 'calc(100vh - 200px)'
+                    minHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '70vh') : '300px', 
+                    maxHeight: showCheckout ? (window.innerWidth < 1024 ? '100vh' : '85vh') : 'calc(100vh - 120px)'
                 }}
             >
                     {showCheckout ? (
@@ -1265,27 +1310,7 @@ function InteractiveCheckout({
                             setSelectedVariant(null);
                         }
                     }}
-                    product={(() => {
-                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
-                        return {
-                            id: selectedVariant.id,
-                            name: selectedVariant.name,
-                            category: selectedVariant.gangType || 'Product',
-                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
-                            description: productData?.description || '',
-                            detailed_description: productData?.detailed_description || '',
-                            features: productData?.features || '',
-                            specifications: productData?.specifications || '',
-                            warranty: productData?.warranty || '',
-                            installation_included: productData?.installation_included || false,
-                            image: selectedVariant.imageUrl,
-                            image2: productData?.image2 || '',
-                            image3: productData?.image3 || '',
-                            image4: productData?.image4 || '',
-                            image5: productData?.image5 || '',
-                            stock: productData?.stock || 0
-                        };
-                    })()}
+                    product={selectedProductData || transformProductForModal(selectedVariant, dbProducts)}
                     addToCart={addToCart}
                     onAddToCart={async (payload) => {
                         if (selectedVariant && payload.productId && payload.productName && payload.trackSize) {
@@ -1782,27 +1807,4 @@ function InteractiveCheckout({
 
 export { InteractiveCheckout, type Product };
 
-// Add CSS to hide category bar scrollbar
-const style = document.createElement('style');
-style.textContent = `
-  .category-bar-container::-webkit-scrollbar {
-    display: none;
-  }
-  .category-bar-container {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-`;
-if (typeof document !== 'undefined' && !document.head.querySelector('style[data-category-bar]')) {
-  style.setAttribute('data-category-bar', 'true');
-  document.head.appendChild(style);
-}
-<style jsx>{`
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-`}</style>
+// CSS styles will be added via useEffect in component
