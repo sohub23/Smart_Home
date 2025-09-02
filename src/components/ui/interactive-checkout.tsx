@@ -203,6 +203,7 @@ function InteractiveCheckout({
     const [activeField, setActiveField] = useState('name');
     const [saveEmailModalOpen, setSaveEmailModalOpen] = useState(false);
     const [showMobileCart, setShowMobileCart] = useState(false);
+    const [removeItemModal, setRemoveItemModal] = useState({ open: false, itemId: '', itemName: '' });
 
     const categoryToIdMap: { [key: string]: string } = {
         'Curtain': '1',
@@ -629,13 +630,13 @@ function InteractiveCheckout({
 
     return (
         <>
-            <div className="w-full max-w-7xl mx-auto min-h-screen grid lg:grid-cols-5 gap-6 lg:gap-8 sticky-checkout-section">
+            <div className="w-full max-w-7xl mx-auto px-4 lg:px-6 min-h-screen flex lg:flex-row flex-col gap-4 lg:gap-6 sticky-checkout-section">
             {/* Product Selection Section */}
-            <div className="lg:col-span-3 bg-white rounded-2xl shadow-lg border border-gray-200/60 overflow-hidden h-[calc(100vh-120px)]">
+            <div className="flex-1 lg:w-[65%] bg-white rounded-xl shadow-lg border border-gray-200/60 overflow-hidden h-[calc(100vh-120px)]">
                 <div className="overflow-y-auto products-scroll-container h-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {/* Category Tabs */}
-                <div className="mb-6 lg:mb-8 sticky top-0 lg:top-0 bg-white/95 backdrop-blur-md z-40 pt-4 pb-3 lg:pt-6 lg:pb-3 shadow-lg border-b border-gray-100">
-                    <div className="flex overflow-x-auto gap-3 lg:gap-4 px-4 lg:px-6 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div className="mb-4 lg:mb-6 sticky top-0 bg-gray-100 z-40 pt-3 pb-2 lg:pt-4 lg:pb-3 shadow-sm border-b border-gray-300">
+                    <div className="flex overflow-x-auto gap-2 lg:gap-3 px-3 lg:px-4 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                         {categories.map((category) => (
                             <motion.button
                                 key={category.id}
@@ -665,10 +666,10 @@ function InteractiveCheckout({
                                     }, 10);
                                 }}
                                 className={cn(
-                                    "flex-shrink-0 flex items-center gap-3 px-4 py-1 rounded-[5px] transition-all duration-300 min-w-fit border-2 group relative overflow-hidden",
+                                    "flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-300 min-w-fit border group relative overflow-hidden",
                                     activeCategory === category.category
-                                        ? "bg-[#0a1d3a] text-white border-transparent shadow-lg"
-                                        : "bg-white text-gray-700 border-gray-200"
+                                        ? "bg-[#0a1d3a] text-white border-[#0a1d3a] shadow-md"
+                                        : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
                                 )}
 
                                 whileHover={{ y: -2, scale: 1.01, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
@@ -677,14 +678,7 @@ function InteractiveCheckout({
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: category.id * 0.1, duration: 0.15 }}
                             >
-                                {/* Animated background */}
-                                {activeCategory === category.category && (
-                                    <motion.div
-                                        className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-blue-400/20 rounded-[5px]"
-                                        layoutId="activeTab"
-                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                    />
-                                )}
+
                                 
 
                                 
@@ -828,6 +822,7 @@ function InteractiveCheckout({
                                     toast({
                                         title: "Added to Cart",
                                         description: `${product.name} has been added to your cart.`,
+                                        duration: 2000,
                                     });
                                 }}
                             >
@@ -867,11 +862,11 @@ function InteractiveCheckout({
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className={cn(
-                    "lg:col-span-2 flex flex-col",
+                    "flex-shrink-0 lg:w-[35%] flex flex-col",
                     "fixed bottom-0 left-0 right-0 lg:relative",
-                    showCheckout ? "top-0 lg:top-6" : "",
-                    "p-5 rounded-t-2xl lg:rounded-2xl",
-                    "bg-white shadow-xl border border-gray-200/60",
+                    showCheckout ? "top-0" : "",
+                    "p-4 lg:p-5 rounded-t-2xl lg:rounded-xl",
+                    "bg-gray-100 shadow-xl border border-gray-300",
                     "z-50 lg:z-auto overflow-hidden",
                     !showMobileCart && "hidden lg:flex"
                 )}
@@ -1101,7 +1096,7 @@ function InteractiveCheckout({
 
                                                         </div>
                                                         <button
-                                                            onClick={() => removeFromCart(item.id)}
+                                                            onClick={() => setRemoveItemModal({ open: true, itemId: item.id, itemName: item.name })}
                                                             className="p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
                                                         >
                                                             <X className="w-4 h-4" />
@@ -1176,7 +1171,6 @@ function InteractiveCheckout({
                                     </div>
                                     <div className="flex items-center justify-between text-sm text-gray-600 mt-1">
                                         <span className="leading-none">{totalItems} item{totalItems !== 1 ? 's' : ''}</span>
-                                        <span className="text-green-600 leading-none">Free Delivery</span>
                                     </div>
                                 </div>
                                 
@@ -1776,6 +1770,27 @@ function InteractiveCheckout({
                 cartItems={cart}
                 totalPrice={totalPrice}
             />
+            
+            {/* Remove Item Confirmation Modal */}
+            {removeItemModal.open && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+                    <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+                        <h3 className="text-lg font-semibold mb-2">Remove Item</h3>
+                        <p className="text-gray-600 mb-4">Are you sure you want to remove "{removeItemModal.itemName}" from your cart?</p>
+                        <div className="flex gap-3 justify-end">
+                            <Button variant="outline" onClick={() => setRemoveItemModal({ open: false, itemId: '', itemName: '' })}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={() => {
+                                removeFromCart(removeItemModal.itemId);
+                                setRemoveItemModal({ open: false, itemId: '', itemName: '' });
+                            }}>
+                                Remove
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }
