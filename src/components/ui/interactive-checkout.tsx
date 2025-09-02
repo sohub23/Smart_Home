@@ -327,6 +327,7 @@ function InteractiveCheckout({
     };
 
     useEffect(() => {
+        
         loadProducts();
         loadCategoryImages();
         
@@ -541,57 +542,33 @@ function InteractiveCheckout({
 
 
 
-    // Auto-select category based on scroll position
+    // Auto-select category based on scroll position (desktop/iPhone only)
     useEffect(() => {
-        let throttleTimer: NodeJS.Timeout | null = null;
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        if (isAndroid) return;
         
         const handleScroll = () => {
-            if (throttleTimer || isManualSelection) return;
+            if (isManualSelection) return;
             
-            throttleTimer = setTimeout(() => {
-                const container = document.querySelector('.products-scroll-container');
-                if (!container) {
-                    throttleTimer = null;
-                    return;
-                }
-                
-                const containerRect = container.getBoundingClientRect();
-                const headerOffset = 200;
-                
-                let visibleCategory = activeCategory;
-                let maxVisibility = 0;
-                
-                allProductsByCategory.forEach(group => {
-                    const element = document.getElementById(`category-${group.category.replace(/\s+/g, '-')}`);
-                    if (element) {
-                        const elementRect = element.getBoundingClientRect();
-                        const relativeTop = elementRect.top - containerRect.top - headerOffset;
-                        
-                        if (relativeTop <= 50 && relativeTop > -element.offsetHeight + 100) {
-                            const visibility = Math.max(0, Math.min(100, 100 - Math.abs(relativeTop)));
-                            if (visibility > maxVisibility) {
-                                maxVisibility = visibility;
-                                visibleCategory = group.category;
-                            }
-                        }
+            const container = document.querySelector('.products-scroll-container');
+            if (!container) return;
+            
+            const scrollTop = container.scrollTop + 200;
+            
+            for (const group of allProductsByCategory) {
+                const element = document.getElementById(`category-${group.category.replace(/\s+/g, '-')}`);
+                if (element && scrollTop >= element.offsetTop) {
+                    if (activeCategory !== group.category) {
+                        setActiveCategory(group.category);
                     }
-                });
-                
-                if (visibleCategory !== activeCategory) {
-                    setActiveCategory(visibleCategory);
                 }
-                
-                throttleTimer = null;
-            }, 100);
+            }
         };
 
         const scrollContainer = document.querySelector('.products-scroll-container');
         if (scrollContainer) {
             scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
-            return () => {
-                scrollContainer.removeEventListener('scroll', handleScroll);
-                if (throttleTimer) clearTimeout(throttleTimer);
-            };
+            return () => scrollContainer.removeEventListener('scroll', handleScroll);
         }
     }, [allProductsByCategory, activeCategory, isManualSelection]);
 
@@ -604,7 +581,12 @@ function InteractiveCheckout({
                 .category-bar-container { -ms-overflow-style: none; scrollbar-width: none; }
                 .sticky-checkout-section { position: relative; }
                 .scroll-lock-container { overscroll-behavior: contain; }
-                .products-scroll-container { overscroll-behavior: auto; }
+                .products-scroll-container { 
+                    overscroll-behavior: auto;
+                    -webkit-overflow-scrolling: touch;
+                    overflow: auto !important;
+                    height: 100% !important;
+                }
                 .products-scroll-container::-webkit-scrollbar { display: none; }
                 .cart-scroll-through { overscroll-behavior: none; }
                 .font-apple { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -622,6 +604,13 @@ function InteractiveCheckout({
                 .cart-scroll::-webkit-scrollbar-thumb:hover {
                   background: rgba(10, 29, 58, 0.8);
                 }
+                /* Android-specific touch improvements */
+                .category-tab-button {
+                    -webkit-tap-highlight-color: transparent;
+                    -webkit-touch-callout: none;
+                    -webkit-user-select: none;
+                    user-select: none;
+                }
             `;
             style.setAttribute('data-category-bar', 'true');
             document.head.appendChild(style);
@@ -630,10 +619,10 @@ function InteractiveCheckout({
 
     return (
         <>
-            <div className="w-full lg:max-w-7xl lg:mx-auto px-0 lg:px-6 min-h-screen flex lg:flex-row flex-col gap-0 lg:gap-6 sticky-checkout-section">
+            <div className="w-full lg:max-w-7xl lg:mx-auto px-0 lg:px-6 min-h-screen flex lg:flex-row flex-col gap-0 lg:gap-6 sticky-checkout-section" data-main-container>
             {/* Product Selection Section */}
             <div className="flex-1 lg:w-[65%] bg-white rounded-none lg:rounded-xl shadow-lg border-0 lg:border border-gray-200/60 overflow-hidden h-[60vh] lg:h-[calc(100vh-120px)]">
-                <div className="overflow-y-auto products-scroll-container h-full" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                <div className="overflow-y-auto products-scroll-container h-full" data-scroll-container style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', position: 'relative' }}>
                 {/* Category Tabs */}
                 <div className="mb-3 lg:mb-6 sticky top-0 bg-gray-100 z-40 pt-2 pb-2 lg:pt-4 lg:pb-3 shadow-sm border-b border-gray-300">
                     <div className="flex overflow-x-auto gap-1.5 lg:gap-3 px-0 lg:px-4 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
@@ -641,47 +630,49 @@ function InteractiveCheckout({
                             <motion.button
                                 key={category.id}
                                 data-category={category.category}
+
                                 onClick={() => {
+                                    const isAndroid = /Android/i.test(navigator.userAgent);
+                                    
                                     setIsManualSelection(true);
                                     setActiveCategory(category.category);
                                     
-                                    // Scroll to the category section
-                                    setTimeout(() => {
-                                        const targetId = `category-${category.category.replace(/\s+/g, '-')}`;
-                                        const element = document.getElementById(targetId);
-                                        const container = document.querySelector('.products-scroll-container');
-                                        
-                                        if (element && container) {
-                                            const stickyHeader = container.querySelector('.sticky');
-                                            const headerHeight = stickyHeader ? stickyHeader.offsetHeight : 140;
-                                            const elementPosition = element.offsetTop;
-                                            const scrollPosition = elementPosition - headerHeight - 20;
-                                            container.scrollTo({
-                                                top: Math.max(0, scrollPosition),
-                                                behavior: 'smooth'
-                                            });
-                                        }
-                                        
-                                        setTimeout(() => setIsManualSelection(false), 800);
-                                    }, 10);
+                                    if (!isAndroid) {
+                                        // Desktop and iPhone: scroll to section
+                                        setTimeout(() => {
+                                            const targetId = `category-${category.category.replace(/\s+/g, '-')}`;
+                                            const element = document.getElementById(targetId);
+                                            const container = document.querySelector('.products-scroll-container');
+                                            
+                                            if (element && container) {
+                                                const targetScrollTop = element.offsetTop - 140;
+                                                container.scrollTo({
+                                                    top: targetScrollTop,
+                                                    behavior: 'smooth'
+                                                });
+                                            }
+                                        }, 50);
+                                    }
+                                    
+                                    setTimeout(() => setIsManualSelection(false), 1000);
+                                }}
+                                onPointerDown={(e) => {
+                                    const isAndroid = /Android/i.test(navigator.userAgent);
+                                    if (isAndroid) {
+                                        e.preventDefault();
+                                        setActiveCategory(category.category);
+                                    }
                                 }}
                                 className={cn(
-                                    "flex-shrink-0 flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-1 lg:py-1.5 rounded-lg transition-all duration-300 min-w-fit border group relative overflow-hidden text-xs lg:text-sm",
+                                    "category-tab-button flex-shrink-0 flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-1 lg:py-1.5 rounded-lg transition-all duration-300 min-w-fit border group relative overflow-hidden text-xs lg:text-sm touch-manipulation",
                                     activeCategory === category.category
                                         ? "bg-[#0a1d3a] text-white border-[#0a1d3a] shadow-md"
                                         : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
                                 )}
 
-                                whileHover={{ y: -2, scale: 1.01, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
                                 whileTap={{ scale: 0.95 }}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: category.id * 0.1, duration: 0.15 }}
+                                style={{ touchAction: 'manipulation', cursor: 'pointer', userSelect: 'none' }}
                             >
-
-                                
-
-                                
                                 <span className="text-xs lg:text-base font-medium whitespace-nowrap relative z-10">
                                     {category.name}
                                 </span>
@@ -701,8 +692,14 @@ function InteractiveCheckout({
 
                 {/* All Products by Category */}
                 <div className="pb-8">
-                    {allProductsByCategory.map((categoryGroup, index) => (
-                        <div key={categoryGroup.category} id={`category-${categoryGroup.category.replace(/\s+/g, '-')}`} className="mb-8">
+                    {(() => {
+                        const isAndroid = /Android/i.test(navigator.userAgent);
+                        const categoriesToShow = isAndroid 
+                            ? allProductsByCategory.filter(categoryGroup => categoryGroup.category === activeCategory)
+                            : allProductsByCategory;
+                        
+                        return categoriesToShow.map((categoryGroup, index) => (
+                            <div key={categoryGroup.category} id={`category-${categoryGroup.category.replace(/\s+/g, '-')}`} className="mb-8">
                             {/* Section Title - Always Show */}
                             <div className="mb-3 lg:mb-6 px-0 lg:px-4">
                                 <h2 className="text-lg lg:text-2xl font-bold text-gray-900 border-b-2 border-green-500 pb-1 lg:pb-2 inline-block">
@@ -838,7 +835,8 @@ function InteractiveCheckout({
                                 </div>
                             )}
                         </div>
-                    ))}
+                        ));
+                    })()}
                 </div>
             </div>
             </div>
