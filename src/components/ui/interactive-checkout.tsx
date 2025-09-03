@@ -721,23 +721,25 @@ function InteractiveCheckout({
                             <div key={categoryGroup.category} id={`category-${categoryGroup.category.replace(/\s+/g, '-')}`} className="mb-8">
                             {/* Section Title - Always Show */}
                             <div className="mb-3 lg:mb-6 px-0 lg:px-4">
-                                <h2 className="text-lg lg:text-2xl font-bold text-gray-900 border-b-2 border-green-500 pb-1 lg:pb-2 inline-block">
-                                    {categoryGroup.category}
-                                </h2>
-                                <p className="text-xs lg:text-sm text-gray-600 mt-1 lg:mt-2">
-                                    {categoryGroup.products.length} products available
-                                </p>
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-lg lg:text-2xl font-bold text-gray-900 border-b-2 border-green-500 pb-1 lg:pb-2 inline-block">
+                                        {categoryGroup.category}
+                                    </h2>
+                                    <p className="text-xs lg:text-sm text-gray-600 italic">
+                                        {categoryGroup.products.length} products available
+                                    </p>
+                                </div>
                             </div>
 
                             {/* Product Grid or No Products Message */}
                             {categoryGroup.products.length > 0 ? (
-                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 lg:gap-2 px-0 lg:px-4 relative z-0">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 px-0 lg:px-4 relative z-0">
                                     {categoryGroup.products.map((product) => (
                         <motion.div
                             key={product.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-white rounded-none lg:rounded-md shadow-sm hover:shadow-md transition-all duration-300 p-2 lg:p-1.5 relative cursor-pointer border-0 lg:border border-gray-100 hover:border-green-200 group aspect-square flex flex-col"
+                            className="bg-white rounded-none lg:rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 p-2 lg:p-1.5 relative cursor-pointer border-0 lg:border border-gray-200 hover:border-green-300 group aspect-square flex flex-col hover:scale-[1.02]"
                 
                             onWheel={(e) => {
                                 const container = document.querySelector('.products-scroll-container');
@@ -1063,17 +1065,26 @@ function InteractiveCheckout({
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-start justify-between mb-2">
                                                         <div className="flex-1 min-w-0 pr-2">
-                                                            <h3 className="text-sm lg:text-base font-semibold text-zinc-900 dark:text-zinc-100 leading-tight">
-                                                                {item.name}
-                                                            </h3>
-                                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                                            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-tight mb-1">
                                                                 {item.category}
-                                                                {item.selectedGang ? ` • ${item.selectedGang.charAt(0).toUpperCase() + item.selectedGang.slice(1)} Gang` : ''}
-                                                                {item.selectedColor ? ` • ${item.selectedColor.charAt(0).toUpperCase() + item.selectedColor.slice(1)}` : ''}
-                                                                {item.trackSize ? ` • ${item.trackSize}` : ''}
-                                                                {item.trackSizes ? ` • ${item.trackSizes.join(', ')}` : ''}
-                                                                {item.height && item.width ? ` • ${item.quantity.toFixed(2)} sq ft (${item.height}' × ${item.width}')` : ''}
+                                                            </h3>
+                                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-tight mb-1">
+                                                                {item.name.split(' (')[0].replace(/ - .*$/, '')}
                                                             </p>
+                                                            {item.name.includes('ZIGBEE') || item.name.includes('WIFI') ? (
+                                                                <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                                                                    Model: {item.name.includes('ZIGBEE') ? 'Zigbee' : 'Wifi'}
+                                                                </p>
+                                                            ) : null}
+                                                            {(item.trackSize || item.name.match(/\d+\.\d+m\([^)]+\)/) || item.name.includes('Standard') || item.name.includes('Large') || item.name.includes('Extra Large')) ? (
+                                                                <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                                                                    Variant: {item.name.includes('Standard (up to 8 feet)') ? 'Standard (up to 8 feet)' : 
+                                                                             item.name.includes('Large (8-12 feet)') ? 'Large (8-12 feet) - Requires 2 motors' :
+                                                                             item.name.includes('Extra Large (12+ feet)') ? 'Extra Large (12+ feet) - Custom quote' :
+                                                                             (typeof item.trackSize === 'string' && item.trackSize !== '8') ? item.trackSize :
+                                                                             item.name.match(/\d+\.\d+m\([^)]+\)/)?.[0] || ''}
+                                                                </p>
+                                                            ) : null}
                                                             {item.accessories && item.accessories.length > 0 && (
                                                                 <div className="mt-2">
                                                                     <p className="text-xs font-medium text-zinc-600 mb-1">Accessories:</p>
