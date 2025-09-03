@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,8 +6,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
+import { EngravingTrigger } from '@/components/ui/EngravingTrigger';
+import { EngravingModal } from '@/components/ui/EngravingModal';
 
-interface RollerCurtainModalProps {
+interface FanSwitchModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   product: {
@@ -19,6 +21,10 @@ interface RollerCurtainModalProps {
     detailed_description?: string;
     features?: string;
     specifications?: string;
+    engraving_available?: boolean;
+    engraving_price?: number;
+    engraving_image?: string;
+    engraving_text_color?: string;
     warranty?: string;
     installation_included?: boolean;
     image?: string;
@@ -33,54 +39,41 @@ interface RollerCurtainModalProps {
   addToCart?: (item: any) => void;
 }
 
-export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: RollerCurtainModalProps) {
-
+export function FanSwitchModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: FanSwitchModalProps) {
   const [selectedImage, setSelectedImage] = useState(0);
-  const [trackSizes, setTrackSizes] = useState([0]);
-  const [trackQuantities, setTrackQuantities] = useState([1]);
+  const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [engravingText, setEngravingText] = useState('');
+  const [engravingModalOpen, setEngravingModalOpen] = useState(false);
   const [includeInstallation, setIncludeInstallation] = useState(false);
   const [installationSelected, setInstallationSelected] = useState(false);
-  const [connectionType, setConnectionType] = useState('zigbee');
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
 
   // Reset to default when modal opens
   useEffect(() => {
     if (open) {
-      setConnectionType('zigbee');
+      setQuantity(1);
     }
   }, [open]);
-  const [showInstallationSetup, setShowInstallationSetup] = useState(false);
-  const [installationNotes, setInstallationNotes] = useState('');
-  const [installationTBD, setInstallationTBD] = useState(false);
 
   const features = product.features ? product.features.split('\n').filter(f => f.trim()) : [];
   const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
   const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
 
-  const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
-  const smartCurtainInstallation = 0;
-  const totalWithInstallation = (product.price * totalQuantity);
+  const engravingPrice = engravingText && product.engraving_price ? product.engraving_price * quantity : 0;
+  const totalPrice = (product.price * quantity) + engravingPrice;
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      const installationForThisRoller = 0;
-      const totalPriceForThisRoller = (product.price * trackQuantities[0]);
-      
-      const cartPayload = {
-        productId: `${product.id}_${Date.now()}`,
-        productName: `${product.name} (${connectionType.toUpperCase()})`,
-        quantity: trackQuantities[0],
-        trackSize: 8, // Default size for roller curtain
-        connectionType: connectionType,
-        installationCharge: installationForThisRoller,
-        totalPrice: connectionType === 'wifi' ? totalPriceForThisRoller + 2000 : totalPriceForThisRoller,
-        unitPrice: product.price
-      };
-      
-      await onAddToCart(cartPayload);
+      await onAddToCart({
+        productId: product.id,
+        quantity: quantity,
+        installationCharge: 0,
+        engravingText: engravingText || undefined,
+        totalPrice: totalPrice
+      });
       
       // Add installation service if selected
       if (installationSelected && addToCart) {
@@ -108,6 +101,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
       });
       onOpenChange(false);
     } catch (error) {
+      console.error('Add to cart failed:', JSON.stringify(error, null, 2));
       toast({
         title: "Error",
         description: "Failed to add item to bag. Please try again.",
@@ -123,7 +117,6 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
       <div className="fixed inset-0 z-[45] bg-black/60" />
       <DialogContent className="max-w-[1200px] max-h-[95vh] overflow-hidden p-0 rounded-2xl fixed left-[50%] top-[50%] z-[50] translate-x-[-50%] translate-y-[-50%] bg-white shadow-2xl border-0">
         <div className="grid lg:grid-cols-2 gap-0">
-
           {/* Left: Hero Image Section */}
           <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-8 flex flex-col">
             {/* Main Product Image */}
@@ -195,17 +188,19 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-lg font-bold text-gray-900">
-                    {(connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation).toLocaleString()} BDT
+                  <span className="text-base font-bold text-gray-900">
+                    {totalPrice.toLocaleString()} BDT
                   </span>
                   <span className="text-xs text-gray-500 line-through">
-                    {Math.round((connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation) * 1.3).toLocaleString()} BDT
+                    {Math.round(totalPrice * 1.3).toLocaleString()} BDT
                   </span>
                   <span className="text-xs text-black font-semibold">
-                    Save {Math.round((connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation) * 0.3).toLocaleString()} BDT
+                    Save {Math.round(totalPrice * 0.3).toLocaleString()} BDT
                   </span>
                 </div>
-
+                {product.engraving_available && product.engraving_price && (
+                  <p className="text-sm text-gray-600">+{product.engraving_price} BDT for customization</p>
+                )}
               </div>
               
               {/* Shipping Info */}
@@ -219,7 +214,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
             <div className="mb-6">
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="details">
-                  <AccordionTrigger className="text-left font-medium no-underline hover:no-underline">Product description</AccordionTrigger>
+                  <AccordionTrigger className="text-left text-base font-medium no-underline hover:no-underline">Product description</AccordionTrigger>
                   <AccordionContent>
                     <div className="border-b border-gray-200">
                       <div className="flex space-x-8">
@@ -254,15 +249,15 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                         <ul className="space-y-2 text-sm text-gray-700">
                           <li className="flex items-start gap-2">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                            Smart motorized roller curtain with app control and voice command integration
+                            Variable speed control for optimal fan performance and energy efficiency
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                            Automated scheduling and remote operation for enhanced privacy and comfort
+                            Durable construction with premium materials for long-lasting performance
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                            Energy-efficient design with quiet operation and premium fabric options
+                            Easy installation with standard wiring compatibility
                           </li>
                         </ul>
                       )}
@@ -270,15 +265,15 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                         <ul className="space-y-2 text-sm text-gray-700">
                           <li className="flex items-start gap-2">
                             <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                            DC 12V brushless motor with max load 15kg and noise level below 35dB
+                            AC 100-240V input with fan speed control mechanism
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                            Zigbee 3.0/WiFi connectivity with 30m range and voice control support
+                            Standard electrical box mounting with secure installation
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                            32mm tube diameter, max 3m width/drop with AC power and battery backup
+                            High-quality plastic housing with smooth operation
                           </li>
                         </ul>
                       )}
@@ -296,89 +291,31 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
               </Accordion>
             </div>
 
-            {/* Upgrade Section */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-900 mb-4">Choose Your Model</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  connectionType === 'zigbee' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
-                }`} onClick={() => setConnectionType('zigbee')}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium text-xs text-gray-900">Original Zigbee</div>
-                    <div className="text-xs text-gray-600">(This item)</div>
-                  </div>
-                  <div className="text-xs text-gray-600">Smart control + Hub required</div>
-                </div>
-                
-                <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  connectionType === 'wifi' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
-                }`} onClick={() => setConnectionType('wifi')}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-medium text-xs text-gray-900">Original WiFi</div>
-                    <div className="text-xs text-black font-medium">+2,000 BDT</div>
-                  </div>
-                  <div className="text-xs text-gray-600">Smart control + Direct connection</div>
-                </div>
-              </div>
-            </div>
-
-
-
-            {/* Options Section */}
-            <div className="mb-6">
-              {/* Size Dropdown */}
-              <div className="mb-4">
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  Pick your size
-                </label>
-                <select className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900">
-                  <option>Standard (up to 8 feet)</option>
-                  <option>Large (8-12 feet) - Requires 2 motors</option>
-                  <option>Extra Large (12+ feet) - Custom quote</option>
-                </select>
-              </div>
-              
-              {/* Cover Options */}
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-3 block">
-                  Installation and setup
-                </label>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <input 
-                      type="checkbox" 
-                      id="installation-service" 
-                      name="installation" 
-                      checked={installationSelected}
-                      onChange={(e) => setInstallationSelected(e.target.checked)}
-                      className="w-4 h-4 text-black border-gray-300 focus:ring-black mt-1"
-                    />
-                    <div className="flex-1">
-                      <label htmlFor="installation-service" className="font-medium text-gray-900 cursor-pointer">
-                        Professional Installation Service (TBD)
-                      </label>
-                      <p className="text-sm text-gray-600 mt-1">Our team will contact you for installation services. <span className="text-xs">(To Be Determined)</span></p>
+            {/* Customization Section */}
+            {product.engraving_available && (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Personalization</h3>
+                <div 
+                  onClick={() => setEngravingModalOpen(true)}
+                  className="w-full p-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🎨</span>
+                      <div className="text-left">
+                        <div className="font-semibold text-gray-900">Customize Your Switch</div>
+                        <div className="text-sm text-gray-600">
+                          {engravingText ? `Engraving: "${engravingText}"` : 'Add personal text engraving'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-900 font-semibold">
+                      +{((product.engraving_price || 200) * quantity).toLocaleString()} BDT
                     </div>
                   </div>
                 </div>
-                
-                <div className="mt-4">
-                  <div 
-                    onClick={() => setHelpModalOpen(true)}
-                    className="flex items-center gap-2 text-sm text-black cursor-pointer hover:text-gray-700"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Need help deciding?</span>
-                  </div>
-                </div>
               </div>
-            </div>
-
-
-            
-
+            )}
 
             {/* Quantity Selection */}
             <div className="mb-6">
@@ -388,24 +325,16 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 </label>
                 <div className="flex items-center gap-3">
                   <button
-                    onClick={() => {
-                      const newQuantities = [...trackQuantities];
-                      newQuantities[0] = Math.max(1, newQuantities[0] - 1);
-                      setTrackQuantities(newQuantities);
-                    }}
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
                   <span className="text-lg font-semibold text-gray-900 min-w-[2rem] text-center">
-                    {trackQuantities[0] || 1}
+                    {quantity}
                   </span>
                   <button
-                    onClick={() => {
-                      const newQuantities = [...trackQuantities];
-                      newQuantities[0] = Math.min(10, (newQuantities[0] || 1) + 1);
-                      setTrackQuantities(newQuantities);
-                    }}
+                    onClick={() => setQuantity(quantity + 1)}
                     className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
                     <Plus className="w-4 h-4" />
@@ -414,9 +343,42 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
               </div>
             </div>
 
-
-
-
+            {/* Installation and setup */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-gray-700 mb-3 block">
+                Installation and setup
+              </label>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <input 
+                    type="checkbox" 
+                    id="installation-service" 
+                    name="installation" 
+                    checked={installationSelected}
+                    onChange={(e) => setInstallationSelected(e.target.checked)}
+                    className="w-4 h-4 text-black border-gray-300 focus:ring-black mt-1"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="installation-service" className="font-medium text-gray-900 cursor-pointer">
+                      Professional Installation Service (TBD)
+                    </label>
+                    <p className="text-sm text-gray-600 mt-1">Our team will contact you for installation services. <span className="text-xs">(To Be Determined)</span></p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                <div 
+                  onClick={() => setHelpModalOpen(true)}
+                  className="flex items-center gap-2 text-sm text-black cursor-pointer hover:text-gray-700"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Need help deciding?</span>
+                </div>
+              </div>
+            </div>
 
             {/* Collapsed Details */}
             <details className="mb-20">
@@ -429,10 +391,10 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <div className="mt-3 text-sm text-gray-700 space-y-2">
                 <p><strong>Specifications:</strong></p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
-                  <li>Maximum width: 120 inches (3 meters)</li>
-                  <li>32mm tube pipe required</li>
-                  <li>Complete motor & roller system included</li>
-                  <li>Smart home compatible</li>
+                  <li>AC 100-240V input voltage</li>
+                  <li>Fan speed control mechanism</li>
+                  <li>Standard electrical box mounting</li>
+                  <li>High-quality plastic housing</li>
                   <li>1-year warranty</li>
                 </ul>
               </div>
@@ -462,64 +424,77 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
       
       {/* Help Modal */}
       <Dialog open={helpModalOpen} onOpenChange={setHelpModalOpen}>
-        <DialogContent className="max-w-md p-0 rounded-3xl bg-white shadow-2xl border-0 overflow-hidden">
+        <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
+          {/* Close Button */}
+          <button 
+            onClick={() => setHelpModalOpen(false)}
+            className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
           
-          {/* Header Section */}
-          <div className="px-8 pt-8 pb-6 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl flex items-center justify-center">
-              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2 tracking-tight">Installation Options</h2>
-            <p className="text-gray-500 text-sm leading-relaxed">Choose the installation service that fits your needs</p>
+          {/* Product Image */}
+          <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
+            <img
+              src={allImages[0] || '/images/smart_switch/3 gang mechanical.webp'}
+              alt={product.name}
+              className="w-32 h-32 object-cover rounded-lg"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/images/smart_switch/3 gang mechanical.webp';
+              }}
+            />
           </div>
           
-          {/* Options */}
-          <div className="px-8 pb-8 space-y-4">
-            {/* Option 1 */}
-            <div className="p-5 rounded-2xl bg-gray-50/80 border border-gray-100 hover:bg-gray-50 transition-all duration-200">
-              <div className="mb-3">
-                <h3 className="font-semibold text-gray-900 text-lg">Standard Setup</h3>
-              </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-3">
-                Basic motor installation and app configuration for standard windows up to 8 feet.
-              </p>
-              <div className="flex items-center text-xs text-gray-500">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                </svg>
-                Mounting hardware included
-              </div>
+          <div className="p-6">
+            {/* Headline */}
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
             </div>
             
-            {/* Option 2 */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 hover:from-blue-50 hover:to-blue-100 transition-all duration-200">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-semibold text-gray-900 text-lg">Premium Service</h3>
-                <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">+2,500 BDT</span>
+            {/* Options */}
+            <div className="space-y-6">
+              {/* Option 1 */}
+              <div>
+                <h3 className="font-bold text-gray-900 mb-2">Standard Installation (+0 BDT)</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Basic fan switch installation with proper wiring and mounting. Perfect for single switches or small installations. Includes safety check and testing.
+                </p>
               </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-3">
-                Complete professional service with custom measurements and smart home integration.
-              </p>
-              <div className="space-y-1">
-                <div className="flex items-center text-xs text-gray-500">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Advanced mounting solutions
-                </div>
-                <div className="flex items-center text-xs text-gray-500">
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  1-year service warranty
-                </div>
+              
+              {/* Option 2 */}
+              <div>
+                <h3 className="font-bold text-gray-900 mb-2">Premium Installation (+800 BDT)</h3>
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  Complete professional service with electrical safety check, advanced wiring, and circuit testing. Includes 1-year installation warranty and priority support.
+                </p>
               </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Engraving Modal */}
+      {product.engraving_available && engravingModalOpen && (
+        <>
+          <div className="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm" />
+          <EngravingModal
+            open={engravingModalOpen}
+            onOpenChange={setEngravingModalOpen}
+            productImage={allImages[selectedImage] || product.image || ''}
+            engravingImage={product.engraving_image}
+            productName={product.name}
+            engravingTextColor={product.engraving_text_color}
+            initialText={engravingText}
+            currentQuantity={quantity}
+            onSave={({ text }) => {
+              setEngravingText(text);
+            }}
+          />
+        </>
+      )}
     </Dialog>
   );
 }

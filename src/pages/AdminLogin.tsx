@@ -20,7 +20,10 @@ const AdminLogin = () => {
 
     // Admin credentials check using environment variables
     const adminUsername = import.meta.env.VITE_ADMIN_USERNAME || 'admin';
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'demo123';
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
+    
+    console.log('Expected:', { adminUsername, adminPassword });
+    console.log('Entered:', { username: formData.username, password: formData.password });
     
     if (formData.username === adminUsername && formData.password === adminPassword) {
       localStorage.setItem('adminLoggedIn', 'true');
@@ -117,7 +120,7 @@ const AdminLogin = () => {
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
               <p className="text-sm text-gray-600 mb-2">Demo Credentials:</p>
               <p className="text-xs text-gray-500">Username: <span className="font-mono bg-gray-100 px-1 rounded">admin</span></p>
-              <p className="text-xs text-gray-500">Password: <span className="font-mono bg-gray-100 px-1 rounded">demo123</span></p>
+              <p className="text-xs text-gray-500">Password: <span className="font-mono bg-gray-100 px-1 rounded">{import.meta.env.VITE_ADMIN_PASSWORD || 'admin123'}</span></p>
             </div>
           </div>
         </CardContent>

@@ -24,7 +24,7 @@ export function SmartSwitchCard({
     <div 
       className={cn(
         "rounded-xl shadow-md p-4 bg-white transition-all duration-200 cursor-pointer relative",
-        "hover:scale-[1.02] hover:shadow-lg",
+
         isSoldOut && "opacity-75"
       )}
       onClick={onClick}
@@ -57,29 +57,9 @@ export function SmartSwitchCard({
         {name}
       </h3>
       
-      {/* Price */}
-      <p className="text-lg font-bold text-center mt-1">
-        {price}
-      </p>
+
       
-      {/* Add Button */}
-      <div className="flex justify-center mt-3">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAdd?.();
-          }}
-          disabled={isSoldOut}
-          className={cn(
-            "w-8 h-8 rounded-full border flex items-center justify-center transition-colors",
-            isSoldOut 
-              ? "border-gray-300 text-gray-300 cursor-not-allowed"
-              : "border-gray-400 text-gray-600 hover:border-black hover:text-black"
-          )}
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
+
     </div>
   );
 }

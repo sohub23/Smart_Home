@@ -43,6 +43,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [connectionType, setConnectionType] = useState('zigbee');
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [selectedVariation, setSelectedVariation] = useState('Select');
 
   // Reset to default when modal opens
   useEffect(() => {
@@ -63,34 +64,35 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const totalWithInstallation = (product.price * totalQuantity);
 
   const handleAddToCart = async () => {
+    if (selectedVariation === 'Select') {
+      toast({
+        title: "Please Select Variation",
+        description: "Please select a variation before adding to bag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
-      // Add each track configuration as separate cart item
-      const validTracks = trackSizes.filter((size, i) => size > 0 && trackQuantities[i] > 0);
+      const quantity = trackQuantities[0] || 1;
+      const basePrice = product.price * quantity;
+      const totalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
       
-      for (let i = 0; i < trackSizes.length; i++) {
-        if (trackSizes[i] > 0 && trackQuantities[i] > 0) {
-          const installationForThisTrack = 0;
-          const basePriceForThisTrack = (product.price * trackQuantities[i]);
-          const modalTotalPrice = connectionType === 'wifi' ? (product.price * totalQuantity) + 2000 : (product.price * totalQuantity);
-          const proportionalPrice = (modalTotalPrice / totalQuantity) * trackQuantities[i];
-          
-          const cartPayload = {
-            productId: `${product.id}_${trackSizes[i]}ft_${Date.now()}_${i}`,
-            productName: `${product.name} (${connectionType.toUpperCase()}) (${trackSizes[i]} feet)`,
-            quantity: trackQuantities[i],
-            trackSize: trackSizes[i],
-            connectionType: connectionType,
-            installationCharge: installationForThisTrack,
-            totalPrice: Math.round(proportionalPrice),
-            unitPrice: product.price
-          };
-          
-          await onAddToCart(cartPayload);
-          // Small delay to ensure each item is processed
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      }
+      const variationText = selectedVariation !== 'Select' ? ` - ${selectedVariation}` : '';
+      
+      const cartPayload = {
+        productId: `${product.id}_${Date.now()}`,
+        productName: `${product.name}${variationText}`,
+        quantity: quantity,
+        trackSize: selectedVariation !== 'Select' ? selectedVariation : '8',
+        connectionType: connectionType,
+        installationCharge: 0,
+        totalPrice: totalPrice,
+        unitPrice: product.price
+      };
+      
+      await onAddToCart(cartPayload);
       
       // Add installation service if selected
       if (installationSelected && addToCart) {
@@ -113,14 +115,14 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       }, 100);
       
       toast({
-        title: "Added to Cart",
-        description: `${validTracks.length} track configuration(s) added to your cart.`,
+        title: "Added to Bag",
+        description: `${product.name} added to your bag.`,
       });
       onOpenChange(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add item to cart. Please try again.",
+        description: "Failed to add item to bag. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -168,7 +170,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       onClick={() => setSelectedImage(index)}
                       className={cn(
                         "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200",
-                        selectedImage === index ? "ring-2 ring-orange-500" : "opacity-70 hover:opacity-100"
+                        selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
                       )}
                     >
                       <img 
@@ -205,212 +207,186 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-2xl font-bold text-gray-900">
+                  <span className="text-lg font-bold text-gray-900">
                     {(connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation).toLocaleString()} BDT
                   </span>
-                  <span className="text-lg text-gray-500 line-through">
+                  <span className="text-xs text-gray-500 line-through">
                     {Math.round((connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation) * 1.3).toLocaleString()} BDT
                   </span>
-                  <span className="text-sm text-green-600 font-semibold">
+                  <span className="text-xs text-black font-semibold">
                     Save {Math.round((connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation) * 0.3).toLocaleString()} BDT
                   </span>
                 </div>
               </div>
               
               {/* Shipping Info */}
-              <div className="flex items-center gap-2 text-green-600 text-sm font-medium mb-6">
+              <div className="flex items-center gap-2 text-black text-sm font-medium mb-6">
                 <Truck className="w-4 h-4" />
                 <span>Ships within 3–7 business days | Free shipping</span>
               </div>
             </div>
 
-            {/* Tab Section */}
+            {/* Details Accordion */}
             <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <div className="flex space-x-8">
-                  <button 
-                    onClick={() => setActiveTab('benefits')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'benefits' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Overview
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('bestfor')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'bestfor' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Technical Details
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('bonuses')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'bonuses' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Warranty
-                  </button>
-                </div>
-              </div>
-              <div className="pt-4">
-                {activeTab === 'benefits' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Smart motorized sliding curtain with app control and voice command integration
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Automated scheduling and remote operation for enhanced privacy and comfort
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Energy-efficient design with quiet operation and premium track system
-                    </li>
-                  </ul>
-                )}
-                {activeTab === 'bestfor' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      DC 12V brushless motor with max load 15kg and noise level below 35dB
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Zigbee 3.0/WiFi connectivity with 30m range and voice control support
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Maximum track length 8.3m with sliding mechanism and smart home integration
-                    </li>
-                  </ul>
-                )}
-                {activeTab === 'bonuses' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      1 Year Service Warranty
-                    </li>
-                  </ul>
-                )}
-              </div>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="details">
+                  <AccordionTrigger className="text-left text-base font-medium no-underline hover:no-underline">Product description</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="border-b border-gray-200">
+                      <div className="flex space-x-8">
+                        <button 
+                          onClick={() => setActiveTab('benefits')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'benefits' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Overview
+                        </button>
+                        <button 
+                          onClick={() => setActiveTab('bestfor')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'bestfor' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Technical Details
+                        </button>
+                        <button 
+                          onClick={() => setActiveTab('bonuses')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'bonuses' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Warranty
+                        </button>
+                      </div>
+                    </div>
+                    <div className="pt-4">
+                      {activeTab === 'benefits' && (
+                        <ul className="space-y-2 text-sm text-gray-700">
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Smart motorized sliding curtain with app control and voice command integration
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Automated scheduling and remote operation for enhanced privacy and comfort
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Energy-efficient design with quiet operation and premium track system
+                          </li>
+                        </ul>
+                      )}
+                      {activeTab === 'bestfor' && (
+                        <ul className="space-y-2 text-sm text-gray-700">
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                            DC 12V brushless motor with max load 15kg and noise level below 35dB
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Zigbee 3.0/WiFi connectivity with 30m range and voice control support
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                            Maximum track length 8.3m with sliding mechanism and smart home integration
+                          </li>
+                        </ul>
+                      )}
+                      {activeTab === 'bonuses' && (
+                        <ul className="space-y-2 text-sm text-gray-700">
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                            1 Year Service Warranty
+                          </li>
+                        </ul>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
 
             {/* Upgrade Section */}
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Your Model</h3>
+              <h3 className="font-medium text-gray-900 mb-4" style={{fontSize: '10px'}}>Choose Your Model</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  connectionType === 'zigbee' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                  connectionType === 'zigbee' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
                 }`} onClick={() => setConnectionType('zigbee')}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="font-semibold text-gray-900">Original Zigbee</div>
-                    <div className="text-sm text-gray-600">(This item)</div>
+                    <div className="font-medium text-xs text-gray-900">Original Zigbee</div>
+                    <div className="text-xs text-gray-600">(This item)</div>
                   </div>
-                  <div className="text-sm text-gray-600">Smart control + Hub required</div>
+                  <div className="text-xs text-gray-600">Smart control + Hub required</div>
                 </div>
                 
                 <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  connectionType === 'wifi' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+                  connectionType === 'wifi' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
                 }`} onClick={() => setConnectionType('wifi')}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="font-semibold text-gray-900">Original WiFi</div>
-                    <div className="text-sm text-orange-600 font-medium">+2,000 BDT</div>
+                    <div className="font-medium text-xs text-gray-900">Original WiFi</div>
+                    <div className="text-xs text-black font-medium">+2,000 BDT</div>
                   </div>
-                  <div className="text-sm text-gray-600">Smart control + Direct connection</div>
+                  <div className="text-xs text-gray-600">Smart control + Direct connection</div>
                 </div>
               </div>
             </div>
 
-            {/* Track Configuration Section */}
+            {/* Variations Dropdown */}
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Track Configuration</h3>
-              {trackSizes.map((size, index) => (
-                <div key={index} className="mb-4 p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-gray-700">Track {index + 1}</h4>
-                    {index > 0 && (
-                      <button
-                        onClick={() => {
-                          const newSizes = trackSizes.filter((_, i) => i !== index);
-                          const newQuantities = trackQuantities.filter((_, i) => i !== index);
-                          setTrackSizes(newSizes);
-                          setTrackQuantities(newQuantities);
-                        }}
-                        className="text-red-500 hover:text-red-700 text-sm"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Track Length (feet)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="27"
-                        step="0.5"
-                        value={size || ''}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value) || 0;
-                          const newSizes = [...trackSizes];
-                          newSizes[index] = value > 27 ? 27 : value;
-                          setTrackSizes(newSizes);
-                        }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-900"
-                        placeholder="Enter track length in feet (max 27)"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 mb-2 block">
-                        Quantity
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => {
-                            const newQuantities = [...trackQuantities];
-                            newQuantities[index] = Math.max(1, newQuantities[index] - 1);
-                            setTrackQuantities(newQuantities);
-                          }}
-                          className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className="text-lg font-semibold text-gray-900 min-w-[2rem] text-center">
-                          {trackQuantities[index] || 1}
-                        </span>
-                        <button
-                          onClick={() => {
-                            const newQuantities = [...trackQuantities];
-                            newQuantities[index] = Math.min(10, (newQuantities[index] || 1) + 1);
-                            setTrackQuantities(newQuantities);
-                          }}
-                          className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setTrackSizes([...trackSizes, 0]);
-                  setTrackQuantities([...trackQuantities, 1]);
-                }}
-                className="w-full h-10 font-medium border-2 border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 hover:from-gray-100 hover:to-gray-200 hover:border-gray-400 transition-all duration-300"
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Variations
+              </label>
+              <select 
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900"
+                value={selectedVariation}
+                onChange={(e) => setSelectedVariation(e.target.value)}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Track
-              </Button>
+                <option>Select</option>
+                <option>4.1m(161.4inch)</option>
+                <option>2.1m(82.6inch)</option>
+                <option>5.1m(200.8inch)</option>
+                <option>8.1m(318.9inch)</option>
+                <option>3.1m(122inch)</option>
+                <option>6.1m(240.2inch)</option>
+                <option>7.1m(279.5inch)</option>
+              </select>
+            </div>
+
+
+            {/* Quantity Selection */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-sm font-medium text-gray-700">
+                  Quantity
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      const newQuantities = [...trackQuantities];
+                      newQuantities[0] = Math.max(1, newQuantities[0] - 1);
+                      setTrackQuantities(newQuantities);
+                    }}
+                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="text-lg font-semibold text-gray-900 min-w-[2rem] text-center">
+                    {trackQuantities[0] || 1}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const newQuantities = [...trackQuantities];
+                      newQuantities[0] = Math.min(10, (newQuantities[0] || 1) + 1);
+                      setTrackQuantities(newQuantities);
+                    }}
+                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Installation and setup */}
@@ -426,7 +402,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     name="installation" 
                     checked={installationSelected}
                     onChange={(e) => setInstallationSelected(e.target.checked)}
-                    className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500 mt-1"
+                    className="w-4 h-4 text-black border-gray-300 focus:ring-black mt-1"
                   />
                   <div className="flex-1">
                     <label htmlFor="installation-service" className="font-medium text-gray-900 cursor-pointer">
@@ -440,7 +416,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <div className="mt-4">
                 <div 
                   onClick={() => setHelpModalOpen(true)}
-                  className="flex items-center gap-2 text-sm text-orange-600 cursor-pointer hover:text-orange-700"
+                  className="flex items-center gap-2 text-sm text-black cursor-pointer hover:text-gray-700"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -477,15 +453,16 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
           <div className="fixed bottom-0 right-0 w-[600px] bg-white border-t border-l border-gray-200 p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || product.stock === 0 || trackSizes[0] === 0}
-              className="w-full h-12 text-base font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
+              disabled={loading || product.stock === 0}
+              className="w-full h-12 text-base font-bold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
+              style={{ backgroundColor: '#7e8898' }}
             >
-              {loading ? 'Adding to cart...' : product.stock === 0 ? 'Out of stock' : 'Add to cart'}
+              {loading ? 'Adding to bag...' : product.stock === 0 ? 'Out of stock' : 'Add to bag'}
             </Button>
             
             {/* Stock Status */}
             {product.stock <= 3 && product.stock > 0 && (
-              <p className="text-center text-sm text-orange-600 font-medium mt-2">
+              <p className="text-center text-sm text-black font-medium mt-2">
                 Only {product.stock} left in stock - order soon!
               </p>
             )}
@@ -531,7 +508,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <div>
                 <h3 className="font-bold text-gray-900 mb-2">Standard Track Setup (+0 BDT)</h3>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  Basic sliding track installation with motor setup and app configuration. Perfect for standard windows up to 27 feet wide. Includes mounting hardware and basic smart home integration.
+                  Basic sliding track installation with motor setup and app configuration. Perfect for standard windows. Includes mounting hardware and basic smart home integration.
                 </p>
               </div>
               

@@ -40,15 +40,11 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
   const [installationNotes, setInstallationNotes] = useState('');
   const [installationTBD, setInstallationTBD] = useState(false);
   const [installationSelected, setInstallationSelected] = useState(false);
-  const [activeTab, setActiveTab] = useState('benefits');
-  const [helpModalOpen, setHelpModalOpen] = useState(false);
 
-  // Reset to default when modal opens
-  useEffect(() => {
-    if (open) {
-      setActiveTab('benefits');
-    }
-  }, [open]);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('benefits');
+
+
 
   const features = product.features ? product.features.split('\n').filter(f => f.trim()) : [];
   const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
@@ -185,7 +181,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                       onClick={() => setSelectedImage(index)}
                       className={cn(
                         "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200",
-                        selectedImage === index ? "ring-2 ring-orange-500" : "opacity-70 hover:opacity-100"
+                        selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
                       )}
                     >
                       <img 
@@ -222,102 +218,109 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-2xl font-bold text-gray-900">
+                  <span className="text-lg font-bold text-gray-900">
                     {product.price.toLocaleString()} BDT
                   </span>
-                  <span className="text-base text-gray-500">per sq ft</span>
-                  <span className="text-lg text-gray-500 line-through">
+                  <span className="text-xs text-gray-500">per sq ft</span>
+                  <span className="text-xs text-gray-500 line-through">
                     {Math.round(product.price * 1.3).toLocaleString()} BDT
                   </span>
-                  <span className="text-sm text-green-600 font-semibold">
+                  <span className="text-xs text-black font-semibold">
                     Save {Math.round(product.price * 0.3).toLocaleString()} BDT
                   </span>
                 </div>
               </div>
               
               {/* Shipping Info */}
-              <div className="flex items-center gap-2 text-green-600 text-sm font-medium mb-6">
+              <div className="flex items-center gap-2 text-black text-sm font-medium mb-6">
                 <Truck className="w-4 h-4" />
                 <span>Ships within 3–7 business days | Free shipping</span>
               </div>
             </div>
 
-            {/* Tab Section */}
+            {/* Details Accordion */}
             <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <div className="flex space-x-8">
-                  <button 
-                    onClick={() => setActiveTab('benefits')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'benefits' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Overview
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('bestfor')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'bestfor' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Technical Details
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('bonuses')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'bonuses' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Warranty
-                  </button>
-                </div>
-              </div>
-              <div className="pt-4">
-                {activeTab === 'benefits' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Smart glass technology with instant opacity control for privacy and light management
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Energy-efficient solution that reduces cooling costs by blocking heat
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Easy installation on existing glass surfaces without replacement
-                    </li>
-                  </ul>
-                )}
-                {activeTab === 'bestfor' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Voltage: 65V AC (transformer required for safe operation)
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Power consumption: 5-7W per sq ft for optimal performance
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Operating temperature: -10°C to +60°C for all weather conditions
-                    </li>
-                  </ul>
-                )}
-                {activeTab === 'bonuses' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      1 Year Transformer Warranty
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-orange-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Film has no warranty - once applied, cannot be reused
-                    </li>
-                  </ul>
-                )}
-              </div>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="details">
+                  <AccordionTrigger className="text-left font-medium no-underline hover:no-underline">Product description</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="border-b border-gray-200">
+                      <div className="flex space-x-8">
+                        <button 
+                          onClick={() => setActiveTab('benefits')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'benefits' ? 'border-gray-800 text-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Overview
+                        </button>
+                        <button 
+                          onClick={() => setActiveTab('bestfor')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'bestfor' ? 'border-gray-800 text-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Technical Details
+                        </button>
+                        <button 
+                          onClick={() => setActiveTab('bonuses')}
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === 'bonuses' ? 'border-gray-800 text-gray-800' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          Warranty
+                        </button>
+                      </div>
+                    </div>
+                    <div className="pt-4">
+                      {activeTab === 'benefits' && (
+                        <ul className="space-y-2 text-sm text-gray-700">
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-800 rounded-full mt-2 flex-shrink-0"></span>
+                            Smart glass technology with instant opacity control for privacy and light management
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-800 rounded-full mt-2 flex-shrink-0"></span>
+                            Energy-efficient solution that reduces cooling costs by blocking heat
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-800 rounded-full mt-2 flex-shrink-0"></span>
+                            Easy installation on existing glass surfaces without replacement
+                          </li>
+                        </ul>
+                      )}
+                      {activeTab === 'bestfor' && (
+                        <ul className="space-y-2 text-sm text-gray-700">
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-800 rounded-full mt-2 flex-shrink-0"></span>
+                            Voltage: 65V AC (transformer required for safe operation)
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-800 rounded-full mt-2 flex-shrink-0"></span>
+                            Power consumption: 5-7W per sq ft for optimal performance
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-800 rounded-full mt-2 flex-shrink-0"></span>
+                            Operating temperature: -10°C to +60°C for all weather conditions
+                          </li>
+                        </ul>
+                      )}
+                      {activeTab === 'bonuses' && (
+                        <ul className="space-y-2 text-sm text-gray-700">
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-800 rounded-full mt-2 flex-shrink-0"></span>
+                            1 Year Transformer Warranty
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 bg-gray-800 rounded-full mt-2 flex-shrink-0"></span>
+                            Film has no warranty - once applied, cannot be reused
+                          </li>
+                        </ul>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
             
             {/* PDLC Film Price Breakdown */}
@@ -342,7 +345,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                   <div className="border-t border-gray-300 pt-3">
                     <div className="flex items-center justify-between">
                       <span className="text-base font-semibold text-gray-900">Total</span>
-                      <span className="text-lg font-bold text-gray-900">{totalWithTransformer.toLocaleString()} BDT</span>
+                      <span className="text-sm font-bold text-gray-900">{totalWithTransformer.toLocaleString()} BDT</span>
                     </div>
                   </div>
                 </div>
@@ -351,7 +354,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
 
             {/* Glass Panel Configuration */}
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Glass Panel Configuration</h3>
+              <h3 className="text-base font-medium text-gray-900 mb-4">Glass Panel Configuration</h3>
               <div className="space-y-4">
                 {dimensions.map((dim, index) => (
                   <div key={index} className="p-4 border border-gray-200 rounded-xl bg-gray-50">
@@ -362,7 +365,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                           onClick={() => {
                             setDimensions(dimensions.filter((_, i) => i !== index));
                           }}
-                          className="text-red-500 hover:text-red-700 text-sm font-medium"
+                          className="text-gray-600 hover:text-gray-700 text-sm font-medium"
                         >
                           Remove
                         </button>
@@ -383,7 +386,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                             newDimensions[index].height = parseFloat(e.target.value) || 0;
                             setDimensions(newDimensions);
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm"
                           placeholder="0"
                         />
                       </div>
@@ -401,7 +404,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                             newDimensions[index].width = parseFloat(e.target.value) || 0;
                             setDimensions(newDimensions);
                           }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 text-sm"
                           placeholder="0"
                         />
                       </div>
@@ -472,7 +475,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                     name="installation" 
                     checked={installationSelected}
                     onChange={(e) => setInstallationSelected(e.target.checked)}
-                    className="w-4 h-4 text-orange-600 border-gray-300 focus:ring-orange-500 mt-1"
+                    className="w-4 h-4 text-gray-600 border-gray-300 focus:ring-gray-500 mt-1"
                   />
                   <div className="flex-1">
                     <label htmlFor="pdlc-installation-service" className="font-medium text-gray-900 cursor-pointer">
@@ -486,7 +489,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
               <div className="mt-4">
                 <div 
                   onClick={() => setHelpModalOpen(true)}
-                  className="flex items-center gap-2 text-sm text-orange-600 cursor-pointer hover:text-orange-700"
+                  className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer hover:text-gray-700"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -524,14 +527,14 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
             <Button
               onClick={handleAddToCart}
               disabled={loading || product.stock === 0 || totalArea === 0}
-              className="w-full h-12 text-base font-bold bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
+              className="w-full h-12 text-base font-bold bg-gray-800 hover:bg-gray-900 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
             >
-              {loading ? 'Adding to cart...' : product.stock === 0 ? 'Out of stock' : totalArea === 0 ? 'Configure panels first' : 'Add to cart'}
+              {loading ? 'Adding to bag...' : product.stock === 0 ? 'Out of stock' : totalArea === 0 ? 'Configure panels first' : 'Add to bag'}
             </Button>
             
             {/* Stock Status */}
             {product.stock <= 3 && product.stock > 0 && (
-              <p className="text-center text-sm text-orange-600 font-medium mt-2">
+              <p className="text-center text-sm text-gray-600 font-medium mt-2">
                 Only {product.stock} left in stock - order soon!
               </p>
             )}

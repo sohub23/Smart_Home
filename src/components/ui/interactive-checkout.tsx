@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Minus, Plus, ShoppingCart, X, CreditCard } from "lucide-react";
+import { Minus, Plus, ShoppingCart, X, CreditCard, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
@@ -14,6 +14,9 @@ import { SohubProtectModal } from "@/components/ui/SohubProtectModal";
 import { SmartSecurityBoxModal } from "@/components/ui/SmartSecurityBoxModal";
 import { SecurityPanelModal } from "@/components/ui/SecurityPanelModal";
 import { SmartSwitchModal } from "@/components/ui/SmartSwitchModal";
+import { LightSwitchModal } from "@/components/ui/LightSwitchModal";
+import { FanSwitchModal } from "@/components/ui/FanSwitchModal";
+import { BoilerSwitchModal } from "@/components/ui/BoilerSwitchModal";
 import { productData } from "@/lib/productData";
 
 import { ServicesModal } from "@/components/ui/ServicesModal";
@@ -47,6 +50,8 @@ interface CartItem extends Product {
     width?: number;
     installationCharge?: number;
     accessories?: any[];
+    selectedGang?: string;
+    selectedColor?: string;
 }
 
 interface InteractiveCheckoutProps {
@@ -128,6 +133,13 @@ const getModalType = (category: string, productName: string) => {
         if (productName.includes('Security Panel') || productName.includes('SP-05')) return 'securityPanel';
         return 'sohubProtect';
     }
+    if (category === 'Switch') {
+        const name = productName.toLowerCase();
+        if (name.includes('smart')) return 'smartSwitch';
+        if (name.includes('fan')) return 'fanSwitch';
+        if (name.includes('boiler')) return 'boilerSwitch';
+        return 'lightSwitch';
+    }
     return category.toLowerCase();
 };
 
@@ -187,6 +199,9 @@ function InteractiveCheckout({
     const [smartSecurityBoxModalOpen, setSmartSecurityBoxModalOpen] = useState(false);
     const [securityPanelModalOpen, setSecurityPanelModalOpen] = useState(false);
     const [smartSwitchModalOpen, setSmartSwitchModalOpen] = useState(false);
+    const [lightSwitchModalOpen, setLightSwitchModalOpen] = useState(false);
+    const [fanSwitchModalOpen, setFanSwitchModalOpen] = useState(false);
+    const [boilerSwitchModalOpen, setBoilerSwitchModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -246,8 +261,8 @@ function InteractiveCheckout({
         
         if (cart.length === 0) {
             toast({
-                title: "Empty Cart",
-                description: "Please add items to your cart before checkout.",
+                title: "Empty Bag",
+                description: "Please add items to your bag before checkout.",
                 variant: "destructive"
             });
             return;
@@ -489,10 +504,9 @@ function InteractiveCheckout({
                         }
                         return { ...item, quantity: newQuantity };
                     }
-                    return item;
                 }
                 return item;
-            })
+            }).filter(item => item.id !== sanitizedId || item.quantity > 0)
         );
     };
 
@@ -673,7 +687,12 @@ function InteractiveCheckout({
                                 whileTap={{ scale: 0.95 }}
                                 style={{ touchAction: 'manipulation', cursor: 'pointer', userSelect: 'none' }}
                             >
-                                <span className="text-xs lg:text-base font-medium whitespace-nowrap relative z-10">
+                                <span className="text-xs lg:text-base font-medium whitespace-nowrap relative z-10 flex items-center gap-1.5">
+                                    {category.name === 'Curtain' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 3h18v2H3V3zm0 16h18v2H3v-2zm2-8h14v6H5v-6zm2 2v2h10v-2H7z"/></svg>}
+                                    {category.name === 'Switch' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17 7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h10c2.76 0 5-2.24 5-5s-2.24-5-5-5zM7 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></svg>}
+                                    {category.name === 'Security' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/></svg>}
+                                    {category.name === 'PDLC Film' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/></svg>}
+                                    {category.name === 'Services' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>}
                                     {category.name}
                                 </span>
                                 
@@ -719,7 +738,7 @@ function InteractiveCheckout({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             className="bg-white rounded-none lg:rounded-md shadow-sm hover:shadow-md transition-all duration-300 p-2 lg:p-1.5 relative cursor-pointer border-0 lg:border border-gray-100 hover:border-green-200 group aspect-square flex flex-col"
-                            whileHover={{ y: -2, scale: 1.01 }}
+                
                             onWheel={(e) => {
                                 const container = document.querySelector('.products-scroll-container');
                                 if (container) {
@@ -756,7 +775,10 @@ function InteractiveCheckout({
                                     case 'securityBox': setSmartSecurityBoxModalOpen(true); break;
                                     case 'securityPanel': setSecurityPanelModalOpen(true); break;
                                     case 'sohubProtect': setSohubProtectModalOpen(true); break;
-                                    case 'switch': setSmartSwitchModalOpen(true); break;
+                                    case 'smartSwitch': setSmartSwitchModalOpen(true); break;
+                                    case 'lightSwitch': setLightSwitchModalOpen(true); break;
+                                    case 'fanSwitch': setFanSwitchModalOpen(true); break;
+                                    case 'boilerSwitch': setBoilerSwitchModalOpen(true); break;
                                     default: setModalOpen(true);
                                 }
                             }}
@@ -786,46 +808,10 @@ function InteractiveCheckout({
                                 <h3 className="font-medium text-gray-900 text-xs lg:text-sm leading-tight truncate font-apple">
                                     {product.name}
                                 </h3>
-                                <p className="text-black text-xs lg:text-sm font-semibold font-apple">
-                                    {typeof product.price === 'string' ? product.price : `${product.price} BDT`}
-                                </p>
+
                             </div>
                             
-                            {/* Add Button */}
-                            <motion.button
-                                className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 lg:w-6 lg:h-6 ${cart.some(cartItem => cartItem.id.includes(product.id) || cartItem.name.includes(product.name)) ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-400 hover:bg-gray-500'} text-white rounded-full flex items-center justify-center text-sm lg:text-lg font-bold shadow-none lg:shadow-md transition-all duration-300`}
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.9 }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (product.id === 'service-1') {
-                                        setServicesModalOpen(true);
-                                        return;
-                                    }
-                                    if (product.id === 'service-2') {
-                                        setInstallationModalOpen(true);
-                                        return;
-                                    }
-                                    const cartItem: CartItem = {
-                                        id: sanitizeDbInput(product.id),
-                                        name: sanitizeDbInput(product.name),
-                                        price: safeParsePrice(product.price.toString()),
-                                        category: product.gangType || 'Product',
-                                        image: product.imageUrl,
-                                        color: product.gangType || 'Default',
-                                        quantity: 1
-                                    };
-                                    addToCart(cartItem);
-                                    toast({
-                                        title: "✓ Added to Cart",
-                                        description: `${product.name}`,
-                                        duration: 2000,
-                                        className: "bg-green-50 border border-green-200 text-green-800 shadow-lg",
-                                    });
-                                }}
-                            >
-                                {cart.some(cartItem => cartItem.id.includes(product.id) || cartItem.name.includes(product.name)) ? '✓' : '+'}
-                            </motion.button>
+
                                     </motion.div>
                                     ))}
                                 </div>
@@ -849,7 +835,7 @@ function InteractiveCheckout({
                     onClick={() => setShowMobileCart(true)}
                     className="lg:hidden fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg z-50 flex items-center gap-2"
                 >
-                    <ShoppingCart className="w-5 h-5" />
+                    <ShoppingBag className="w-5 h-5" />
                     <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                         {totalItems}
                     </span>
@@ -890,7 +876,7 @@ function InteractiveCheckout({
                                     className="flex items-center gap-2"
                                 >
                                     <ArrowLeft className="w-4 h-4" />
-                                    Back to Cart
+                                    Back to Bag
                                 </Button>
                                 <Button
                                     variant="ghost"
@@ -1024,9 +1010,9 @@ function InteractiveCheckout({
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-[#0a1d3a]/10 rounded-lg">
-                                        <ShoppingCart className="w-5 h-5 text-[#0a1d3a]" />
+                                        <ShoppingBag className="w-5 h-5 text-[#0a1d3a]" />
                                     </div>
-                                    <h2 className="text-lg font-semibold text-gray-900 leading-none">Shopping Cart</h2>
+                                    <h2 className="text-lg font-semibold text-gray-900 leading-none">Shopping Bag</h2>
                                 </div>
                                 <p className="text-sm text-gray-500 leading-none italic">{totalItems} item{totalItems !== 1 ? 's' : ''}</p>
                                 <Button
@@ -1044,9 +1030,9 @@ function InteractiveCheckout({
                                     {cart.length === 0 ? (
                                         <div className="text-center py-12 text-gray-500">
                                             <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                                                <ShoppingCart className="w-8 h-8 text-gray-400" />
+                                                <ShoppingBag className="w-8 h-8 text-gray-400" />
                                             </div>
-                                            <h3 className="text-base font-medium text-gray-700 mb-1">Cart is empty</h3>
+                                            <h3 className="text-base font-medium text-gray-700 mb-1">Bag is empty</h3>
                                             <p className="text-sm text-gray-500">Add products to get started</p>
                                         </div>
                                     ) : (
@@ -1082,8 +1068,10 @@ function InteractiveCheckout({
                                                             </h3>
                                                             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                                                                 {item.category}
-                                                                {item.trackSize ? ` • ${item.trackSize} ft` : ''}
-                                                                {item.trackSizes ? ` • ${item.trackSizes.join(', ')} ft` : ''}
+                                                                {item.selectedGang ? ` • ${item.selectedGang.charAt(0).toUpperCase() + item.selectedGang.slice(1)} Gang` : ''}
+                                                                {item.selectedColor ? ` • ${item.selectedColor.charAt(0).toUpperCase() + item.selectedColor.slice(1)}` : ''}
+                                                                {item.trackSize ? ` • ${item.trackSize}` : ''}
+                                                                {item.trackSizes ? ` • ${item.trackSizes.join(', ')}` : ''}
                                                                 {item.height && item.width ? ` • ${item.quantity.toFixed(2)} sq ft (${item.height}' × ${item.width}')` : ''}
                                                             </p>
                                                             {item.accessories && item.accessories.length > 0 && (
@@ -1099,12 +1087,14 @@ function InteractiveCheckout({
                                                             )}
 
                                                         </div>
-                                                        <button
-                                                            onClick={() => setRemoveItemModal({ open: true, itemId: item.id, itemName: item.name })}
-                                                            className="p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
+                                                        {(item.category === 'Services' || item.category === 'Installation Service') && (
+                                                            <button
+                                                                onClick={() => removeFromCart(item.id)}
+                                                                className="p-1 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                     <div className="flex items-center justify-between">
                                                         {item.category === 'Services' || item.category === 'Installation Service' ? (
@@ -1114,7 +1104,13 @@ function InteractiveCheckout({
                                                         ) : (
                                                             <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200">
                                                                 <button
-                                                                    onClick={() => updateQuantity(item.id, -1)}
+                                                                    onClick={() => {
+                                                                        if (item.quantity === 1) {
+                                                                            removeFromCart(item.id);
+                                                                        } else {
+                                                                            updateQuantity(item.id, -1);
+                                                                        }
+                                                                    }}
                                                                     className="w-6 h-6 rounded-md bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                                                                 >
                                                                     <Minus className="w-3 h-3 text-gray-600" />
@@ -1470,7 +1466,7 @@ function InteractiveCheckout({
                             
                             toast({
                                 title: "Proceeding to Checkout",
-                                description: `${cartItem.name} added for immediate purchase.`,
+                                description: `${cartItem.name} added to bag for immediate purchase.`,
                             });
                         }
                     }}
@@ -1493,8 +1489,8 @@ function InteractiveCheckout({
                 onAddToCart={(cartItem) => {
                     addToCart(cartItem);
                     toast({
-                        title: "Added to Cart",
-                        description: `${cartItem.name} has been added to your cart.`,
+                        title: "Added to Bag",
+                        description: `${cartItem.name} has been added to your bag.`,
                     });
                 }}
             />
@@ -1509,8 +1505,8 @@ function InteractiveCheckout({
                 onAddToCart={(cartItem) => {
                     addToCart(cartItem);
                     toast({
-                        title: "Added to Cart",
-                        description: `${cartItem.name} has been added to your cart.`,
+                        title: "Added to Bag",
+                        description: `${cartItem.name} has been added to your bag.`,
                     });
                 }}
             />
@@ -1622,6 +1618,177 @@ function InteractiveCheckout({
                     }}
                     onBuyNow={async (payload) => {
                         // Handle buy now for Smart Switch products
+                    }}
+                />
+            )}
+            
+            {/* Light Switch Modal */}
+            {selectedVariant && (
+                <LightSwitchModal
+                    open={lightSwitchModalOpen}
+                    onOpenChange={(open) => {
+                        setLightSwitchModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Switch',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: productData?.description || '',
+                            detailed_description: productData?.detailed_description || '',
+                            features: productData?.features || '',
+                            specifications: productData?.specifications || '',
+                            engraving_available: productData?.engraving_available || false,
+                            engraving_price: productData?.engraving_price || 0,
+                            engraving_image: productData?.engraving_image || '',
+                            engraving_text_color: productData?.engraving_text_color || '#000000',
+                            warranty: productData?.warranty || '',
+                            installation_included: productData?.installation_included || false,
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'Switch',
+                                image: selectedVariant.imageUrl,
+                                color: 'Switch',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Light Switch products
+                    }}
+                />
+            )}
+            
+            {/* Fan Switch Modal */}
+            {selectedVariant && (
+                <FanSwitchModal
+                    open={fanSwitchModalOpen}
+                    onOpenChange={(open) => {
+                        setFanSwitchModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Switch',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: productData?.description || '',
+                            detailed_description: productData?.detailed_description || '',
+                            features: productData?.features || '',
+                            specifications: productData?.specifications || '',
+                            engraving_available: productData?.engraving_available || false,
+                            engraving_price: productData?.engraving_price || 0,
+                            engraving_image: productData?.engraving_image || '',
+                            engraving_text_color: productData?.engraving_text_color || '#000000',
+                            warranty: productData?.warranty || '',
+                            installation_included: productData?.installation_included || false,
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'Switch',
+                                image: selectedVariant.imageUrl,
+                                color: 'Switch',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Fan Switch products
+                    }}
+                />
+            )}
+            
+            {/* Boiler Switch Modal */}
+            {selectedVariant && (
+                <BoilerSwitchModal
+                    open={boilerSwitchModalOpen}
+                    onOpenChange={(open) => {
+                        setBoilerSwitchModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Switch',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: productData?.description || '',
+                            detailed_description: productData?.detailed_description || '',
+                            features: productData?.features || '',
+                            specifications: productData?.specifications || '',
+                            engraving_available: productData?.engraving_available || false,
+                            engraving_price: productData?.engraving_price || 0,
+                            engraving_image: productData?.engraving_image || '',
+                            engraving_text_color: productData?.engraving_text_color || '#000000',
+                            warranty: productData?.warranty || '',
+                            installation_included: productData?.installation_included || false,
+                            image: selectedVariant.imageUrl,
+                            image2: productData?.image2 || '',
+                            image3: productData?.image3 || '',
+                            image4: productData?.image4 || '',
+                            image5: productData?.image5 || '',
+                            stock: productData?.stock || 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'Switch',
+                                image: selectedVariant.imageUrl,
+                                color: 'Switch',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Boiler Switch products
                     }}
                 />
             )}
@@ -1780,7 +1947,7 @@ function InteractiveCheckout({
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
                     <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
                         <h3 className="text-lg font-semibold mb-2">Remove Item</h3>
-                        <p className="text-gray-600 mb-4">Are you sure you want to remove "{removeItemModal.itemName}" from your cart?</p>
+                        <p className="text-gray-600 mb-4">Are you sure you want to remove "{removeItemModal.itemName}" from your bag?</p>
                         <div className="flex gap-3 justify-end">
                             <Button variant="outline" onClick={() => setRemoveItemModal({ open: false, itemId: '', itemName: '' })}>
                                 Cancel
