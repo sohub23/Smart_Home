@@ -234,7 +234,7 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
           <div className="p-8 overflow-y-auto max-h-[95vh] bg-white pb-24">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                Security Panel Kit (SP-05)
+                Panel Kit
               </h1>
               
               <div className="mb-4">

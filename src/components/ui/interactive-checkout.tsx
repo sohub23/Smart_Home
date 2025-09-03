@@ -13,6 +13,8 @@ import { PDLCFilmModal } from "@/components/ui/PDLCFilmModal";
 import { SohubProtectModal } from "@/components/ui/SohubProtectModal";
 import { SmartSecurityBoxModal } from "@/components/ui/SmartSecurityBoxModal";
 import { SecurityPanelModal } from "@/components/ui/SecurityPanelModal";
+import { SensorsSelectionModal } from "@/components/ui/SensorsSelectionModal";
+import { CameraSelectionModal } from "@/components/ui/CameraSelectionModal";
 import { SmartSwitchModal } from "@/components/ui/SmartSwitchModal";
 import { LightSwitchModal } from "@/components/ui/LightSwitchModal";
 import { FanSwitchModal } from "@/components/ui/FanSwitchModal";
@@ -129,7 +131,7 @@ const getModalType = (category: string, productName: string) => {
         return productName.toLowerCase().includes('roller') ? 'roller' : 'slider';
     }
     if (category === 'Security') {
-        if (productName.includes('Smart Security Box') || productName.includes('SP-01')) return 'securityBox';
+        if (productName.includes('Smart Security Box') || productName.includes('Panel Kit')) return 'securityBox';
         if (productName.includes('Security Panel') || productName.includes('SP-05')) return 'securityPanel';
         return 'sohubProtect';
     }
@@ -198,6 +200,8 @@ function InteractiveCheckout({
     const [sohubProtectModalOpen, setSohubProtectModalOpen] = useState(false);
     const [smartSecurityBoxModalOpen, setSmartSecurityBoxModalOpen] = useState(false);
     const [securityPanelModalOpen, setSecurityPanelModalOpen] = useState(false);
+    const [sensorsSelectionModalOpen, setSensorsSelectionModalOpen] = useState(false);
+    const [cameraSelectionModalOpen, setCameraSelectionModalOpen] = useState(false);
     const [smartSwitchModalOpen, setSmartSwitchModalOpen] = useState(false);
     const [lightSwitchModalOpen, setLightSwitchModalOpen] = useState(false);
     const [fanSwitchModalOpen, setFanSwitchModalOpen] = useState(false);
@@ -398,23 +402,59 @@ function InteractiveCheckout({
             ];
         }
         
+        // For Security category, show Panel Kit and Sensors
+        if (sanitizedCategory === 'Security') {
+            const products = [];
+            
+            // Add Panel Kit
+            const panelKitProduct = dbProducts.find(p => 
+                p.category === 'Security' && 
+                p.name.includes('Panel Kit') &&
+                p.stock > 0
+            );
+            
+            if (panelKitProduct) {
+                products.push({
+                    id: panelKitProduct.id,
+                    name: 'Panel Kit',
+                    price: `${panelKitProduct.price.toLocaleString()} BDT`,
+                    gangType: panelKitProduct.category,
+                    imageUrl: panelKitProduct.image || '/images/sohub_protect/security-panel.png',
+                    isSoldOut: panelKitProduct.stock === 0
+                });
+            }
+            
+            // Add Sensors card
+            products.push({
+                id: 'sensors-1',
+                name: 'Sensors',
+                price: 'From 2,499 BDT',
+                gangType: 'Security',
+                imageUrl: '/images/sohub_protect/accesories/Motion_pr200.png',
+                isSoldOut: false
+            });
+            
+            // Add Camera card
+            products.push({
+                id: 'camera-1',
+                name: 'Camera',
+                price: 'From 8,999 BDT',
+                gangType: 'Security',
+                imageUrl: '/images/sohub_protect/accesories/camera-c11.png',
+                isSoldOut: false
+            });
+            
+            return products;
+        }
+        
         // If we have database products, use them
         if (dbProducts.length > 0) {
             const categoryFilter = sanitizedCategory === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
                                  sanitizedCategory === 'Curtain' ? ['Smart Curtain'] : 
                                  sanitizedCategory === 'Switch' ? ['Smart Switch'] : [sanitizedCategory];
             const filteredProducts = dbProducts.filter(p => categoryFilter.includes(p.category) && p.stock > 0);
-            
-            // Sort Security products by serial_order, others by default
-            const sortedProducts = sanitizedCategory === 'Security' 
-                ? filteredProducts.sort((a, b) => {
-                    const aOrder = a.serial_order || 999;
-                    const bOrder = b.serial_order || 999;
-                    return aOrder - bOrder;
-                })
-                : filteredProducts;
                 
-            return sortedProducts.map(p => ({
+            return filteredProducts.map(p => ({
                 id: p.id,
                 name: p.name,
                 price: `${p.price.toLocaleString()} BDT`,
@@ -764,6 +804,30 @@ function InteractiveCheckout({
                                     setInstallationModalOpen(true);
                                     return;
                                 }
+                                if (product.id === 'sensors-1') {
+                                    const sensorsVariant = {
+                                        id: 'sensors-1',
+                                        name: 'Sensors',
+                                        price: '2499 BDT',
+                                        gangType: 'Security',
+                                        imageUrl: '/images/sohub_protect/accesories/Motion_pr200.png'
+                                    };
+                                    setSelectedVariant(sensorsVariant);
+                                    setSensorsSelectionModalOpen(true);
+                                    return;
+                                }
+                                if (product.id === 'camera-1') {
+                                    const cameraVariant = {
+                                        id: 'camera-1',
+                                        name: 'Camera',
+                                        price: '8999 BDT',
+                                        gangType: 'Security',
+                                        imageUrl: '/images/sohub_protect/accesories/camera-c11.png'
+                                    };
+                                    setSelectedVariant(cameraVariant);
+                                    setCameraSelectionModalOpen(true);
+                                    return;
+                                }
                                 const variant = categoryGroup.products.find(p => p.id === product.id);
                                 setSelectedVariant(variant);
                                 setSelectedProduct(categoryToIdMap[categoryGroup.category] || '3');
@@ -835,10 +899,10 @@ function InteractiveCheckout({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     onClick={() => setShowMobileCart(true)}
-                    className="lg:hidden fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg z-50 flex items-center gap-2"
+                    className="lg:hidden fixed bottom-4 right-4 bg-[#0a1d3a] text-white p-3 rounded-full shadow-lg z-50 flex items-center gap-2"
                 >
                     <ShoppingBag className="w-5 h-5" />
-                    <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    <span className="bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                         {totalItems}
                     </span>
                 </motion.button>
@@ -1942,6 +2006,36 @@ function InteractiveCheckout({
                             addToCart(cartItem);
                         }
                     }}
+                />
+            )}
+            
+            {/* Sensors Selection Modal */}
+            {selectedVariant && (
+                <SensorsSelectionModal
+                    open={sensorsSelectionModalOpen}
+                    onOpenChange={(open) => {
+                        setSensorsSelectionModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={selectedVariant}
+                    addToCart={addToCart}
+                />
+            )}
+            
+            {/* Camera Selection Modal */}
+            {selectedVariant && (
+                <CameraSelectionModal
+                    open={cameraSelectionModalOpen}
+                    onOpenChange={(open) => {
+                        setCameraSelectionModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={selectedVariant}
+                    addToCart={addToCart}
                 />
             )}
             

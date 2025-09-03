@@ -161,7 +161,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      const variationText = selectedModel !== 'SP-01' ? ` - ${selectedModel}` : '';
+      const variationText = ` - ${selectedModel}`;
       
       const cartPayload = {
         productId: `${product.id}_${Date.now()}`,
@@ -173,7 +173,19 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
         unitPrice: currentPrice
       };
       
-      await onAddToCart(cartPayload);
+      // Add main product to cart instantly
+      if (addToCart) {
+        addToCart({
+          id: `${product.id}_${selectedModel}_${Date.now()}`,
+          name: `${product.name}${variationText}`,
+          price: currentPrice,
+          category: 'Security System',
+          image: currentImages[0] || '/images/sohub_protect/smart-security-box.png',
+          color: `Model: ${selectedModel}`,
+          model: selectedModel,
+          quantity: quantity
+        });
+      }
       
       // Add each accessory as separate cart item instantly
       selectedAccessories.forEach(index => {
@@ -456,7 +468,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
             {/* Choose Model Section */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Choose Model</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   selectedModel === 'SP-01' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
                 }`} onClick={() => setSelectedModel('SP-01')} style={selectedModel === 'SP-01' ? {backgroundColor: '#e8e8ed'} : {}}>
