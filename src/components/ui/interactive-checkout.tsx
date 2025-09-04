@@ -161,7 +161,7 @@ const getCategoryProducts = (dbProducts: any[], categoryImages: any[]) => {
         // Handle both 'Film' and 'PDLC Film' for products
         const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
                              category === 'Curtain' ? ['Smart Curtain', 'Curtain'] : 
-                             category === 'Switch' ? ['Smart Switch', 'Switch'] : [category];
+                             category === 'Switch' ? ['Switch', 'Light Switch', 'Fan Switch', 'Boiler Switch'] : [category];
         const categoryProducts = dbProducts.filter(p => categoryFilter.includes(p.category));
         const firstProduct = categoryProducts[0];
         
@@ -402,6 +402,68 @@ function InteractiveCheckout({
             ];
         }
         
+        // For Switch category, show Light Switch, Fan Switch, and Boiler Switch
+        if (sanitizedCategory === 'Switch') {
+            const switchProducts = [];
+            
+            // Get Light Switch products from database
+            const lightSwitchProducts = dbProducts.filter(p => 
+                p.category === 'Switch' && 
+                ['light', 'touch', '4 gang', '3 gang', 'mechanical'].some(term => 
+                    p.name.toLowerCase().includes(term.toLowerCase())
+                )
+            );
+            const firstLightSwitch = lightSwitchProducts[0];
+            
+            // Get Fan Switch products from database
+            const fanSwitchProducts = dbProducts.filter(p => 
+                p.category === 'Switch' && 
+                p.name.toLowerCase().includes('fan')
+            );
+            const firstFanSwitch = fanSwitchProducts[0];
+            
+            // Get Boiler Switch products from database
+            const boilerSwitchProducts = dbProducts.filter(p => 
+                p.category === 'Switch' && 
+                ['boiler', '1 gang', 'one gang'].some(term => 
+                    p.name.toLowerCase().includes(term.toLowerCase())
+                )
+            );
+            const firstBoilerSwitch = boilerSwitchProducts[0];
+            
+            // Add Light Switch
+            switchProducts.push({
+                id: 'light-switch-1',
+                name: 'Light Switch',
+                price: firstLightSwitch ? `From ${firstLightSwitch.price} BDT` : 'From 299 BDT',
+                gangType: 'Light Switch',
+                imageUrl: firstLightSwitch?.image || '/images/smart_switch/light switch.webp',
+                isSoldOut: false
+            });
+            
+            // Add Fan Switch
+            switchProducts.push({
+                id: 'fan-switch-1',
+                name: 'Fan Switch',
+                price: firstFanSwitch ? `From ${firstFanSwitch.price} BDT` : 'From 399 BDT',
+                gangType: 'Fan Switch',
+                imageUrl: firstFanSwitch?.image || '/images/smart_switch/fan touch switch.webp',
+                isSoldOut: false
+            });
+            
+            // Add Boiler Switch
+            switchProducts.push({
+                id: 'boiler-switch-1',
+                name: 'Boiler Switch',
+                price: firstBoilerSwitch ? `From ${firstBoilerSwitch.price} BDT` : 'From 499 BDT',
+                gangType: 'Boiler Switch',
+                imageUrl: firstBoilerSwitch?.image || '/images/smart_switch/one gang.webp',
+                isSoldOut: false
+            });
+            
+            return switchProducts;
+        }
+        
         // For Security category, show Panel Kit and Sensors
         if (sanitizedCategory === 'Security') {
             const products = [];
@@ -450,7 +512,7 @@ function InteractiveCheckout({
         // If we have database products, use them
         if (dbProducts.length > 0) {
             const categoryFilter = sanitizedCategory === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
-                                 sanitizedCategory === 'Curtain' ? ['Smart Curtain'] : 
+                                 sanitizedCategory === 'Curtain' ? ['Smart Curtain', 'Curtain'] : 
                                  sanitizedCategory === 'Switch' ? ['Smart Switch'] : [sanitizedCategory];
             const filteredProducts = dbProducts.filter(p => categoryFilter.includes(p.category) && p.stock > 0);
                 
@@ -534,8 +596,8 @@ function InteractiveCheckout({
                     const newQuantity = item.quantity + delta;
                     if (newQuantity > 0) {
                         // For items with installation, recalculate price based on new quantity
-                        if (item.installationCharge && (item.category === 'Smart Switch' || item.category === 'Smart Curtain')) {
-                            const basePrice = item.category === 'Smart Switch' ? 
+                        if (item.installationCharge && (item.category === 'Smart Switch' || item.category === 'Smart Curtain' || item.category === 'Switch')) {
+                            const basePrice = (item.category === 'Smart Switch' || item.category === 'Switch') ? 
                                 (item.price - item.installationCharge) / item.quantity :
                                 item.category === 'Smart Curtain' && item.trackSizes ? 
                                 (item.price - item.installationCharge) / item.quantity : item.price / item.quantity;
@@ -556,7 +618,7 @@ function InteractiveCheckout({
             let itemTotal = 0;
             
             // For items with pre-calculated totals (Smart Curtains with tracks or Smart Switches with installation)
-            if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge)) {
+            if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) || (item.category === 'Switch' && item.installationCharge)) {
                 itemTotal = item.price;
             } else {
                 itemTotal = item.price * item.quantity;
@@ -728,11 +790,31 @@ function InteractiveCheckout({
                                 style={{ touchAction: 'manipulation', cursor: 'pointer', userSelect: 'none' }}
                             >
                                 <span className="text-xs lg:text-base font-medium whitespace-nowrap relative z-10 flex items-center gap-1.5">
-                                    {category.name === 'Curtain' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M3 3h18v2H3V3zm0 16h18v2H3v-2zm2-8h14v6H5v-6zm2 2v2h10v-2H7z"/></svg>}
-                                    {category.name === 'Switch' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17 7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h10c2.76 0 5-2.24 5-5s-2.24-5-5-5zM7 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></svg>}
-                                    {category.name === 'Security' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/></svg>}
-                                    {category.name === 'PDLC Film' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"/></svg>}
-                                    {category.name === 'Services' && <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>}
+                                    {category.name === 'Curtain' && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                        </svg>
+                                    )}
+                                    {category.name === 'Switch' && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+                                        </svg>
+                                    )}
+                                    {category.name === 'Security' && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                                        </svg>
+                                    )}
+                                    {category.name === 'PDLC Film' && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM13.5 6A2.25 2.25 0 0115.75 3.75H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 15.75a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 15.75V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                                        </svg>
+                                    )}
+                                    {category.name === 'Services' && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655-5.653a2.548 2.548 0 010-3.586l.837-.836c.415-.415.865-.617 1.344-.548a4.583 4.583 0 006.336 4.51l-3.505 1.408.5 2.8L11.42 15.17z" />
+                                        </svg>
+                                    )}
                                     {category.name}
                                 </span>
                                 
@@ -826,6 +908,70 @@ function InteractiveCheckout({
                                     };
                                     setSelectedVariant(cameraVariant);
                                     setCameraSelectionModalOpen(true);
+                                    return;
+                                }
+                                if (product.id === 'light-switch-1') {
+                                    // Find actual light switch products from database
+                                    const lightSwitchProducts = dbProducts.filter(p => 
+                                        p.category === 'Switch' && 
+                                        ['light', 'touch', '4 gang', '3 gang', 'mechanical'].some(term => 
+                                            p.name.toLowerCase().includes(term.toLowerCase())
+                                        )
+                                    );
+                                    
+                                    // Use first available light switch product or fallback
+                                    const firstLightSwitch = lightSwitchProducts[0];
+                                    const lightSwitchVariant = {
+                                        id: firstLightSwitch?.id || 'light-switch-1',
+                                        name: firstLightSwitch?.name || 'Light Switch',
+                                        price: firstLightSwitch ? `${firstLightSwitch.price} BDT` : '299 BDT',
+                                        gangType: 'Light Switch',
+                                        imageUrl: firstLightSwitch?.image || '/images/smart_switch/one gang.webp'
+                                    };
+                                    setSelectedVariant(lightSwitchVariant);
+                                    setLightSwitchModalOpen(true);
+                                    return;
+                                }
+                                if (product.id === 'fan-switch-1') {
+                                    // Find actual fan switch products from database
+                                    const fanSwitchProducts = dbProducts.filter(p => 
+                                        p.category === 'Switch' && 
+                                        p.name.toLowerCase().includes('fan')
+                                    );
+                                    
+                                    // Use first available fan switch product or fallback
+                                    const firstFanSwitch = fanSwitchProducts[0];
+                                    const fanSwitchVariant = {
+                                        id: firstFanSwitch?.id || 'fan-switch-1',
+                                        name: firstFanSwitch?.name || 'Fan Switch',
+                                        price: firstFanSwitch ? `${firstFanSwitch.price} BDT` : '399 BDT',
+                                        gangType: 'Fan Switch',
+                                        imageUrl: firstFanSwitch?.image || '/images/smart_switch/fan touch switch.webp'
+                                    };
+                                    setSelectedVariant(fanSwitchVariant);
+                                    setFanSwitchModalOpen(true);
+                                    return;
+                                }
+                                if (product.id === 'boiler-switch-1') {
+                                    // Find actual boiler switch products from database
+                                    const boilerSwitchProducts = dbProducts.filter(p => 
+                                        p.category === 'Switch' && 
+                                        ['boiler', '1 gang', 'one gang'].some(term => 
+                                            p.name.toLowerCase().includes(term.toLowerCase())
+                                        )
+                                    );
+                                    
+                                    // Use first available boiler switch product or fallback
+                                    const firstBoilerSwitch = boilerSwitchProducts[0];
+                                    const boilerSwitchVariant = {
+                                        id: firstBoilerSwitch?.id || 'boiler-switch-1',
+                                        name: firstBoilerSwitch?.name || 'Boiler Switch',
+                                        price: firstBoilerSwitch ? `${firstBoilerSwitch.price} BDT` : '499 BDT',
+                                        gangType: 'Boiler Switch',
+                                        imageUrl: firstBoilerSwitch?.image || '/images/smart_switch/one gang.webp'
+                                    };
+                                    setSelectedVariant(boilerSwitchVariant);
+                                    setBoilerSwitchModalOpen(true);
                                     return;
                                 }
                                 const variant = categoryGroup.products.find(p => p.id === product.id);
@@ -1133,7 +1279,7 @@ function InteractiveCheckout({
                                                                 {item.category}
                                                             </h3>
                                                             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-tight mb-1">
-                                                                {item.name.split(' (')[0].replace(/ - .*$/, '')}
+                                                                {item.name}
                                                             </p>
                                                             {item.name.includes('ZIGBEE') || item.name.includes('WIFI') ? (
                                                                 <p className="text-xs text-zinc-400 dark:text-zinc-500">
@@ -1215,7 +1361,7 @@ function InteractiveCheckout({
                                                             <p className="text-sm lg:text-base font-bold text-zinc-900 dark:text-zinc-100">
                                                                 {item.category === 'Services' ? 'Free' : item.category === 'Installation Service' ? 'TBD' : (() => {
                                                                     let itemTotal = 0;
-                                                                    if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge)) {
+                                                                    if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) || (item.category === 'Switch' && item.installationCharge)) {
                                                                         itemTotal = item.price;
                                                                     } else {
                                                                         itemTotal = item.price * item.quantity;
@@ -1709,27 +1855,25 @@ function InteractiveCheckout({
                     }}
                     product={(() => {
                         const productData = dbProducts.find(p => p.id === selectedVariant.id);
-                        return {
+                        return productData ? {
+                            ...productData,
+                            gang_1_image: productData.gang_1_image,
+                            gang_2_image: productData.gang_2_image,
+                            gang_3_image: productData.gang_3_image,
+                            gang_4_image: productData.gang_4_image,
+                            additional_image_1: productData.additional_image_1,
+                            additional_image_2: productData.additional_image_2,
+                            additional_image_3: productData.additional_image_3,
+                            additional_image_4: productData.additional_image_4,
+                            additional_image_5: productData.additional_image_5
+                        } : {
                             id: selectedVariant.id,
                             name: selectedVariant.name,
                             category: selectedVariant.gangType || 'Switch',
                             price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
-                            description: productData?.description || '',
-                            detailed_description: productData?.detailed_description || '',
-                            features: productData?.features || '',
-                            specifications: productData?.specifications || '',
-                            engraving_available: productData?.engraving_available || false,
-                            engraving_price: productData?.engraving_price || 0,
-                            engraving_image: productData?.engraving_image || '',
-                            engraving_text_color: productData?.engraving_text_color || '#000000',
-                            warranty: productData?.warranty || '',
-                            installation_included: productData?.installation_included || false,
+                            description: '',
                             image: selectedVariant.imageUrl,
-                            image2: productData?.image2 || '',
-                            image3: productData?.image3 || '',
-                            image4: productData?.image4 || '',
-                            image5: productData?.image5 || '',
-                            stock: productData?.stock || 0
+                            stock: 0
                         };
                     })()}
                     addToCart={addToCart}
@@ -1737,8 +1881,8 @@ function InteractiveCheckout({
                         if (selectedVariant && payload.productId) {
                             const cartItem = {
                                 id: payload.productId,
-                                name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: payload.totalPrice,
+                                name: payload.productName || `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice / payload.quantity,
                                 category: 'Switch',
                                 image: selectedVariant.imageUrl,
                                 color: 'Switch',
@@ -1766,27 +1910,21 @@ function InteractiveCheckout({
                     }}
                     product={(() => {
                         const productData = dbProducts.find(p => p.id === selectedVariant.id);
-                        return {
+                        return productData ? {
+                            ...productData,
+                            additional_image_1: productData.additional_image_1,
+                            additional_image_2: productData.additional_image_2,
+                            additional_image_3: productData.additional_image_3,
+                            additional_image_4: productData.additional_image_4,
+                            additional_image_5: productData.additional_image_5
+                        } : {
                             id: selectedVariant.id,
                             name: selectedVariant.name,
                             category: selectedVariant.gangType || 'Switch',
                             price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
-                            description: productData?.description || '',
-                            detailed_description: productData?.detailed_description || '',
-                            features: productData?.features || '',
-                            specifications: productData?.specifications || '',
-                            engraving_available: productData?.engraving_available || false,
-                            engraving_price: productData?.engraving_price || 0,
-                            engraving_image: productData?.engraving_image || '',
-                            engraving_text_color: productData?.engraving_text_color || '#000000',
-                            warranty: productData?.warranty || '',
-                            installation_included: productData?.installation_included || false,
+                            description: '',
                             image: selectedVariant.imageUrl,
-                            image2: productData?.image2 || '',
-                            image3: productData?.image3 || '',
-                            image4: productData?.image4 || '',
-                            image5: productData?.image5 || '',
-                            stock: productData?.stock || 0
+                            stock: 0
                         };
                     })()}
                     addToCart={addToCart}
@@ -1795,7 +1933,7 @@ function InteractiveCheckout({
                             const cartItem = {
                                 id: payload.productId,
                                 name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: payload.totalPrice,
+                                price: payload.totalPrice / payload.quantity,
                                 category: 'Switch',
                                 image: selectedVariant.imageUrl,
                                 color: 'Switch',
@@ -1823,27 +1961,21 @@ function InteractiveCheckout({
                     }}
                     product={(() => {
                         const productData = dbProducts.find(p => p.id === selectedVariant.id);
-                        return {
+                        return productData ? {
+                            ...productData,
+                            additional_image_1: productData.additional_image_1,
+                            additional_image_2: productData.additional_image_2,
+                            additional_image_3: productData.additional_image_3,
+                            additional_image_4: productData.additional_image_4,
+                            additional_image_5: productData.additional_image_5
+                        } : {
                             id: selectedVariant.id,
                             name: selectedVariant.name,
                             category: selectedVariant.gangType || 'Switch',
                             price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
-                            description: productData?.description || '',
-                            detailed_description: productData?.detailed_description || '',
-                            features: productData?.features || '',
-                            specifications: productData?.specifications || '',
-                            engraving_available: productData?.engraving_available || false,
-                            engraving_price: productData?.engraving_price || 0,
-                            engraving_image: productData?.engraving_image || '',
-                            engraving_text_color: productData?.engraving_text_color || '#000000',
-                            warranty: productData?.warranty || '',
-                            installation_included: productData?.installation_included || false,
+                            description: '',
                             image: selectedVariant.imageUrl,
-                            image2: productData?.image2 || '',
-                            image3: productData?.image3 || '',
-                            image4: productData?.image4 || '',
-                            image5: productData?.image5 || '',
-                            stock: productData?.stock || 0
+                            stock: 0
                         };
                     })()}
                     addToCart={addToCart}
@@ -1852,7 +1984,7 @@ function InteractiveCheckout({
                             const cartItem = {
                                 id: payload.productId,
                                 name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: payload.totalPrice,
+                                price: payload.totalPrice / payload.quantity,
                                 category: 'Switch',
                                 image: selectedVariant.imageUrl,
                                 color: 'Switch',
