@@ -695,6 +695,8 @@ function InteractiveCheckout({
             style.textContent = `
                 .category-bar-container::-webkit-scrollbar { display: none; }
                 .category-bar-container { -ms-overflow-style: none; scrollbar-width: none; }
+                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
                 .sticky-checkout-section { position: relative; }
                 .scroll-lock-container { overscroll-behavior: contain; }
                 .products-scroll-container { 
@@ -741,17 +743,31 @@ function InteractiveCheckout({
                 <div className="overflow-y-auto products-scroll-container h-full" data-scroll-container style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', position: 'relative' }}>
                 {/* Category Tabs */}
                 <div className="mb-3 lg:mb-6 sticky top-0 bg-gray-100 z-40 pt-2 pb-2 lg:pt-4 lg:pb-3 shadow-sm border-b border-gray-300">
-                    <div className="flex overflow-x-auto gap-1.5 lg:gap-3 px-0 lg:px-4 category-bar-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    <div className="flex lg:grid lg:grid-cols-5 gap-2 px-2 lg:px-4 overflow-x-auto lg:overflow-x-visible scrollbar-hide">
                         {categories.map((category) => (
                             <motion.button
                                 key={category.id}
                                 data-category={category.category}
 
-                                onClick={() => {
+                                onClick={(e) => {
                                     const isAndroid = /Android/i.test(navigator.userAgent);
+                                    const isMobile = window.innerWidth < 1024;
                                     
                                     setIsManualSelection(true);
                                     setActiveCategory(category.category);
+                                    
+                                    // Auto-scroll tab to center on mobile
+                                    if (isMobile) {
+                                        const tabContainer = e.currentTarget.parentElement;
+                                        const tab = e.currentTarget;
+                                        if (tabContainer && tab) {
+                                            const containerWidth = tabContainer.offsetWidth;
+                                            const tabLeft = tab.offsetLeft;
+                                            const tabWidth = tab.offsetWidth;
+                                            const scrollLeft = tabLeft - (containerWidth / 2) + (tabWidth / 2);
+                                            tabContainer.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                                        }
+                                    }
                                     
                                     if (!isAndroid) {
                                         // Desktop and iPhone: scroll to section
@@ -780,7 +796,7 @@ function InteractiveCheckout({
                                     }
                                 }}
                                 className={cn(
-                                    "category-tab-button flex-shrink-0 flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-1 lg:py-1.5 rounded-lg transition-all duration-300 min-w-fit border group relative overflow-hidden text-xs lg:text-sm touch-manipulation",
+                                    "category-tab-button flex-shrink-0 flex items-center gap-1 lg:gap-2 px-2 lg:px-3 py-1 lg:py-1.5 rounded-lg transition-all duration-300 whitespace-nowrap border group relative overflow-hidden text-xs lg:text-sm touch-manipulation",
                                     activeCategory === category.category
                                         ? "bg-[#0a1d3a] text-white border-[#0a1d3a] shadow-md"
                                         : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
@@ -791,28 +807,48 @@ function InteractiveCheckout({
                             >
                                 <span className="text-xs lg:text-base font-medium whitespace-nowrap relative z-10 flex items-center gap-1.5">
                                     {category.name === 'Curtain' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M3 3h18v2H3V3zm0 16h18v2H3v-2zM5 7h2v10H5V7zm4 0h2v10H9V7zm4 0h2v10h-2V7zm4 0h2v10h-2V7z"/>
                                         </svg>
                                     )}
                                     {category.name === 'Switch' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17 7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h10c2.76 0 5-2.24 5-5s-2.24-5-5-5zM7 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
                                         </svg>
                                     )}
                                     {category.name === 'Security' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
                                         </svg>
                                     )}
                                     {category.name === 'PDLC Film' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM13.5 6A2.25 2.25 0 0115.75 3.75H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 15.75a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 15.75V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            {/* Glass frame */}
+                                            <rect x="2" y="4" width="20" height="16" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                                            {/* Clear state (left half) */}
+                                            <rect x="3" y="5" width="9" height="14" fill="currentColor" opacity="0.1"/>
+                                            {/* Opaque state (right half) */}
+                                            <rect x="12" y="5" width="9" height="14" fill="currentColor" opacity="0.6"/>
+                                            {/* Transition line */}
+                                            <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="1" strokeDasharray="2,2"/>
+                                            {/* Smart control indicator */}
+                                            <circle cx="19" cy="7" r="1.5" fill="currentColor"/>
+                                            <path d="M17.5 6.5l3 1M17.5 7.5l3-1" stroke="currentColor" strokeWidth="0.8"/>
+                                            {/* Phone/control symbol */}
+                                            <rect x="16.5" y="15" width="3" height="4" rx="0.5" fill="none" stroke="currentColor" strokeWidth="0.8"/>
+                                            <circle cx="18" cy="17" r="0.3" fill="currentColor"/>
                                         </svg>
                                     )}
                                     {category.name === 'Services' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655-5.653a2.548 2.548 0 010-3.586l.837-.836c.415-.415.865-.617 1.344-.548a4.583 4.583 0 006.336 4.51l-3.505 1.408.5 2.8L11.42 15.17z" />
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            {/* Person with headset (consultant) */}
+                                            <circle cx="12" cy="8" r="3" fill="currentColor"/>
+                                            <path d="M12 12c-2.67 0-8 1.34-8 4v4h16v-4c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                                            {/* Headset/support symbol */}
+                                            <path d="M12 5c-1.5 0-3 1-3 2.5v3c0 .5.5 1 1 1s1-.5 1-1v-3c0-.5.5-1 1-1s1 .5 1 1v3c0 .5.5 1 1 1s1-.5 1-1v-3c0-1.5-1.5-2.5-3-2.5z" fill="currentColor" opacity="0.7"/>
+                                            {/* Tools crossed */}
+                                            <path d="M18 14l2 2-2 2-2-2 2-2z" fill="currentColor"/>
+                                            <path d="M20 16l2-2-2-2-2 2 2 2z" fill="currentColor"/>
                                         </svg>
                                     )}
                                     {category.name}

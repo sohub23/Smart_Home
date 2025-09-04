@@ -40,11 +40,11 @@ const Navigation = () => {
       navigate('/');
       setTimeout(() => {
         if (sectionId === 'order') {
-          // Scroll to category tabs section with offset
-          const categoryTabs = document.querySelector('.category-bar-container');
-          if (categoryTabs) {
-            const rect = categoryTabs.getBoundingClientRect();
-            const offsetTop = window.pageYOffset + rect.top - 100;
+          // Scroll to product list section
+          const productSection = document.querySelector('[data-main-container]');
+          if (productSection) {
+            const rect = productSection.getBoundingClientRect();
+            const offsetTop = window.pageYOffset + rect.top - 80;
             window.scrollTo({ top: offsetTop, behavior: 'smooth' });
           }
         } else {
@@ -56,11 +56,11 @@ const Navigation = () => {
       }, 100);
     } else {
       if (sectionId === 'order') {
-        // Scroll to category tabs section with offset
-        const categoryTabs = document.querySelector('.category-bar-container');
-        if (categoryTabs) {
-          const rect = categoryTabs.getBoundingClientRect();
-          const offsetTop = window.pageYOffset + rect.top - 100;
+        // Scroll to product list section
+        const productSection = document.querySelector('[data-main-container]');
+        if (productSection) {
+          const rect = productSection.getBoundingClientRect();
+          const offsetTop = window.pageYOffset + rect.top - 80;
           window.scrollTo({ top: offsetTop, behavior: 'smooth' });
         }
       } else {

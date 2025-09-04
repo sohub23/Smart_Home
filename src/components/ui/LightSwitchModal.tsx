@@ -360,72 +360,150 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             {/* Product Variation Section */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Choose Your Model</h3>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div 
-                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedGang === 'one' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    selectedGang === 'one' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                   onClick={() => {
                     setSelectedGang('one');
                     setSelectedImage(0);
                   }}
                 >
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="font-medium text-sm text-gray-900">One Gang</div>
+                  <div className="text-center">
+                    <div className="mb-2 flex justify-center">
+                      <div className={`w-8 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'one' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-2 h-2 rounded-full ${
+                          selectedGang === 'one' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                    </div>
+                    <div className={`font-medium text-xs ${
+                      selectedGang === 'one' ? 'text-[#0a1d3a]' : 'text-gray-700'
+                    }`}>1 Gang</div>
+                    <div className="text-xs text-gray-500 mt-1">Single Switch</div>
                   </div>
                 </div>
                 
                 <div 
-                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedGang === 'two' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    selectedGang === 'two' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                   onClick={() => {
                     setSelectedGang('two');
                     setSelectedImage(0);
                   }}
                 >
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="font-medium text-sm text-gray-900">Two Gang</div>
+                  <div className="text-center">
+                    <div className="mb-2 flex justify-center gap-1">
+                      <div className={`w-4 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'two' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-1 h-1 rounded-full ${
+                          selectedGang === 'two' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                      <div className={`w-4 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'two' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-1 h-1 rounded-full ${
+                          selectedGang === 'two' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                    </div>
+                    <div className={`font-medium text-xs ${
+                      selectedGang === 'two' ? 'text-[#0a1d3a]' : 'text-gray-700'
+                    }`}>2 Gang</div>
+                    <div className="text-xs text-gray-500 mt-1">Double Switch</div>
                   </div>
                 </div>
                 
                 <div 
-                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedGang === 'three' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    selectedGang === 'three' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                   onClick={() => {
                     setSelectedGang('three');
                     setSelectedImage(0);
                   }}
                 >
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="font-medium text-sm text-gray-900">Three Gang</div>
+                  <div className="text-center">
+                    <div className="mb-2 flex justify-center gap-0.5">
+                      <div className={`w-3 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'three' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-1 h-1 rounded-full ${
+                          selectedGang === 'three' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                      <div className={`w-3 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'three' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-1 h-1 rounded-full ${
+                          selectedGang === 'three' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                      <div className={`w-3 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'three' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-1 h-1 rounded-full ${
+                          selectedGang === 'three' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                    </div>
+                    <div className={`font-medium text-xs ${
+                      selectedGang === 'three' ? 'text-[#0a1d3a]' : 'text-gray-700'
+                    }`}>3 Gang</div>
+                    <div className="text-xs text-gray-500 mt-1">Triple Switch</div>
                   </div>
                 </div>
                 
                 <div 
-                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${
-                    selectedGang === 'four' ? 'border-black bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                    selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
                   }`}
                   onClick={() => {
                     setSelectedGang('four');
                     setSelectedImage(0);
                   }}
                 >
-                  <div className="flex items-center gap-1">
-                    <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="font-medium text-sm text-gray-900">Four Gang</div>
+                  <div className="text-center">
+                    <div className="mb-2 flex justify-center gap-0.5">
+                      <div className={`w-2 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-0.5 h-1 rounded-full ${
+                          selectedGang === 'four' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                      <div className={`w-2 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-0.5 h-1 rounded-full ${
+                          selectedGang === 'four' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                      <div className={`w-2 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-0.5 h-1 rounded-full ${
+                          selectedGang === 'four' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                      <div className={`w-2 h-6 rounded border-2 flex items-center justify-center ${
+                        selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                      }`}>
+                        <div className={`w-0.5 h-1 rounded-full ${
+                          selectedGang === 'four' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                        }`}></div>
+                      </div>
+                    </div>
+                    <div className={`font-medium text-xs ${
+                      selectedGang === 'four' ? 'text-[#0a1d3a]' : 'text-gray-700'
+                    }`}>4 Gang</div>
+                    <div className="text-xs text-gray-500 mt-1">Quad Switch</div>
                   </div>
                 </div>
               </div>
@@ -434,19 +512,34 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             {/* Color Section */}
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Color</h3>
-              <div className="flex gap-3">
+              <div className="flex gap-4">
                 <div 
-                  className={`w-8 h-8 rounded-full cursor-pointer transition-all ${
-                    selectedColor === 'white' ? 'border-4 border-gray-400' : 'border-2 border-gray-300'
-                  } bg-white`}
+                  className={`flex flex-col items-center cursor-pointer transition-all duration-200 ${
+                    selectedColor === 'white' ? 'transform scale-105' : 'hover:scale-105'
+                  }`}
                   onClick={() => setSelectedColor('white')}
-                />
+                >
+                  <div className={`w-10 h-10 rounded-full border-2 shadow-md transition-all duration-200 ${
+                    selectedColor === 'white' ? 'border-[#0a1d3a] ring-2 ring-[#0a1d3a]/20' : 'border-gray-300 hover:border-gray-400'
+                  } bg-white`} />
+                  <span className={`text-xs mt-1 font-medium ${
+                    selectedColor === 'white' ? 'text-[#0a1d3a]' : 'text-gray-600'
+                  }`}>White</span>
+                </div>
+                
                 <div 
-                  className={`w-8 h-8 rounded-full cursor-pointer transition-all ${
-                    selectedColor === 'black' ? 'border-4 border-gray-400' : 'border-2 border-gray-300'
-                  } bg-black`}
+                  className={`flex flex-col items-center cursor-pointer transition-all duration-200 ${
+                    selectedColor === 'black' ? 'transform scale-105' : 'hover:scale-105'
+                  }`}
                   onClick={() => setSelectedColor('black')}
-                />
+                >
+                  <div className={`w-10 h-10 rounded-full border-2 shadow-md transition-all duration-200 ${
+                    selectedColor === 'black' ? 'border-[#0a1d3a] ring-2 ring-[#0a1d3a]/20' : 'border-gray-300 hover:border-gray-400'
+                  } bg-black`} />
+                  <span className={`text-xs mt-1 font-medium ${
+                    selectedColor === 'black' ? 'text-[#0a1d3a]' : 'text-gray-600'
+                  }`}>Black</span>
+                </div>
               </div>
             </div>
 
@@ -456,20 +549,48 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Personalization</h3>
                 <div 
                   onClick={() => setEngravingModalOpen(true)}
-                  className="w-full p-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                    engravingText 
+                      ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md hover:shadow-lg' 
+                      : 'border-dashed border-gray-300 bg-gray-50/50 hover:border-[#0a1d3a]/50 hover:bg-[#0a1d3a]/5'
+                  }`}
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">🎨</span>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        engravingText ? 'bg-[#0a1d3a]/10' : 'bg-gray-200'
+                      }`}>
+                        <svg className={`w-5 h-5 ${
+                          engravingText ? 'text-[#0a1d3a]' : 'text-gray-500'
+                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </div>
                       <div className="text-left">
-                        <div className="font-semibold text-gray-900">Customize Your Switch</div>
+                        <div className={`font-semibold ${
+                          engravingText ? 'text-[#0a1d3a]' : 'text-gray-700'
+                        }`}>Customize Your Switch</div>
                         <div className="text-sm text-gray-600">
-                          {engravingText ? `Engraving: "${engravingText}"` : 'Add personal text engraving'}
+                          {engravingText ? (
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium">"${engravingText}"</span>
+                              <span className="text-green-600">✓ Added</span>
+                            </span>
+                          ) : (
+                            'Add personal text engraving'
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-900 font-semibold">
-                      +{((product.engraving_price || 200) * quantity).toLocaleString()} BDT
+                    <div className="text-right">
+                      <div className={`text-sm font-semibold ${
+                        engravingText ? 'text-[#0a1d3a]' : 'text-gray-700'
+                      }`}>
+                        +{((product.engraving_price || 200) * quantity).toLocaleString()} BDT
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {engravingText ? 'Click to edit' : 'Optional'}
+                      </div>
                     </div>
                   </div>
                 </div>

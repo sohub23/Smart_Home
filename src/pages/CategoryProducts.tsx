@@ -54,10 +54,26 @@ const CategoryProducts = () => {
   const [categoryImagePreview, setCategoryImagePreview] = useState<string>('');
 
   const categoryIcons = {
-    'Curtain': '🪟',
-    'Switch': '🔌',
-    'Security': '🛡️',
-    'PDLC Film': '🔳'
+    'Curtain': (
+      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M3 3h18v2H3V3zm0 16h18v2H3v-2zM5 7h2v10H5V7zm4 0h2v10H9V7zm4 0h2v10h-2V7zm4 0h2v10h-2V7z"/>
+      </svg>
+    ),
+    'Switch': (
+      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M17 7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h10c2.76 0 5-2.24 5-5s-2.24-5-5-5zM7 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
+      </svg>
+    ),
+    'Security': (
+      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
+      </svg>
+    ),
+    'PDLC Film': (
+      <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm2 2h8v8H8V8zm2 2v4h4v-4h-4z"/>
+      </svg>
+    )
   };
 
   useEffect(() => {
@@ -388,8 +404,8 @@ const CategoryProducts = () => {
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <span className="text-2xl text-white filter drop-shadow-sm">{categoryIcons[category as keyof typeof categoryIcons]}</span>
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg text-white">
+                {categoryIcons[category as keyof typeof categoryIcons]}
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-1">
@@ -792,8 +808,10 @@ const CategoryProducts = () => {
             <div className="p-6">
               {filteredProducts.length === 0 ? (
                 <div className="text-center py-16">
-                  <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <span className="text-3xl text-white filter drop-shadow-sm">{categoryIcons[category as keyof typeof categoryIcons]}</span>
+                  <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg text-white">
+                    <div className="scale-150">
+                      {categoryIcons[category as keyof typeof categoryIcons]}
+                    </div>
                   </div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">
                     {searchTerm ? 'No products found' : `No ${category?.toLowerCase()} products yet`}

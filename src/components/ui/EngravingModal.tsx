@@ -81,8 +81,8 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
           <div className="flex items-center justify-between p-4 sm:p-6 border-b">
             <div>
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Make it yours.</h2>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                Engrave names, icons, or room labels on your smart switches. Personalized, professional laser engraving at no extra hassle.
+              <p className="text-xs sm:text-sm text-gray-400 mt-1">
+                Add names, icons, or room labels to your smart switches with professional laser engraving – easy and hassle-free.
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} className="h-8 w-8 p-0">
@@ -104,7 +104,7 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
                 }}
               />
               {text && (
-                <div className="absolute bottom-4 sm:bottom-6 right-20 sm:right-36">
+                <div className="absolute bottom-6 right-16 sm:bottom-6 sm:right-36">
                   <div className="font-semibold" style={{ fontSize: '12px', color: engravingTextColor, textShadow: '2px 2px 4px rgba(255,255,255,0.8)' }}>
                     {text}
                   </div>
@@ -119,10 +119,10 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
               ref={inputRef}
               value={text}
               onChange={(e) => handleTextChange(e.target.value)}
-              placeholder=""
+              placeholder="Enter your text here..."
               maxLength={14}
               aria-describedby={error ? 'engraving-error' : 'engraving-help'}
-              className={error ? 'border-red-500' : ''}
+              className={`h-12 text-base border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 ${error ? 'border-red-500' : 'border-gray-300'}`}
             />
             <div className="flex justify-between text-xs">
               <span id="engraving-help" className="text-gray-500">
@@ -155,21 +155,23 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
         </div>
         
         {/* Actions */}
-        <div className="flex gap-3 p-4 border-t">
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={!isValid || isSaving}
-            className="flex-1"
-          >
-            {isSaving ? 'Personalizing...' : 'Start Personalizing →'}
-          </Button>
+        <div className="sticky bottom-0 bg-white border-t p-4">
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              className="flex-1 h-12"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!isValid || isSaving}
+              className="flex-1 h-12"
+            >
+              {isSaving ? 'Personalizing...' : 'Start Personalizing →'}
+            </Button>
+          </div>
         </div>
         </div>
         </DialogPrimitive.Content>
