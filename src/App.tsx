@@ -12,10 +12,12 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminOrders from "./pages/AdminOrders";
 import AdminProducts from "./pages/AdminProducts";
+import AdminProductsNew from "./pages/AdminProductsNew";
 import AdminReports from "./pages/AdminReports";
 import AdminCustomers from "./pages/AdminCustomers";
 import AdminUsers from "./pages/AdminUsers";
 import AdminCategories from "./pages/AdminCategories";
+import AdminCategoriesNew from "./pages/AdminCategoriesNew";
 import CategoryProducts from "./pages/CategoryProducts";
 import SetupDatabase from "./pages/SetupDatabase";
 import SetupStorage from "./pages/SetupStorage";
@@ -44,11 +46,13 @@ const App = () => (
           <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/orders" element={<ProtectedRoute><AdminOrders /></ProtectedRoute>} />
           <Route path="/admin/products" element={<ProtectedRoute><AdminProducts /></ProtectedRoute>} />
+          <Route path="/admin/products-new" element={<ProtectedRoute><AdminProductsNew /></ProtectedRoute>} />
           <Route path="/admin/products/:category" element={<ProtectedRoute><CategoryProducts /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
           <Route path="/admin/customers" element={<ProtectedRoute><AdminCustomers /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
           <Route path="/admin/categories" element={<ProtectedRoute><AdminCategories /></ProtectedRoute>} />
+          <Route path="/admin/categories-new" element={<ProtectedRoute><AdminCategoriesNew /></ProtectedRoute>} />
           <Route path="/setup-database" element={<SetupDatabase />} />
           <Route path="/setup-storage" element={<SetupStorage />} />
           <Route path="/update-schema" element={<UpdateProductSchema />} />

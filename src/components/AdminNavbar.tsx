@@ -29,36 +29,29 @@ const AdminNavbar = () => {
   ];
 
   return (
-    <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 px-6 py-4 sticky top-0 z-50 shadow-sm">
+    <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center space-x-8">
           <div className="flex items-center space-x-3">
-            <div className="relative">
-              <img src={navbarLogo} alt="Smart Home" className="h-10 w-auto" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-            </div>
-            <div>
-              <Badge variant="outline" className="px-3 py-1 text-sm font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
-                Admin Panel
-              </Badge>
-            </div>
+            <img src={navbarLogo} alt="Smart Home" className="h-10 w-auto" />
+            <Badge className="px-3 py-1 text-sm font-medium bg-[#0a1d3a] text-white">
+              Admin Panel
+            </Badge>
           </div>
           <nav className="hidden lg:flex space-x-1">
             {navItems.map((item) => (
               <Button 
                 key={item.path}
                 variant="ghost" 
-                className={`relative px-4 py-2 rounded-lg transition-all duration-200 ${
+                className={`px-4 py-2 rounded-lg transition-colors ${
                   isActive(item.path) 
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl' 
+                    ? 'bg-[#0a1d3a] text-white' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
                 onClick={() => navigate(item.path)}
               >
                 {item.label}
-                {isActive(item.path) && (
-                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white rounded-full"></div>
-                )}
+
               </Button>
             ))}
           </nav>
@@ -77,9 +70,9 @@ const AdminNavbar = () => {
             size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex items-center space-x-2 border-gray-200 hover:bg-gray-50 transition-all duration-200"
+            className="flex items-center space-x-2 border-gray-200 hover:bg-gray-50"
           >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-blue-600' : 'text-gray-600'}`} />
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#0a1d3a]' : 'text-gray-600'}`} />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
           <div className="hidden md:flex items-center space-x-2">
@@ -93,38 +86,38 @@ const AdminNavbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="w-8 h-8 p-0 rounded-full">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center hover:shadow-lg transition-all duration-200">
+                  <div className="w-8 h-8 bg-[#0a1d3a] rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 mr-4 mt-2 border-0 shadow-xl bg-white/95 backdrop-blur-sm">
-                <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+              <DropdownMenuContent align="end" className="w-64 mr-4 mt-2 shadow-lg bg-white">
+                <div className="px-4 py-3 bg-gray-50 border-b">
                   <p className="text-sm font-semibold text-gray-900">Admin User</p>
                   <p className="text-xs text-gray-600">admin@smartcurtain.com</p>
                 </div>
                 <div className="py-2">
-                  <DropdownMenuItem className="cursor-pointer px-4 py-2 hover:bg-blue-50 focus:bg-blue-50">
-                    <UserCog className="w-4 h-4 mr-3 text-blue-600" />
+                  <DropdownMenuItem className="cursor-pointer px-4 py-2">
+                    <UserCog className="w-4 h-4 mr-3 text-[#0a1d3a]" />
                     <span className="text-sm font-medium">Profile Settings</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer px-4 py-2 hover:bg-blue-50 focus:bg-blue-50">
+                  <DropdownMenuItem className="cursor-pointer px-4 py-2">
                     <Settings className="w-4 h-4 mr-3 text-gray-600" />
                     <span className="text-sm font-medium">System Settings</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer px-4 py-2 hover:bg-blue-50 focus:bg-blue-50">
+                  <DropdownMenuItem className="cursor-pointer px-4 py-2">
                     <Key className="w-4 h-4 mr-3 text-orange-600" />
                     <span className="text-sm font-medium">Change Password</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer px-4 py-2 hover:bg-blue-50 focus:bg-blue-50">
+                  <DropdownMenuItem className="cursor-pointer px-4 py-2">
                     <Shield className="w-4 h-4 mr-3 text-green-600" />
                     <span className="text-sm font-medium">Security</span>
                   </DropdownMenuItem>
                 </div>
                 <DropdownMenuSeparator className="my-1" />
                 <div className="py-2">
-                  <DropdownMenuItem className="cursor-pointer px-4 py-2 hover:bg-blue-50 focus:bg-blue-50">
-                    <HelpCircle className="w-4 h-4 mr-3 text-purple-600" />
+                  <DropdownMenuItem className="cursor-pointer px-4 py-2">
+                    <HelpCircle className="w-4 h-4 mr-3 text-[#0a1d3a]" />
                     <span className="text-sm font-medium">Help & Support</span>
                   </DropdownMenuItem>
                 </div>
@@ -156,9 +149,9 @@ const AdminNavbar = () => {
                 <Button 
                   key={item.path}
                   variant="ghost" 
-                  className={`w-full justify-start px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`w-full justify-start px-4 py-3 rounded-lg transition-colors ${
                     isActive(item.path) 
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg' 
+                      ? 'bg-[#0a1d3a] text-white' 
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                   onClick={() => {

@@ -1,27 +1,38 @@
 import { supabase } from './client'
-
-export interface Product {
-  id: string
-  name: string
-  category: string
-  price: number
-  stock: number
-  description?: string
-  image?: string
-  engraving_image?: string
-  engraving_text_color?: string
-  status: string
-  serial_order?: number
-  created_at?: string
-  updated_at?: string
-}
+import { Product, ProductVariant, ProductColor, ProductImage } from './types'
 
 export const productService = {
-  async getProducts() {
+  async getProducts(categoryId?: string, subcategoryId?: string) {
+    let query = supabase
+      .from('products_new')
+      .select(`
+        *,
+        product_categories(name, slug),
+        product_subcategories(name, slug)
+      `)
+      .order('position')
+    
+    if (categoryId) query = query.eq('category_id', categoryId)
+    if (subcategoryId) query = query.eq('subcategory_id', subcategoryId)
+    
+    const { data, error } = await query
+    if (error) throw error
+    return data as Product[]
+  },
+
+  async getProduct(id: string) {
     const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false })
+      .from('products_new')
+      .select(`
+        *,
+        product_categories(name, slug),
+        product_subcategories(name, slug),
+        product_variants(*),
+        product_colors(*),
+        product_images(*)
+      `)
+      .eq('id', id)
+      .single()
     
     if (error) throw error
     return data
@@ -29,36 +40,161 @@ export const productService = {
 
   async createProduct(productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) {
     const { data, error } = await supabase
-      .from('products')
+      .from('products_new')
       .insert([productData])
       .select()
       .single()
     
     if (error) throw error
-    return data
+    return data as Product
   },
 
   async updateProduct(id: string, productData: Partial<Product>) {
-    // Sanitize ID to prevent injection
-    const sanitizedId = id.replace(/[^a-zA-Z0-9-]/g, '');
     const { data, error } = await supabase
-      .from('products')
+      .from('products_new')
       .update({ ...productData, updated_at: new Date().toISOString() })
-      .eq('id', sanitizedId)
+      .eq('id', id)
       .select()
       .single()
     
     if (error) throw error
-    return data
+    return data as Product
   },
 
   async deleteProduct(id: string) {
-    // Sanitize ID to prevent injection
-    const sanitizedId = id.replace(/[^a-zA-Z0-9-]/g, '');
     const { error } = await supabase
-      .from('products')
+      .from('products_new')
       .delete()
-      .eq('id', sanitizedId)
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
+  },
+
+  // Variants
+  async getVariants(productId: string) {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', productId)
+      .eq('is_active', true)
+      .order('position')
+    
+    if (error) throw error
+    return data as ProductVariant[]
+  },
+
+  async createVariant(variantData: Omit<ProductVariant, 'id' | 'created_at' | 'updated_at'>) {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .insert([variantData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data as ProductVariant
+  },
+
+  async updateVariant(id: string, variantData: Partial<ProductVariant>) {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .update({ ...variantData, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data as ProductVariant
+  },
+
+  async deleteVariant(id: string) {
+    const { error } = await supabase
+      .from('product_variants')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
+  },
+
+  // Colors
+  async getColors(productId: string) {
+    const { data, error } = await supabase
+      .from('product_colors')
+      .select('*')
+      .eq('product_id', productId)
+      .eq('is_active', true)
+      .order('position')
+    
+    if (error) throw error
+    return data as ProductColor[]
+  },
+
+  async createColor(colorData: Omit<ProductColor, 'id' | 'created_at' | 'updated_at'>) {
+    const { data, error } = await supabase
+      .from('product_colors')
+      .insert([colorData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data as ProductColor
+  },
+
+  async updateColor(id: string, colorData: Partial<ProductColor>) {
+    const { data, error } = await supabase
+      .from('product_colors')
+      .update({ ...colorData, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data as ProductColor
+  },
+
+  async deleteColor(id: string) {
+    const { error } = await supabase
+      .from('product_colors')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
+  },
+
+  // Images
+  async getImages(productId?: string, variantId?: string, colorId?: string) {
+    let query = supabase
+      .from('product_images')
+      .select('*')
+      .order('position')
+    
+    if (productId) query = query.eq('product_id', productId)
+    if (variantId) query = query.eq('variant_id', variantId)
+    if (colorId) query = query.eq('color_id', colorId)
+    
+    const { data, error } = await query
+    if (error) throw error
+    return data as ProductImage[]
+  },
+
+  async createImage(imageData: Omit<ProductImage, 'id' | 'created_at'>) {
+    const { data, error } = await supabase
+      .from('product_images')
+      .insert([imageData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data as ProductImage
+  },
+
+  async deleteImage(id: string) {
+    const { error } = await supabase
+      .from('product_images')
+      .delete()
+      .eq('id', id)
     
     if (error) throw error
     return true
