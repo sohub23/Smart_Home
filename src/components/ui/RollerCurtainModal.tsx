@@ -61,6 +61,13 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
     }
   }, [open, product]);
 
+  // Reset quantity when variant changes
+  useEffect(() => {
+    if (selectedVariant) {
+      setTrackQuantities([1]);
+    }
+  }, [selectedVariant]);
+
   const loadRollerCurtainProducts = async () => {
     try {
       setDynamicLoading(true);
@@ -557,7 +564,8 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       newQuantities[0] = Math.max(1, newQuantities[0] - 1);
                       setTrackQuantities(newQuantities);
                     }}
-                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    disabled={trackQuantities[0] <= 1}
+                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Minus className="w-4 h-4" />
                   </button>
@@ -567,10 +575,12 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   <button
                     onClick={() => {
                       const newQuantities = [...trackQuantities];
-                      newQuantities[0] = Math.min(10, (newQuantities[0] || 1) + 1);
+                      const maxStock = selectedVariant?.stock || 10;
+                      newQuantities[0] = Math.min(maxStock, (newQuantities[0] || 1) + 1);
                       setTrackQuantities(newQuantities);
                     }}
-                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    disabled={trackQuantities[0] >= (selectedVariant?.stock || 10)}
+                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
