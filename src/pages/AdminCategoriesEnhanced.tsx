@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Trash2, Layers, Image, ArrowUpDown, Upload, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AdminNavbar from '@/components/AdminNavbar';
+import { supabase } from '@/supabase';
 
 
 const AdminCategoriesEnhanced = () => {
@@ -45,8 +46,6 @@ const AdminCategoriesEnhanced = () => {
 
   const loadData = async () => {
     try {
-      const { supabase } = await import('@/supabase/client');
-      
       const [categoriesResult, subcategoriesResult] = await Promise.all([
         supabase.from('product_categories').select('*').eq('is_active', true).order('position'),
         supabase.from('product_subcategories').select('*').eq('is_active', true).order('position')
@@ -68,17 +67,13 @@ const AdminCategoriesEnhanced = () => {
     }
 
     try {
-      const { supabase } = await import('@/supabase/client');
-      
       if (editingCategory) {
         const { error } = await supabase
           .from('product_categories')
           .update({
             name: categoryForm.name,
-            description: categoryForm.description || null,
             image_url: categoryForm.image_url || null,
-            position: categoryForm.position,
-            updated_at: new Date().toISOString()
+            position: categoryForm.position
           })
           .eq('id', editingCategory.id);
           
@@ -89,9 +84,8 @@ const AdminCategoriesEnhanced = () => {
           .from('product_categories')
           .insert([{
             name: categoryForm.name,
-            description: categoryForm.description || null,
             image_url: categoryForm.image_url || null,
-            position: categories.length + 1,
+            position: categoryForm.position || categories.length + 1,
             is_active: true
           }]);
           
@@ -115,18 +109,14 @@ const AdminCategoriesEnhanced = () => {
     }
 
     try {
-      const { supabase } = await import('@/supabase/client');
-      
       if (editingSubcategory) {
         const { error } = await supabase
           .from('product_subcategories')
           .update({
             category_id: subcategoryForm.category_id,
             name: subcategoryForm.name,
-            description: subcategoryForm.description || null,
             image_url: subcategoryForm.image_url || null,
-            position: subcategoryForm.position,
-            updated_at: new Date().toISOString()
+            position: subcategoryForm.position
           })
           .eq('id', editingSubcategory.id);
           
@@ -138,9 +128,8 @@ const AdminCategoriesEnhanced = () => {
           .insert([{
             category_id: subcategoryForm.category_id,
             name: subcategoryForm.name,
-            description: subcategoryForm.description || null,
             image_url: subcategoryForm.image_url || null,
-            position: subcategories.filter(sub => sub.category_id === subcategoryForm.category_id).length + 1,
+            position: subcategoryForm.position || subcategories.filter(sub => sub.category_id === subcategoryForm.category_id).length + 1,
             is_active: true
           }]);
           
@@ -229,7 +218,6 @@ const AdminCategoriesEnhanced = () => {
 
   const handleDeleteCategory = async (id) => {
     try {
-      const { supabase } = await import('@/supabase/client');
       const { error } = await supabase.from('product_categories').delete().eq('id', id);
       if (error) throw error;
       toast({ title: "Success", description: "Category deleted successfully" });
@@ -241,7 +229,6 @@ const AdminCategoriesEnhanced = () => {
 
   const handleDeleteSubcategory = async (id) => {
     try {
-      const { supabase } = await import('@/supabase/client');
       const { error } = await supabase.from('product_subcategories').delete().eq('id', id);
       if (error) throw error;
       toast({ title: "Success", description: "Subcategory deleted successfully" });

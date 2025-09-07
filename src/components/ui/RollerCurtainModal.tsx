@@ -50,6 +50,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
   const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
   const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
   // Load dynamic products from admin portal
   useEffect(() => {
@@ -100,7 +101,30 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
       
       // Set first product as selected if available
       if (products && products.length > 0) {
+        console.log('Setting selected product to:', products[0]);
         setSelectedProduct(products[0]);
+        // Parse variants if they're stored as JSON string
+        let variants = products[0].variants;
+        console.log('Raw variants from product:', variants);
+        if (typeof variants === 'string') {
+          try {
+            variants = JSON.parse(variants);
+            console.log('Parsed variants:', variants);
+          } catch (e) {
+            console.log('Failed to parse variants:', e);
+            variants = [];
+          }
+        }
+        // Set first variant as selected if available
+        if (variants && variants.length > 0) {
+          console.log('Setting selected variant to:', variants[0]);
+          setSelectedVariant(variants[0]);
+        } else {
+          console.log('No variants found, using product price:', products[0].price);
+        }
+      } else {
+        console.log('No products found, using original product:', product);
+        setSelectedProduct(product);
       }
       
     } catch (error) {
@@ -117,15 +141,20 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
   const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
   const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
+  const currentPrice = selectedVariant?.price || selectedProduct?.price || currentProductData.price || product.price || 0;
   
   console.log('Current product data:', currentProductData);
-  console.log('Overview:', currentProductData.overview);
-  console.log('Warranty:', currentProductData.warranty);
+  console.log('Selected product:', selectedProduct);
+  console.log('Dynamic products:', dynamicProducts);
+  console.log('Selected variant:', selectedVariant);
+  console.log('Current price:', currentPrice);
+  console.log('Product price:', currentProductData.price);
+  console.log('Selected product price:', selectedProduct?.price);
+  console.log('Selected product variants:', selectedProduct?.variants);
   const allImages = [currentProductData.image, currentProductData.image2, currentProductData.image3, currentProductData.image4, currentProductData.image5].filter(Boolean);
 
   const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
   const smartCurtainInstallation = 0;
-  const currentPrice = selectedProduct?.price || currentProductData.price;
   const totalWithInstallation = (currentPrice * totalQuantity);
 
   const handleAddToCart = async () => {
@@ -286,25 +315,13 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-base text-gray-900">
-                    {(() => {
-                      const basePrice = selectedProduct?.variants?.[0]?.price || currentPrice;
-                      const finalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
-                      return finalPrice.toLocaleString();
-                    })()} BDT
+                    {currentPrice.toLocaleString()} BDT
                   </span>
                   <span className="text-xs text-gray-500 line-through">
-                    {(() => {
-                      const basePrice = selectedProduct?.variants?.[0]?.price || currentPrice;
-                      const finalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
-                      return Math.round(finalPrice * 1.3).toLocaleString();
-                    })()} BDT
+                    {Math.round(currentPrice * 1.3).toLocaleString()} BDT
                   </span>
                   <span className="text-xs text-gray-500">
-                    Save {(() => {
-                      const basePrice = selectedProduct?.variants?.[0]?.price || currentPrice;
-                      const finalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
-                      return Math.round(finalPrice * 0.3).toLocaleString();
-                    })()} BDT
+                    Save {Math.round(currentPrice * 0.3).toLocaleString()} BDT
                   </span>
                 </div>
               </div>
@@ -458,22 +475,66 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 <AccordionItem value="variations" className="border-none">
                   <AccordionTrigger className="text-left text-sm font-medium no-underline hover:no-underline py-2">
                     <div className="flex items-center justify-between w-full">
-                      <span className="font-semibold">Size - {selectedSize}</span>
+                      <span className="font-semibold">
+                        {(() => {
+                          let variants = selectedProduct?.variants || [];
+                          if (typeof variants === 'string') {
+                            try {
+                              variants = JSON.parse(variants);
+                            } catch (e) {
+                              variants = [];
+                            }
+                          }
+                          return variants.length > 0 ? 
+                            `Variant - ${selectedVariant?.name || 'Select variant'}` : 
+                            `Size - ${selectedSize}`;
+                        })()
+                        }
+                      </span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pb-2">
                     <div className="grid grid-cols-1 gap-2">
-                      {['Standard (up to 8 feet)', 'Large (8-12 feet) - Requires 2 motors', 'Extra Large (12+ feet) - Custom quote'].map((size) => (
-                        <button
-                          key={size}
-                          onClick={() => setSelectedSize(size)}
-                          className={`p-3 text-xs rounded-lg border-2 transition-all ${
-                            selectedSize === size ? 'border-gray-400 bg-gray-100 font-bold' : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          {size}
-                        </button>
-                      ))}
+                      {(() => {
+                        let variants = selectedProduct?.variants || [];
+                        if (typeof variants === 'string') {
+                          try {
+                            variants = JSON.parse(variants);
+                          } catch (e) {
+                            variants = [];
+                          }
+                        }
+                        return variants.length > 0 ? (
+                          variants.map((variant: any, index: number) => (
+                            <button
+                              key={variant.id || index}
+                              onClick={() => {
+                                setSelectedVariant(variant);
+                                setSelectedSize(variant.name);
+                              }}
+                              className={`p-3 text-xs rounded-lg border-2 transition-all flex justify-between items-center ${
+                                selectedVariant?.name === variant.name ? 'border-gray-400 bg-gray-100 font-bold' : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <span>{variant.name}</span>
+                              <span className="font-bold">{variant.price?.toLocaleString()} BDT</span>
+                            </button>
+                          ))
+                        ) : (
+                          ['Standard (up to 8 feet)', 'Large (8-12 feet) - Requires 2 motors', 'Extra Large (12+ feet) - Custom quote'].map((size) => (
+                            <button
+                              key={size}
+                              onClick={() => setSelectedSize(size)}
+                              className={`p-3 text-xs rounded-lg border-2 transition-all ${
+                                selectedSize === size ? 'border-gray-400 bg-gray-100 font-bold' : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              {size}
+                            </button>
+                          ))
+                        );
+                      })()}
+
                     </div>
                   </AccordionContent>
                 </AccordionItem>

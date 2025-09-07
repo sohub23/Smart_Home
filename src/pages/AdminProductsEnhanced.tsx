@@ -7,25 +7,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Package, Layers, Palette, DollarSign, Search, Filter, Eye, Settings, Grid3X3, List, MoreVertical, Star } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Edit, Trash2, Package, Layers, Palette, DollarSign, Search, Filter, Eye, Settings, Grid3X3, List, MoreVertical, Star, Download } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 import AdminNavbar from '@/components/AdminNavbar';
+import RichTextEditor from '@/components/RichTextEditor';
 import { enhancedProductService, supabase } from '@/supabase';
-import type { Category, Subcategory, Product, ProductVariant, ProductColor } from '@/types/product';
 
 const AdminProductsEnhanced = () => {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedSubcategory, setSelectedSubcategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
+  const [activeTab, setActiveTab] = useState('all-products');
+  const [detailsTab, setDetailsTab] = useState('overview');
 
   const [productForm, setProductForm] = useState({
     title: '',
@@ -43,91 +44,34 @@ const AdminProductsEnhanced = () => {
     shipping_cost: 0,
     engraving_image_url: '',
     engraving_price: 0,
-    image: '',
-    image2: '',
-    image3: '',
-    image4: '',
-    image5: '',
-    gang_1_image: '',
-    gang_2_image: '',
-    gang_3_image: '',
-    gang_4_image: ''
+    image: ''
   });
-
-  const [rollerCurtainForm, setRollerCurtainForm] = useState({
-    title: '',
-    display_name: '',
-    product_overview: '',
-    model: 'Zigbee',
-    category_id: '',
-    subcategory_id: '',
-    price: 0,
-    stock: 0,
-    specifications: '',
-    warranty: '',
-    image: '',
-    image2: '',
-    image3: '',
-    image4: '',
-    image5: '',
-    gang_1_image: '',
-    gang_2_image: '',
-    gang_3_image: '',
-    gang_4_image: ''
-  });
-
-  const [isRollerCurtainModal, setIsRollerCurtainModal] = useState(false);
 
   const [variants, setVariants] = useState([]);
   const [colors, setColors] = useState([]);
+  const [additionalImages, setAdditionalImages] = useState([]);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  // Remove the useEffect that was clearing subcategories
-  // Subcategories are now loaded once in loadData()
-
   const loadData = async () => {
     try {
       setLoading(true);
-      
-      // Test all possible product tables
-      const tables = ['products', 'simple_products', 'enhanced_products'];
-      for (const table of tables) {
-        const { data, error } = await supabase.from(table).select('*').limit(5);
-        console.log(`Table ${table}:`, { data, error, count: data?.length });
-      }
-      
-      // Try multiple product sources
-      let productsData = [];
-      try {
-        productsData = await enhancedProductService.getProducts();
-      } catch (error) {
-        console.log('Enhanced service failed, trying direct query');
-        const { data } = await supabase.from('products').select('*');
-        productsData = data || [];
-      }
-      
-      const [categoriesData, subcategoriesData] = await Promise.all([
+      const [productsData, categoriesData, subcategoriesData] = await Promise.all([
+        enhancedProductService.getProducts(),
         enhancedProductService.getCategories(),
         enhancedProductService.getSubcategories()
       ]);
-      console.log('Setting state with:', { 
-        categories: categoriesData?.length, 
-        subcategories: subcategoriesData?.length, 
-        products: productsData?.length,
-        productsData 
-      });
       
+      setProducts(productsData || []);
       setCategories(categoriesData || []);
       setSubcategories(subcategoriesData || []);
-      setProducts(productsData || []);
     } catch (error) {
       console.error('Error loading data:', error);
       toast({ 
         title: "Error", 
-        description: `Failed to load data: ${error.message}`,
+        description: "Failed to load data",
         variant: "destructive"
       });
     } finally {
@@ -135,19 +79,17 @@ const AdminProductsEnhanced = () => {
     }
   };
 
-  const loadSubcategories = async (categoryId) => {
-    try {
-      // Load all subcategories, not filtered by category
-      const allSubcategories = await enhancedProductService.getSubcategories();
-      setSubcategories(allSubcategories || []);
-    } catch (error) {
-      console.error('Error loading subcategories:', error);
-      toast({ 
-        title: "Error", 
-        description: "Failed to load subcategories",
-        variant: "destructive"
-      });
-    }
+  const resetForm = () => {
+    setProductForm({
+      title: '', display_name: '', product_overview: '', model: [],
+      category_id: '', subcategory_id: '', overview: '', technical_details: '',
+      warranty: '', help_image_url: '', help_text: '', shipping_time: '',
+      shipping_cost: 0, engraving_image_url: '', engraving_price: 0, image: ''
+    });
+    setVariants([]);
+    setColors([]);
+    setAdditionalImages([]);
+    setEditingProduct(null);
   };
 
   const handleCreateProduct = async () => {
@@ -165,7 +107,7 @@ const AdminProductsEnhanced = () => {
         title: productForm.title,
         display_name: productForm.display_name || productForm.title,
         product_overview: productForm.product_overview,
-        model: productForm.model.join(','),
+        model: Array.isArray(productForm.model) ? productForm.model.join(',').substring(0, 20) : (productForm.model || 'Zigbee').substring(0, 20),
         category_id: productForm.category_id,
         subcategory_id: productForm.subcategory_id || null,
         overview: productForm.overview,
@@ -177,16 +119,19 @@ const AdminProductsEnhanced = () => {
         shipping_cost: productForm.shipping_cost || 0,
         engraving_image_url: productForm.engraving_image_url,
         engraving_price: productForm.engraving_price || 0,
+        image: productForm.image,
+        additional_images: additionalImages.length > 0 ? JSON.stringify(additionalImages) : null,
+        variants: variants.length > 0 ? variants : null,
+        colors: colors.length > 0 ? colors : null,
+        price: 0,
+        stock_quantity: 0,
         is_active: true,
-        status: 'active',
-        position: products.length + 1
+        status: 'active'
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('products')
-        .insert(productData)
-        .select()
-        .single();
+        .insert(productData);
 
       if (error) throw error;
       
@@ -198,25 +143,6 @@ const AdminProductsEnhanced = () => {
       console.error('Product creation error:', error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
-  };
-
-  const resetForm = () => {
-    setProductForm({
-      title: '', display_name: '', product_overview: '', model: 'Zigbee',
-      category_id: '', subcategory_id: '', overview: '', technical_details: '',
-      warranty: '', help_image_url: '', help_text: '', shipping_time: '',
-      shipping_cost: 0, engraving_image_url: '', engraving_price: 0, image: '', image2: '', image3: '', image4: '', image5: '',
-      gang_1_image: '', gang_2_image: '', gang_3_image: '', gang_4_image: ''
-    });
-    setRollerCurtainForm({
-      title: '', display_name: '', product_overview: '',
-      model: 'Zigbee', category_id: '', subcategory_id: '', price: 0, stock: 0,
-      specifications: '', warranty: '', image: '', image2: '', image3: '', image4: '', image5: '',
-      gang_1_image: '', gang_2_image: '', gang_3_image: '', gang_4_image: ''
-    });
-    setVariants([]);
-    setColors([]);
-    setEditingProduct(null);
   };
 
   const handleUpdateProduct = async () => {
@@ -234,7 +160,7 @@ const AdminProductsEnhanced = () => {
         title: productForm.title,
         display_name: productForm.display_name || productForm.title,
         product_overview: productForm.product_overview,
-        model: productForm.model,
+        model: Array.isArray(productForm.model) ? productForm.model.join(',').substring(0, 20) : (productForm.model || 'Zigbee').substring(0, 20),
         category_id: productForm.category_id,
         subcategory_id: productForm.subcategory_id || null,
         overview: productForm.overview,
@@ -245,15 +171,11 @@ const AdminProductsEnhanced = () => {
         shipping_time: productForm.shipping_time,
         shipping_cost: productForm.shipping_cost || 0,
         engraving_image_url: productForm.engraving_image_url,
+        engraving_price: productForm.engraving_price || 0,
         image: productForm.image,
-        image2: productForm.image2,
-        image3: productForm.image3,
-        image4: productForm.image4,
-        image5: productForm.image5,
-        gang_1_image: productForm.gang_1_image,
-        gang_2_image: productForm.gang_2_image,
-        gang_3_image: productForm.gang_3_image,
-        gang_4_image: productForm.gang_4_image
+        additional_images: additionalImages.length > 0 ? JSON.stringify(additionalImages) : null,
+        variants: variants.length > 0 ? variants : null,
+        colors: colors.length > 0 ? colors : null
       };
 
       const { error } = await supabase
@@ -273,78 +195,17 @@ const AdminProductsEnhanced = () => {
     }
   };
 
-  const addVariant = () => {
-    const selectedSubcategory = subcategories.find(sub => sub.id === productForm.subcategory_id);
-    const subcategoryName = selectedSubcategory?.name?.toLowerCase() || '';
-    
-    let newVariant = {
-      name: '',
-      sku: '',
-      price: 0,
-      discount_price: 0,
-      stock: 0,
-      is_default: false,
-      is_active: true
-    };
-    
-    // Set default name based on subcategory
-    if (subcategoryName.includes('switch') || subcategoryName.includes('light')) {
-      newVariant.name = '1 Gang';
-    } else if (subcategoryName.includes('curtain')) {
-      newVariant.name = 'Standard Size';
-    } else if (subcategoryName.includes('panel')) {
-      newVariant.name = 'Standard Panel';
-    }
-    
-    setVariants([...variants, newVariant]);
-  };
-
-  const updateVariant = (index, field, value) => {
-    const updated = [...variants];
-    updated[index] = { ...updated[index], [field]: value };
-    setVariants(updated);
-  };
-
-  const removeVariant = (index) => {
-    setVariants(variants.filter((_, i) => i !== index));
-  };
-
-  const addColor = () => {
-    setColors([...colors, {
-      name: '',
-      hex_code: '#000000',
-      is_active: true
-    }]);
-  };
-
-  const updateColor = (index, field, value) => {
-    const updated = [...colors];
-    updated[index] = { ...updated[index], [field]: value };
-    setColors(updated);
-  };
-
-  const removeColor = (index) => {
-    setColors(colors.filter((_, i) => i !== index));
-  };
-
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      // Show all products if no filters are selected
-      if (!selectedCategory && !selectedSubcategory && !searchTerm) return true;
-      
-      // Filter by search term if provided
-      if (searchTerm && !(
-        product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.display_name?.toLowerCase().includes(searchTerm.toLowerCase())
-      )) return false;
-      
-      return true;
+      if (!searchTerm) return true;
+      return product.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+             product.display_name?.toLowerCase().includes(searchTerm.toLowerCase());
     });
-  }, [products, selectedCategory, selectedSubcategory, searchTerm]);
+  }, [products, searchTerm]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-gray-50">
         <AdminNavbar />
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
@@ -361,41 +222,353 @@ const AdminProductsEnhanced = () => {
       <AdminNavbar />
       <main className="p-6 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Product Management
-              </h1>
-              <p className="text-gray-600">Manage your smart home products efficiently</p>
-              <div className="mt-4 flex gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">Products: <span className="font-semibold text-gray-900">{products.length}</span></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">Categories: <span className="font-semibold text-gray-900">{categories.length}</span></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                  <span className="text-sm text-gray-600">Subcategories: <span className="font-semibold text-gray-900">{subcategories.length}</span></span>
-                </div>
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
+              <p className="text-gray-600 mt-1">{products.length} products • {categories.length} categories</p>
             </div>
             <Button 
               onClick={() => {
                 resetForm();
                 setIsProductDialogOpen(true);
               }}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700"
             >
-              <Plus className="w-4 h-4" />
-              <span>Add Product</span>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Product
             </Button>
           </div>
         </div>
 
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="all-products">All Products</TabsTrigger>
+            <TabsTrigger value="categories">Product Categories</TabsTrigger>
+          </TabsList>
+
+          {/* All Products Tab */}
+          <TabsContent value="all-products" className="space-y-6">
+            {/* Search and Export */}
+            <div className="bg-white rounded-lg shadow-sm border p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+              <Input
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                const csvContent = "data:text/csv;charset=utf-8," + 
+                  "Title,Category,Subcategory,Model,Engraving\n" +
+                  filteredProducts.map(product => {
+                    const category = categories.find(cat => cat.id === product.category_id);
+                    const subcategory = subcategories.find(sub => sub.id === product.subcategory_id);
+                    return `"${product.title}","${category?.name || ''}","${subcategory?.name || ''}","${product.model || ''}","${product.engraving_image_url ? 'Yes' : 'No'}"`;
+                  }).join("\n");
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "products.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export All
+            </Button>
+          </div>
+        </div>
+
+            {/* Products List */}
+            <div className="bg-white rounded-lg shadow-sm border overflow-hidden w-full">
+          {/* Header */}
+          <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b font-medium text-sm text-gray-700 w-full">
+            <div className="col-span-1">Image</div>
+            <div className="col-span-3">Title</div>
+            <div className="col-span-2">Category</div>
+            <div className="col-span-2">Subcategory</div>
+            <div className="col-span-1">Model</div>
+            <div className="col-span-1">Engraving</div>
+            <div className="col-span-2">Actions</div>
+          </div>
+          
+          {/* Products */}
+          {filteredProducts.map((product) => {
+            const category = categories.find(cat => cat.id === product.category_id);
+            const subcategory = subcategories.find(sub => sub.id === product.subcategory_id);
+            
+            return (
+              <div key={product.id} className="grid grid-cols-12 gap-4 p-4 border-b hover:bg-gray-50 transition-colors w-full">
+                <div className="col-span-1">
+                  {product.image ? (
+                    <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded" />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                      <Package className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="col-span-3">
+                  <h3 className="font-medium text-gray-900">{product.title}</h3>
+                  <p className="text-sm text-gray-500">{product.display_name}</p>
+                </div>
+                
+                <div className="col-span-2">
+                  <span className="text-sm text-gray-700">{category?.name || '-'}</span>
+                </div>
+                
+                <div className="col-span-2">
+                  <span className="text-sm text-gray-700">{subcategory?.name || '-'}</span>
+                </div>
+                
+                <div className="col-span-1">
+                  {product.model && (
+                    <Badge variant="secondary" className="text-xs">{product.model}</Badge>
+                  )}
+                </div>
+                
+                <div className="col-span-1">
+                  <Badge variant={product.engraving_image_url ? 'default' : 'secondary'} className="text-xs">
+                    {product.engraving_image_url ? 'Yes' : 'No'}
+                  </Badge>
+                </div>
+                
+                <div className="col-span-2">
+                  <div className="flex gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        setEditingProduct(product);
+                        setProductForm({
+                          title: product.title || '',
+                          display_name: product.display_name || '',
+                          product_overview: product.product_overview || '',
+                          model: product.model ? (typeof product.model === 'string' ? product.model.split(',') : product.model) : [],
+                          category_id: product.category_id || '',
+                          subcategory_id: product.subcategory_id || '',
+                          overview: product.overview || '',
+                          technical_details: product.technical_details || '',
+                          warranty: product.warranty || '',
+                          help_image_url: product.help_image_url || '',
+                          help_text: product.help_text || '',
+                          shipping_time: product.shipping_time || '',
+                          shipping_cost: product.shipping_cost || 0,
+                          engraving_image_url: product.engraving_image_url || '',
+                          engraving_price: product.engraving_price || 0,
+                          image: product.image || ''
+                        });
+                        setVariants(product.variants || []);
+                        setColors(product.colors || []);
+                        setAdditionalImages(product.additional_images ? (typeof product.additional_images === 'string' ? JSON.parse(product.additional_images) : product.additional_images) : []);
+                        setIsProductDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
+                      onClick={() => {
+                        setProductToDelete(product);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+            </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="bg-white rounded-lg shadow-sm border p-12 text-center">
+                <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
+                <p className="text-gray-600 mb-4">
+                  {products.length === 0 ? 'Create your first product' : 'Try adjusting your search'}
+                </p>
+                {products.length === 0 && (
+                  <Button onClick={() => setIsProductDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create First Product
+                  </Button>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Categories Tab */}
+          <TabsContent value="categories" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {categories.map(category => {
+                const categoryProducts = products.filter(p => p.category_id === category.id);
+                const categorySubcategories = subcategories.filter(sub => sub.category_id === category.id);
+                
+                return (
+                  <Card key={category.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+                    <div className="bg-gradient-to-r from-primary to-primary/80 p-6 text-white">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h2 className="text-xl font-bold mb-1">{category.name}</h2>
+                          <div className="flex items-center gap-4 text-blue-100 text-sm">
+                            <span className="flex items-center gap-1">
+                              <Package className="w-4 h-4" />
+                              {categoryProducts.length} products
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Layers className="w-4 h-4" />
+                              {categorySubcategories.length} subcategories
+                            </span>
+                          </div>
+                        </div>
+                        <Button 
+                          onClick={() => {
+                            resetForm();
+                            setProductForm(prev => ({...prev, category_id: category.id}));
+                            setIsProductDialogOpen(true);
+                          }}
+                          className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                          size="sm"
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      {categorySubcategories.length > 0 ? (
+                        <div className="space-y-4">
+                          {categorySubcategories.map(subcategory => {
+                            const subcategoryProducts = products.filter(p => p.subcategory_id === subcategory.id);
+                            return (
+                              <div key={subcategory.id} className="border rounded-lg p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                                      <Layers className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <div>
+                                      <h3 className="font-semibold text-gray-900">{subcategory.name}</h3>
+                                      <p className="text-xs text-gray-500">{subcategoryProducts.length} products</p>
+                                    </div>
+                                  </div>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                      resetForm();
+                                      setProductForm(prev => ({...prev, category_id: category.id, subcategory_id: subcategory.id}));
+                                      setIsProductDialogOpen(true);
+                                    }}
+                                  >
+                                    <Plus className="w-3 h-3 mr-1" />
+                                    Add
+                                  </Button>
+                                </div>
+                                {subcategoryProducts.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {subcategoryProducts.slice(0, 3).map((product) => (
+                                      <div key={product.id} className="flex items-center justify-between p-2 bg-white rounded border">
+                                        <div className="flex items-center gap-3">
+                                          {product.image ? (
+                                            <img src={product.image} alt={product.title} className="w-8 h-8 object-cover rounded" />
+                                          ) : (
+                                            <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                                              <Package className="w-4 h-4 text-gray-400" />
+                                            </div>
+                                          )}
+                                          <div>
+                                            <h4 className="font-medium text-sm text-gray-900">{product.title}</h4>
+                                            <p className="text-xs text-gray-500">{product.display_name}</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex gap-1">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-7 w-7 p-0"
+                                            onClick={() => {
+                                              setEditingProduct(product);
+                                              setProductForm({
+                                                title: product.title || '',
+                                                display_name: product.display_name || '',
+                                                product_overview: product.product_overview || '',
+                                                model: product.model ? (typeof product.model === 'string' ? product.model.split(',') : product.model) : [],
+                                                category_id: product.category_id || '',
+                                                subcategory_id: product.subcategory_id || '',
+                                                overview: product.overview || '',
+                                                technical_details: product.technical_details || '',
+                                                warranty: product.warranty || '',
+                                                help_image_url: product.help_image_url || '',
+                                                help_text: product.help_text || '',
+                                                shipping_time: product.shipping_time || '',
+                                                shipping_cost: product.shipping_cost || 0,
+                                                engraving_image_url: product.engraving_image_url || '',
+                                                engraving_price: product.engraving_price || 0,
+                                                image: product.image || ''
+                                              });
+                                              setVariants(product.variants || []);
+                                              setColors(product.colors || []);
+                                              setAdditionalImages(product.additional_images ? (typeof product.additional_images === 'string' ? JSON.parse(product.additional_images) : product.additional_images) : []);
+                                              setIsProductDialogOpen(true);
+                                            }}
+                                          >
+                                            <Edit className="w-3 h-3" />
+                                          </Button>
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            className="h-7 w-7 p-0 text-red-500"
+                                            onClick={() => {
+                                              setProductToDelete(product);
+                                              setDeleteDialogOpen(true);
+                                            }}
+                                          >
+                                            <Trash2 className="w-3 h-3" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4 text-gray-500">
+                                    <Package className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-xs">No products yet</p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Layers className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                          <p className="text-gray-500 text-sm mb-3">No subcategories</p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {/* Product Dialog */}
         <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
           <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -417,16 +590,16 @@ const AdminProductsEnhanced = () => {
                     <Input
                       value={productForm.title}
                       onChange={(e) => setProductForm({...productForm, title: e.target.value})}
-                      placeholder="Smart Security Camera Pro"
+                      placeholder="Product title"
                       className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Display Name *</Label>
+                    <Label className="text-sm font-medium">Display Name</Label>
                     <Input
                       value={productForm.display_name}
                       onChange={(e) => setProductForm({...productForm, display_name: e.target.value})}
-                      placeholder="SecureCam Pro"
+                      placeholder="Display name"
                       className="mt-1"
                     />
                   </div>
@@ -434,16 +607,14 @@ const AdminProductsEnhanced = () => {
                     <Label className="text-sm font-medium">Category *</Label>
                     <Select 
                       value={productForm.category_id} 
-                      onValueChange={(value) => {
-                        setProductForm({...productForm, category_id: value, subcategory_id: ''});
-                      }}
+                      onValueChange={(value) => setProductForm({...productForm, category_id: value, subcategory_id: ''})}
                     >
                       <SelectTrigger className="mt-1 bg-white">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
                         {categories.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id} className="hover:bg-gray-100">{cat.name}</SelectItem>
+                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -455,15 +626,15 @@ const AdminProductsEnhanced = () => {
                         <SelectValue placeholder="Select subcategory" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
-                        <SelectItem value="none" className="hover:bg-gray-100">No Subcategory</SelectItem>
+                        <SelectItem value="none">No Subcategory</SelectItem>
                         {subcategories.filter(sub => sub.category_id === productForm.category_id).map(subcat => (
-                          <SelectItem key={subcat.id} value={subcat.id} className="hover:bg-gray-100">{subcat.name}</SelectItem>
+                          <SelectItem key={subcat.id} value={subcat.id}>{subcat.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium">Model *</Label>
+                    <Label className="text-sm font-medium">Model</Label>
                     <div className="mt-1 space-y-2">
                       {['Zigbee', 'Wifi'].map((modelOption) => (
                         <div key={modelOption} className="flex items-center space-x-2">
@@ -478,74 +649,11 @@ const AdminProductsEnhanced = () => {
                                 setProductForm({...productForm, model: productForm.model.filter(m => m !== modelOption)});
                               }
                             }}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                           />
-                          <label htmlFor={`model-${modelOption}`} className="text-sm text-gray-700">
-                            {modelOption}
-                          </label>
+                          <label htmlFor={`model-${modelOption}`}>{modelOption}</label>
                         </div>
                       ))}
                     </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Shipping Time</Label>
-                    <Input
-                      value={productForm.shipping_time}
-                      onChange={(e) => setProductForm({...productForm, shipping_time: e.target.value})}
-                      placeholder="3-7 business days"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Shipping Cost (BDT)</Label>
-                    <Input
-                      type="number"
-                      value={productForm.shipping_cost}
-                      onChange={(e) => setProductForm({...productForm, shipping_cost: parseFloat(e.target.value) || 0})}
-                      placeholder="0"
-                      className="mt-1"
-                    />
-                  </div>
-
-                </div>
-              </Card>
-
-              {/* Product Details */}
-              <Card className="p-6">
-                <h3 className="font-semibold mb-4 flex items-center text-lg">
-                  <Settings className="w-5 h-5 mr-2 text-green-600" />
-                  Product Details
-                </h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Overview</Label>
-                    <Textarea
-                      value={productForm.overview}
-                      onChange={(e) => setProductForm({...productForm, overview: e.target.value})}
-                      placeholder="Detailed product overview and description"
-                      rows={4}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Technical Details</Label>
-                    <Textarea
-                      value={productForm.technical_details}
-                      onChange={(e) => setProductForm({...productForm, technical_details: e.target.value})}
-                      placeholder="Technical specifications and details"
-                      rows={4}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Warranty Information</Label>
-                    <Textarea
-                      value={productForm.warranty}
-                      onChange={(e) => setProductForm({...productForm, warranty: e.target.value})}
-                      placeholder="Warranty terms and conditions"
-                      rows={3}
-                      className="mt-1"
-                    />
                   </div>
                 </div>
               </Card>
@@ -616,10 +724,21 @@ const AdminProductsEnhanced = () => {
 
                 {/* Additional Images */}
                 <div>
-                  <Label className="text-sm font-medium mb-2 block">Additional Images</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-medium">Additional Images</Label>
+                    <Button 
+                      type="button"
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setAdditionalImages([...additionalImages, ''])}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Image
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {['image2', 'image3', 'image4', 'image5'].map((imageKey, index) => (
-                      <div key={imageKey}>
+                    {additionalImages.map((image, index) => (
+                      <div key={index}>
                         <div
                           className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer h-32"
                           onDragOver={(e) => e.preventDefault()}
@@ -628,15 +747,19 @@ const AdminProductsEnhanced = () => {
                             const file = e.dataTransfer.files[0];
                             if (file && file.type.startsWith('image/')) {
                               const reader = new FileReader();
-                              reader.onload = (e) => setProductForm({...productForm, [imageKey]: e.target.result});
+                              reader.onload = (e) => {
+                                const updated = [...additionalImages];
+                                updated[index] = e.target.result;
+                                setAdditionalImages(updated);
+                              };
                               reader.readAsDataURL(file);
                             }
                           }}
-                          onClick={() => document.getElementById(`${imageKey}-input`).click()}
+                          onClick={() => document.getElementById(`additional-image-${index}`).click()}
                         >
-                          {productForm[imageKey] ? (
+                          {image ? (
                             <div className="relative h-full">
-                              <img src={productForm[imageKey]} alt={`Image ${index + 2}`} className="h-full w-full object-cover rounded" />
+                              <img src={image} alt={`Additional ${index + 1}`} className="h-full w-full object-cover rounded" />
                               <Button 
                                 type="button"
                                 variant="outline" 
@@ -644,7 +767,8 @@ const AdminProductsEnhanced = () => {
                                 className="absolute top-1 right-1 h-6 w-6 p-0"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setProductForm({...productForm, [imageKey]: ''});
+                                  const updated = additionalImages.filter((_, i) => i !== index);
+                                  setAdditionalImages(updated);
                                 }}
                               >
                                 ×
@@ -653,12 +777,12 @@ const AdminProductsEnhanced = () => {
                           ) : (
                             <div className="flex flex-col items-center justify-center h-full">
                               <Plus className="w-6 h-6 text-gray-400 mb-1" />
-                              <p className="text-xs text-gray-500">Image {index + 2}</p>
+                              <p className="text-xs text-gray-500">Image {index + 1}</p>
                             </div>
                           )}
                         </div>
                         <input
-                          id={`${imageKey}-input`}
+                          id={`additional-image-${index}`}
                           type="file"
                           accept="image/*"
                           className="hidden"
@@ -666,7 +790,11 @@ const AdminProductsEnhanced = () => {
                             const file = e.target.files[0];
                             if (file) {
                               const reader = new FileReader();
-                              reader.onload = (e) => setProductForm({...productForm, [imageKey]: e.target.result});
+                              reader.onload = (e) => {
+                                const updated = [...additionalImages];
+                                updated[index] = e.target.result;
+                                setAdditionalImages(updated);
+                              };
                               reader.readAsDataURL(file);
                             }
                           }}
@@ -675,71 +803,49 @@ const AdminProductsEnhanced = () => {
                     ))}
                   </div>
                 </div>
+              </Card>
+
+              {/* Product Details */}
+              <Card className="p-6">
+                <h3 className="font-semibold mb-4 flex items-center text-lg">
+                  <Settings className="w-5 h-5 mr-2 text-green-600" />
+                  Product Details
+                </h3>
                 
-                {/* Gang-specific Images for Light Switch */}
-                {productForm.subcategory_id && subcategories.find(sub => sub.id === productForm.subcategory_id)?.name?.toLowerCase().includes('switch') && (
-                  <div className="mt-6">
-                    <Label className="text-sm font-medium mb-2 block">Gang Images (Light Switch)</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {['gang_1_image', 'gang_2_image', 'gang_3_image', 'gang_4_image'].map((gangKey, index) => (
-                        <div key={gangKey}>
-                          <Label className="text-xs text-gray-600 mb-1 block">{index + 1} Gang</Label>
-                          <div
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer h-32"
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              const file = e.dataTransfer.files[0];
-                              if (file && file.type.startsWith('image/')) {
-                                const reader = new FileReader();
-                                reader.onload = (e) => setProductForm({...productForm, [gangKey]: e.target.result});
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                            onClick={() => document.getElementById(`${gangKey}-input`).click()}
-                          >
-                            {productForm[gangKey] ? (
-                              <div className="relative h-full">
-                                <img src={productForm[gangKey]} alt={`${index + 1} Gang`} className="h-full w-full object-cover rounded" />
-                                <Button 
-                                  type="button"
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="absolute top-1 right-1 h-6 w-6 p-0"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setProductForm({...productForm, [gangKey]: ''});
-                                  }}
-                                >
-                                  ×
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex flex-col items-center justify-center h-full">
-                                <Plus className="w-6 h-6 text-gray-400 mb-1" />
-                                <p className="text-xs text-gray-500">{index + 1}G</p>
-                              </div>
-                            )}
-                          </div>
-                          <input
-                            id={`${gangKey}-input`}
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (e) => setProductForm({...productForm, [gangKey]: e.target.result});
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <Tabs value={detailsTab} onValueChange={setDetailsTab} className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="technical-details">Technical Details</TabsTrigger>
+                    <TabsTrigger value="warranty">Warranty Information</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="overview" className="space-y-2">
+                    <Label className="text-sm font-medium">Overview</Label>
+                    <RichTextEditor
+                      value={productForm.overview}
+                      onChange={(value) => setProductForm({...productForm, overview: value})}
+                      placeholder="Write detailed product description with rich formatting..."
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="technical-details" className="space-y-2">
+                    <Label className="text-sm font-medium">Technical Details</Label>
+                    <RichTextEditor
+                      value={productForm.technical_details}
+                      onChange={(value) => setProductForm({...productForm, technical_details: value})}
+                      placeholder="Write technical specifications with rich formatting..."
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="warranty" className="space-y-2">
+                    <Label className="text-sm font-medium">Warranty Information</Label>
+                    <RichTextEditor
+                      value={productForm.warranty}
+                      onChange={(value) => setProductForm({...productForm, warranty: value})}
+                      placeholder="Write warranty terms with rich formatting..."
+                    />
+                  </TabsContent>
+                </Tabs>
               </Card>
 
               {/* Variants */}
@@ -749,7 +855,7 @@ const AdminProductsEnhanced = () => {
                     <Layers className="w-5 h-5 mr-2 text-purple-600" />
                     Product Variants
                   </h3>
-                  <Button onClick={addVariant} variant="outline" size="sm">
+                  <Button onClick={() => setVariants([...variants, {name: '', price: 0, discount_price: 0, stock: 0, is_default: false, is_active: true}])} variant="outline" size="sm">
                     <Plus className="w-4 h-4 mr-1" />
                     Add Variant
                   </Button>
@@ -758,61 +864,55 @@ const AdminProductsEnhanced = () => {
                   <p className="text-gray-500 text-center py-4">No variants added yet</p>
                 ) : (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-3 p-3 bg-gray-100 rounded-lg font-medium text-sm text-gray-700">
-                      <div>{(() => {
-                        const selectedSubcategory = subcategories.find(sub => sub.id === productForm.subcategory_id);
-                        const subcategoryName = selectedSubcategory?.name?.toLowerCase() || '';
-                        if (subcategoryName.includes('curtain')) return 'Size';
-                        return 'Name';
-                      })()}</div>
-                      <div>SKU</div>
-                      <div>Price</div>
-                      <div>Discount Price</div>
-                      <div>Stock Qty</div>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 bg-gray-100 rounded-lg font-medium text-sm text-gray-700">
+                      <div>Name</div>
+                      <div>Price (BDT)</div>
+                      <div>Discount Price (BDT)</div>
+                      <div>Stock Quantity</div>
                       <div>Action</div>
                     </div>
                     {variants.map((variant, index) => (
-                      <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-3 p-4 border rounded-lg bg-gray-50">
+                      <div key={index} className="grid grid-cols-1 md:grid-cols-5 gap-3 p-4 border rounded-lg bg-gray-50">
                         <Input
-                          placeholder={(() => {
-                            const selectedSubcategory = subcategories.find(sub => sub.id === productForm.subcategory_id);
-                            const subcategoryName = selectedSubcategory?.name?.toLowerCase() || '';
-                            if (subcategoryName.includes('switch') || subcategoryName.includes('light')) {
-                              return '1 Gang, 2 Gang, 3 Gang';
-                            } else if (subcategoryName.includes('curtain')) {
-                              return 'Standard, Large, Custom';
-                            } else if (subcategoryName.includes('panel')) {
-                              return 'Panel Kit Name';
-                            }
-                            return 'Variant Name';
-                          })()}
+                          placeholder="Variant Name"
                           value={variant.name}
-                          onChange={(e) => updateVariant(index, 'name', e.target.value)}
-                        />
-                        <Input
-                          placeholder="SKU (e.g., SC-PRO-001)"
-                          value={variant.sku}
-                          onChange={(e) => updateVariant(index, 'sku', e.target.value)}
+                          onChange={(e) => {
+                            const updated = [...variants];
+                            updated[index] = { ...updated[index], name: e.target.value };
+                            setVariants(updated);
+                          }}
                         />
                         <Input
                           type="number"
-                          placeholder="Price (e.g., 25000)"
+                          placeholder="Price"
                           value={variant.price}
-                          onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => {
+                            const updated = [...variants];
+                            updated[index] = { ...updated[index], price: parseFloat(e.target.value) || 0 };
+                            setVariants(updated);
+                          }}
                         />
                         <Input
                           type="number"
-                          placeholder="Discount (e.g., 22000)"
+                          placeholder="Discount Price"
                           value={variant.discount_price}
-                          onChange={(e) => updateVariant(index, 'discount_price', parseFloat(e.target.value) || 0)}
+                          onChange={(e) => {
+                            const updated = [...variants];
+                            updated[index] = { ...updated[index], discount_price: parseFloat(e.target.value) || 0 };
+                            setVariants(updated);
+                          }}
                         />
                         <Input
                           type="number"
-                          placeholder="Stock (e.g., 50)"
+                          placeholder="Stock"
                           value={variant.stock}
-                          onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
+                          onChange={(e) => {
+                            const updated = [...variants];
+                            updated[index] = { ...updated[index], stock: parseInt(e.target.value) || 0 };
+                            setVariants(updated);
+                          }}
                         />
-                        <Button onClick={() => removeVariant(index)} variant="outline" size="sm">
+                        <Button onClick={() => setVariants(variants.filter((_, i) => i !== index))} variant="outline" size="sm">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -828,7 +928,7 @@ const AdminProductsEnhanced = () => {
                     <Palette className="w-5 h-5 mr-2 text-pink-600" />
                     Product Colors
                   </h3>
-                  <Button onClick={addColor} variant="outline" size="sm">
+                  <Button onClick={() => setColors([...colors, {name: '', hex_code: '#000000', is_active: true}])} variant="outline" size="sm">
                     <Plus className="w-4 h-4 mr-1" />
                     Add Color
                   </Button>
@@ -840,24 +940,36 @@ const AdminProductsEnhanced = () => {
                     {colors.map((color, index) => (
                       <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 border rounded-lg bg-gray-50">
                         <Input
-                          placeholder="Color name (e.g., White)"
+                          placeholder="Color name"
                           value={color.name}
-                          onChange={(e) => updateColor(index, 'name', e.target.value)}
+                          onChange={(e) => {
+                            const updated = [...colors];
+                            updated[index] = { ...updated[index], name: e.target.value };
+                            setColors(updated);
+                          }}
                         />
                         <div className="flex items-center space-x-2">
                           <Input
                             type="color"
                             value={color.hex_code}
-                            onChange={(e) => updateColor(index, 'hex_code', e.target.value)}
+                            onChange={(e) => {
+                              const updated = [...colors];
+                              updated[index] = { ...updated[index], hex_code: e.target.value };
+                              setColors(updated);
+                            }}
                             className="w-16 h-10 p-1"
                           />
                           <Input
                             placeholder="#FFFFFF"
                             value={color.hex_code}
-                            onChange={(e) => updateColor(index, 'hex_code', e.target.value)}
+                            onChange={(e) => {
+                              const updated = [...colors];
+                              updated[index] = { ...updated[index], hex_code: e.target.value };
+                              setColors(updated);
+                            }}
                           />
                         </div>
-                        <Button onClick={() => removeColor(index)} variant="outline" size="sm">
+                        <Button onClick={() => setColors(colors.filter((_, i) => i !== index))} variant="outline" size="sm">
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -909,7 +1021,6 @@ const AdminProductsEnhanced = () => {
                         <div>
                           <Package className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-gray-600">Drag & drop help image or click to browse</p>
-                          <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 10MB</p>
                         </div>
                       )}
                     </div>
@@ -930,12 +1041,10 @@ const AdminProductsEnhanced = () => {
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Help Text</Label>
-                    <Textarea
+                    <RichTextEditor
                       value={productForm.help_text}
-                      onChange={(e) => setProductForm({...productForm, help_text: e.target.value})}
-                      placeholder="Helpful information to assist customers in making decisions"
-                      rows={3}
-                      className="mt-1"
+                      onChange={(value) => setProductForm({...productForm, help_text: value})}
+                      placeholder="Write helpful information with rich formatting..."
                     />
                   </div>
                 </div>
@@ -984,7 +1093,6 @@ const AdminProductsEnhanced = () => {
                         <div>
                           <Package className="w-12 h-12 text-gray-400 mx-auto mb-2" />
                           <p className="text-gray-600">Drag & drop engraving template or click to browse</p>
-                          <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 10MB</p>
                         </div>
                       )}
                     </div>
@@ -1026,370 +1134,6 @@ const AdminProductsEnhanced = () => {
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {editingProduct ? 'Update Product' : 'Create Product'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Roller Curtain Product Modal */}
-        <Dialog open={isRollerCurtainModal} onOpenChange={setIsRollerCurtainModal}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">
-                {editingProduct ? 'Edit Roller Curtain Product' : 'Add Roller Curtain Product'}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-6 py-4">
-              {/* Basic Information */}
-              <Card className="p-6">
-                <h3 className="font-semibold mb-4 flex items-center text-lg">
-                  <Package className="w-5 h-5 mr-2 text-blue-600" />
-                  Basic Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Product Name *</Label>
-                    <Input
-                      value={rollerCurtainForm.title}
-                      onChange={(e) => setRollerCurtainForm({...rollerCurtainForm, title: e.target.value})}
-                      placeholder="Smart Roller Curtain Pro"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Product Price (BDT) *</Label>
-                    <Input
-                      type="number"
-                      value={rollerCurtainForm.price}
-                      onChange={(e) => setRollerCurtainForm({...rollerCurtainForm, price: parseFloat(e.target.value) || 0})}
-                      placeholder="25000"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Stock Quantity *</Label>
-                    <Input
-                      type="number"
-                      value={rollerCurtainForm.stock}
-                      onChange={(e) => setRollerCurtainForm({...rollerCurtainForm, stock: parseInt(e.target.value) || 0})}
-                      placeholder="50"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Category *</Label>
-                    <Select 
-                      value={rollerCurtainForm.category_id} 
-                      onValueChange={(value) => {
-                        setRollerCurtainForm({...rollerCurtainForm, category_id: value, subcategory_id: ''});
-                      }}
-                    >
-                      <SelectTrigger className="mt-1 bg-white">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white">
-                        {categories.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id} className="hover:bg-gray-100">{cat.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Subcategory</Label>
-                    <Select value={rollerCurtainForm.subcategory_id || 'none'} onValueChange={(value) => setRollerCurtainForm({...rollerCurtainForm, subcategory_id: value === 'none' ? '' : value})}>
-                      <SelectTrigger className="mt-1 bg-white">
-                        <SelectValue placeholder="Select subcategory" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white">
-                        <SelectItem value="none" className="hover:bg-gray-100">No Subcategory</SelectItem>
-                        {subcategories.filter(sub => sub.category_id === rollerCurtainForm.category_id).map(subcat => (
-                          <SelectItem key={subcat.id} value={subcat.id} className="hover:bg-gray-100">{subcat.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <Label className="text-sm font-medium">Product Description (Overview) *</Label>
-                    <Textarea
-                      value={rollerCurtainForm.product_overview}
-                      onChange={(e) => setRollerCurtainForm({...rollerCurtainForm, product_overview: e.target.value})}
-                      placeholder="Smart motorized roller curtain with app control and voice command integration for enhanced privacy and comfort"
-                      rows={4}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </Card>
-
-              {/* Product Details */}
-              <Card className="p-6">
-                <h3 className="font-semibold mb-4 flex items-center text-lg">
-                  <Settings className="w-5 h-5 mr-2 text-green-600" />
-                  Product Details
-                </h3>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Technical Details (one per line) *</Label>
-                    <Textarea
-                      value={rollerCurtainForm.specifications}
-                      onChange={(e) => setRollerCurtainForm({...rollerCurtainForm, specifications: e.target.value})}
-                      placeholder="DC 12V brushless motor with max load 15kg and noise level below 35dB\nZigbee 3.0/WiFi connectivity with 30m range and voice control support\n32mm tube diameter, max 3m width/drop with AC power and battery backup"
-                      rows={5}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium">Warranty Information (one per line) *</Label>
-                    <Textarea
-                      value={rollerCurtainForm.warranty}
-                      onChange={(e) => setRollerCurtainForm({...rollerCurtainForm, warranty: e.target.value})}
-                      placeholder="1 Year Service Warranty\n24/7 customer support\nFree replacement within warranty period"
-                      rows={3}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </Card>
-
-              {/* Size Options */}
-              <Card className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold flex items-center text-lg">
-                    <Settings className="w-5 h-5 mr-2 text-purple-600" />
-                    Available Size Options
-                  </h3>
-                  <Button 
-                    type="button"
-                    onClick={() => {
-                      const newOption = "New Size Option|Description for new size option";
-                      const current = rollerCurtainForm.size_options;
-                      const updated = current ? `${current}\n${newOption}` : newOption;
-                      setRollerCurtainForm({...rollerCurtainForm, size_options: updated});
-                    }}
-                    variant="outline" 
-                    size="sm"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Add Option
-                  </Button>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Size Options (format: Title|Description)</Label>
-                  <Textarea
-                    value={rollerCurtainForm.size_options}
-                    onChange={(e) => setRollerCurtainForm({...rollerCurtainForm, size_options: e.target.value})}
-                    placeholder="Standard (up to 8 feet)|Perfect for standard windows and doors\nLarge (8-12 feet) - Requires 2 motors|For larger windows requiring dual motor setup\nExtra Large (12+ feet) - Custom quote|Custom solutions for oversized installations"
-                    rows={3}
-                    className="mt-1"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Each line: Title|Description</p>
-                </div>
-              </Card>
-
-              {/* Product Images */}
-              <Card className="p-6">
-                <h3 className="font-semibold mb-4 flex items-center text-lg">
-                  <Package className="w-5 h-5 mr-2 text-orange-600" />
-                  Product Images
-                </h3>
-                
-                {/* Main Image */}
-                <div className="mb-6">
-                  <Label className="text-sm font-medium mb-2 block">Main Image *</Label>
-                  <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const file = e.dataTransfer.files[0];
-                      if (file && file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => setRollerCurtainForm({...rollerCurtainForm, image: e.target.result});
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    onClick={() => document.getElementById('main-image-input').click()}
-                  >
-                    {rollerCurtainForm.image ? (
-                      <div className="relative">
-                        <img src={rollerCurtainForm.image} alt="Main" className="max-h-32 mx-auto rounded" />
-                        <Button 
-                          type="button"
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setRollerCurtainForm({...rollerCurtainForm, image: ''});
-                          }}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    ) : (
-                      <div>
-                        <Package className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                        <p className="text-gray-600">Drag & drop main image or click to browse</p>
-                        <p className="text-xs text-gray-400 mt-1">PNG, JPG up to 10MB</p>
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    id="main-image-input"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => setRollerCurtainForm({...rollerCurtainForm, image: e.target.result});
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </div>
-
-                {/* Additional Images */}
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Additional Images</Label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {['image2', 'image3', 'image4', 'image5'].map((imageKey, index) => (
-                      <div key={imageKey}>
-                        <div
-                          className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer h-32"
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={(e) => {
-                            e.preventDefault();
-                            const file = e.dataTransfer.files[0];
-                            if (file && file.type.startsWith('image/')) {
-                              const reader = new FileReader();
-                              reader.onload = (e) => setRollerCurtainForm({...rollerCurtainForm, [imageKey]: e.target.result});
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                          onClick={() => document.getElementById(`${imageKey}-input`).click()}
-                        >
-                          {rollerCurtainForm[imageKey] ? (
-                            <div className="relative h-full">
-                              <img src={rollerCurtainForm[imageKey]} alt={`Image ${index + 2}`} className="h-full w-full object-cover rounded" />
-                              <Button 
-                                type="button"
-                                variant="outline" 
-                                size="sm" 
-                                className="absolute top-1 right-1 h-6 w-6 p-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRollerCurtainForm({...rollerCurtainForm, [imageKey]: ''});
-                                }}
-                              >
-                                ×
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center h-full">
-                              <Plus className="w-6 h-6 text-gray-400 mb-1" />
-                              <p className="text-xs text-gray-500">Image {index + 2}</p>
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          id={`${imageKey}-input`}
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (e) => setRollerCurtainForm({...rollerCurtainForm, [imageKey]: e.target.result});
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </Card>
-            </div>
-            
-            <div className="flex justify-end space-x-3 pt-6 border-t">
-              <Button variant="outline" onClick={() => setIsRollerCurtainModal(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={async () => {
-                  if (!rollerCurtainForm.title || !rollerCurtainForm.price || !rollerCurtainForm.category_id) {
-                    toast({ 
-                      title: "Missing Fields", 
-                      description: "Please fill in product name, price, and category",
-                      variant: "destructive" 
-                    });
-                    return;
-                  }
-
-                  try {
-                    const productData = {
-                      title: rollerCurtainForm.title,
-                      display_name: rollerCurtainForm.display_name || rollerCurtainForm.title,
-                      product_overview: rollerCurtainForm.product_overview,
-                      model: rollerCurtainForm.model,
-                      price: rollerCurtainForm.price || 0,
-                      stock: rollerCurtainForm.stock || 0,
-                      specifications: rollerCurtainForm.specifications,
-                      warranty: rollerCurtainForm.warranty,
-                      category_id: rollerCurtainForm.category_id,
-                      subcategory_id: rollerCurtainForm.subcategory_id || null,
-                      image: rollerCurtainForm.image,
-                      image2: rollerCurtainForm.image2,
-                      image3: rollerCurtainForm.image3,
-                      image4: rollerCurtainForm.image4,
-                      image5: rollerCurtainForm.image5,
-                      gang_1_image: rollerCurtainForm.gang_1_image,
-                      gang_2_image: rollerCurtainForm.gang_2_image,
-                      gang_3_image: rollerCurtainForm.gang_3_image,
-                      gang_4_image: rollerCurtainForm.gang_4_image
-                    };
-
-                    if (editingProduct) {
-                      const { error } = await supabase
-                        .from('products')
-                        .update(productData)
-                        .eq('id', editingProduct.id);
-
-                      if (error) throw error;
-                      toast({ title: "Success", description: "Roller curtain product updated successfully" });
-                    } else {
-                      const { error } = await supabase
-                        .from('products')
-                        .insert({
-                          ...productData,
-                          is_active: true,
-                          position: products.length + 1
-                        });
-
-                      if (error) throw error;
-                      toast({ title: "Success", description: "Roller curtain product created successfully" });
-                    }
-                    setIsRollerCurtainModal(false);
-                    setRollerCurtainForm({
-                      title: '', display_name: '', product_overview: '',
-                      model: 'Zigbee', category_id: '', subcategory_id: '', price: 0, stock: 0,
-                      specifications: '', warranty: '', image: '', image2: '', image3: '', image4: '', image5: '',
-                      gang_1_image: '', gang_2_image: '', gang_3_image: '', gang_4_image: ''
-                    });
-                    setEditingProduct(null);
-                    loadData();
-                  } catch (error) {
-                    toast({ title: "Error", description: error.message, variant: "destructive" });
-                  }
-                }}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-{editingProduct ? 'Update Roller Curtain Product' : 'Create Roller Curtain Product'}
               </Button>
             </div>
           </DialogContent>
@@ -1455,284 +1199,6 @@ const AdminProductsEnhanced = () => {
             </div>
           </DialogContent>
         </Dialog>
-
-        {/* Filters & Actions */}
-        <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="relative">
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                <Input
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-80 border-gray-200 focus:border-blue-500"
-                />
-              </div>
-              <Select value={selectedCategory || "all"} onValueChange={(value) => setSelectedCategory(value === "all" ? "" : value)}>
-                <SelectTrigger className="w-48 border-gray-200">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(cat => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedCategory && subcategories.length > 0 && (
-                <Select value={selectedSubcategory || "all"} onValueChange={(value) => setSelectedSubcategory(value === "all" ? "" : value)}>
-                  <SelectTrigger className="w-48 border-gray-200">
-                    <SelectValue placeholder="All Subcategories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Subcategories</SelectItem>
-                    {subcategories.map(subcat => (
-                      <SelectItem key={subcat.id} value={subcat.id}>{subcat.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="px-3 py-1">
-                {filteredProducts.length} products found
-              </Badge>
-              <Button variant="outline" size="sm">
-                <Filter className="w-4 h-4 mr-2" />
-                More Filters
-              </Button>
-            </div>
-          </div>
-        </div>
-
-
-
-
-
-        {/* Category and Subcategory Display */}
-        <div className="space-y-8">
-          {categories.map(category => {
-            const categorySubcategories = subcategories.filter(sub => sub.category_id === category.id);
-            const categoryProducts = filteredProducts.filter(p => p.category_id === category.id);
-            
-            return (
-              <div key={category.id} className="bg-white rounded-xl shadow-sm border overflow-hidden">
-                {/* Category Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                        <Layers className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-white">{category.name}</h2>
-                        <p className="text-blue-100">{categoryProducts.length} products • {categorySubcategories.length} subcategories</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => {
-                          resetForm();
-                          setProductForm(prev => ({...prev, category_id: category.id, subcategory_id: ''}));
-                          setIsProductDialogOpen(true);
-                        }}
-                        className="bg-white/20 hover:bg-white/30 text-white border-white/30"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Product
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Subcategories */}
-                <div className="p-6 space-y-6">
-                  {categorySubcategories.length > 0 ? (
-                    categorySubcategories.map(subcategory => {
-                      const subcategoryProducts = filteredProducts.filter(p => p.subcategory_id === subcategory.id);
-                      
-                      return (
-                        <div key={subcategory.id} className="border-l-4 border-blue-200 pl-6">
-                          {/* Subcategory Header */}
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <Package className="w-4 h-4 text-blue-600" />
-                              </div>
-                              <div>
-                                <h3 className="text-lg font-semibold text-gray-900">{subcategory.name}</h3>
-                                <p className="text-sm text-gray-500">{subcategoryProducts.length} products</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                {subcategoryProducts.length}
-                              </Badge>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  resetForm();
-                                  setProductForm(prev => ({...prev, category_id: category.id, subcategory_id: subcategory.id}));
-                                  setIsProductDialogOpen(true);
-                                }}
-                                className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                              >
-                                <Plus className="w-3 h-3 mr-1" />
-                                Add
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Products Grid */}
-                          {subcategoryProducts.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                              {subcategoryProducts.map((product) => (
-                                <Card key={product.id} className="group hover:shadow-lg transition-all duration-300 border-gray-200 hover:border-blue-300 hover:-translate-y-1">
-                                  <div className="p-4">
-                                    <div className="flex items-start justify-between mb-3">
-                                      <div className="flex-1">
-                                        <h4 className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">
-                                          {product.title}
-                                        </h4>
-                                        <p className="text-sm text-gray-500 mb-2 line-clamp-1">{product.display_name}</p>
-                                      </div>
-                                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <MoreVertical className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                    
-                                    {product.product_overview && (
-                                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-                                        {product.product_overview}
-                                      </p>
-                                    )}
-                                    
-                                    <div className="flex items-center gap-2 mb-3">
-                                      {product.model && (
-                                        <Badge variant={product.model === 'Wifi' ? 'default' : 'secondary'} className="text-xs">
-                                          {product.model}
-                                        </Badge>
-                                      )}
-                                      <Badge variant={product.is_active ? 'default' : 'secondary'} className="text-xs">
-                                        {product.is_active ? 'Active' : 'Inactive'}
-                                      </Badge>
-                                    </div>
-                                    
-                                    <Separator className="mb-3" />
-                                    
-                                    <div className="flex gap-1">
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="flex-1 h-7 text-xs"
-                                        onClick={() => {
-                                          setEditingProduct(product);
-                                          setProductForm({
-                                            title: product.title || '',
-                                            display_name: product.display_name || '',
-                                            product_overview: product.product_overview || '',
-                                            model: product.model || 'Zigbee',
-                                            category_id: product.category_id || '',
-                                            subcategory_id: product.subcategory_id || '',
-                                            overview: product.overview || '',
-                                            technical_details: product.technical_details || '',
-                                            warranty: product.warranty || '',
-                                            help_image_url: product.help_image_url || '',
-                                            help_text: product.help_text || '',
-                                            shipping_time: product.shipping_time || '',
-                                            shipping_cost: product.shipping_cost || 0,
-                                            engraving_image_url: product.engraving_image_url || '',
-                                            engraving_price: product.engraving_price || 0,
-                                            image: product.image || '',
-                                            image2: product.image2 || '',
-                                            image3: product.image3 || '',
-                                            image4: product.image4 || '',
-                                            image5: product.image5 || '',
-                                            gang_1_image: product.gang_1_image || '',
-                                            gang_2_image: product.gang_2_image || '',
-                                            gang_3_image: product.gang_3_image || '',
-                                            gang_4_image: product.gang_4_image || ''
-                                          });
-                                          setIsProductDialogOpen(true);
-                                        }}
-                                      >
-                                        <Edit className="w-3 h-3 mr-1" />
-                                        Edit
-                                      </Button>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50"
-                                        onClick={() => {
-                                          setProductToDelete(product);
-                                          setDeleteDialogOpen(true);
-                                        }}
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </Card>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="bg-gray-50 rounded-lg p-8 text-center border-2 border-dashed border-gray-200">
-                              <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                              <p className="text-gray-500 mb-3">No products in {subcategory.name}</p>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => {
-                                  resetForm();
-                                  setProductForm(prev => ({...prev, category_id: category.id, subcategory_id: subcategory.id}));
-                                  setIsProductDialogOpen(true);
-                                }}
-                              >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add First Product
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-8">
-                      <Layers className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500 mb-4">No subcategories in {category.name}</p>
-                      <p className="text-sm text-gray-400">Create subcategories to organize products better</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          
-          {filteredProducts.length === 0 && (
-            <div className="bg-white rounded-xl shadow-sm border p-12 text-center">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="w-10 h-10 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {products.length === 0 ? 'No products yet' : 'No products match your filters'}
-              </h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                {products.length === 0 
-                  ? 'Start building your product catalog by creating your first product' 
-                  : 'Try adjusting your search criteria or filters to find what you\'re looking for'
-                }
-              </p>
-              {products.length === 0 && (
-                <Button onClick={() => setIsProductDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create First Product
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
       </main>
     </div>
   );
