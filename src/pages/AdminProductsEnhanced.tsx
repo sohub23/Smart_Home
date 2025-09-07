@@ -1629,54 +1629,33 @@ const AdminProductsEnhanced = () => {
                                         className="flex-1 h-7 text-xs"
                                         onClick={() => {
                                           setEditingProduct(product);
-                                          
-                                          if (isRollerCurtain) {
-                                            setRollerCurtainForm({
-                                              title: product.title || '',
-                                              display_name: product.display_name || '',
-                                              product_overview: product.product_overview || '',
-                                              model: product.model || 'Zigbee',
-                                              category_id: product.category_id || '',
-                                              subcategory_id: product.subcategory_id || '',
-                                              price: product.price || 0,
-                                              stock: product.stock || 0,
-                                              specifications: product.specifications || '',
-                                              warranty: product.warranty || '',
-                                              image: product.image || '',
-                                              image2: product.image2 || '',
-                                              image3: product.image3 || '',
-                                              image4: product.image4 || '',
-                                              image5: product.image5 || ''
-                                            });
-                                            setIsRollerCurtainModal(true);
-                                          } else {
-                                            setProductForm({
-                                              title: product.title || '',
-                                              display_name: product.display_name || '',
-                                              product_overview: product.product_overview || '',
-                                              model: product.model || 'Zigbee',
-                                              category_id: product.category_id || '',
-                                              subcategory_id: product.subcategory_id || '',
-                                              overview: product.overview || '',
-                                              technical_details: product.technical_details || '',
-                                              warranty: product.warranty || '',
-                                              help_image_url: product.help_image_url || '',
-                                              help_text: product.help_text || '',
-                                              shipping_time: product.shipping_time || '',
-                                              shipping_cost: product.shipping_cost || 0,
-                                              engraving_image_url: product.engraving_image_url || '',
-                                              image: product.image || '',
-                                              image2: product.image2 || '',
-                                              image3: product.image3 || '',
-                                              image4: product.image4 || '',
-                                              image5: product.image5 || '',
-                                              gang_1_image: product.gang_1_image || '',
-                                              gang_2_image: product.gang_2_image || '',
-                                              gang_3_image: product.gang_3_image || '',
-                                              gang_4_image: product.gang_4_image || ''
-                                            });
-                                            setIsProductDialogOpen(true);
-                                          }
+                                          setProductForm({
+                                            title: product.title || '',
+                                            display_name: product.display_name || '',
+                                            product_overview: product.product_overview || '',
+                                            model: product.model || 'Zigbee',
+                                            category_id: product.category_id || '',
+                                            subcategory_id: product.subcategory_id || '',
+                                            overview: product.overview || '',
+                                            technical_details: product.technical_details || '',
+                                            warranty: product.warranty || '',
+                                            help_image_url: product.help_image_url || '',
+                                            help_text: product.help_text || '',
+                                            shipping_time: product.shipping_time || '',
+                                            shipping_cost: product.shipping_cost || 0,
+                                            engraving_image_url: product.engraving_image_url || '',
+                                            engraving_price: product.engraving_price || 0,
+                                            image: product.image || '',
+                                            image2: product.image2 || '',
+                                            image3: product.image3 || '',
+                                            image4: product.image4 || '',
+                                            image5: product.image5 || '',
+                                            gang_1_image: product.gang_1_image || '',
+                                            gang_2_image: product.gang_2_image || '',
+                                            gang_3_image: product.gang_3_image || '',
+                                            gang_4_image: product.gang_4_image || ''
+                                          });
+                                          setIsProductDialogOpen(true);
                                         }}
                                       >
                                         <Edit className="w-3 h-3 mr-1" />
