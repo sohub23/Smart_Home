@@ -107,12 +107,7 @@ export const enhancedProductService = {
   async getProductsBySubcategory(subcategoryId: string): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
-      .select(`
-        *,
-        subcategory:product_subcategories(*),
-        variants:product_variants(*),
-        colors:product_colors(*)
-      `)
+      .select('*')
       .eq('subcategory_id', subcategoryId)
       .eq('is_active', true)
       .order('position');

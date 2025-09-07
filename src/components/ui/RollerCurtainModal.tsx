@@ -137,11 +137,11 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [installationNotes, setInstallationNotes] = useState('');
   const [installationTBD, setInstallationTBD] = useState(false);
 
-  const currentProductData = dynamicProducts.length > 0 ? selectedProduct : product;
+  const currentProductData = product;
   const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
   const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
   const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
-  const currentPrice = selectedVariant?.price || selectedProduct?.price || currentProductData.price || product.price || 0;
+  const currentPrice = (selectedVariant?.discount_price && selectedVariant.discount_price > 0 ? selectedVariant.discount_price : selectedVariant?.price) || selectedProduct?.price || currentProductData.price || product.price || 0;
   
   console.log('Current product data:', currentProductData);
   console.log('Selected product:', selectedProduct);
@@ -306,7 +306,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {currentProductData.title || currentProductData.display_name || currentProductData.name}
+                {selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || currentProductData.title || currentProductData.display_name || currentProductData.name}
               </h1>
               
 
@@ -317,12 +317,16 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   <span className="text-base text-gray-900">
                     {currentPrice.toLocaleString()} BDT
                   </span>
-                  <span className="text-xs text-gray-500 line-through">
-                    {Math.round(currentPrice * 1.3).toLocaleString()} BDT
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Save {Math.round(currentPrice * 0.3).toLocaleString()} BDT
-                  </span>
+                  {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.price > 0 && (
+                    <>
+                      <span className="text-xs text-gray-500 line-through">
+                        {selectedVariant.price.toLocaleString()} BDT
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Save {(selectedVariant.price - selectedVariant.discount_price).toLocaleString()} BDT
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -370,15 +374,13 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          {(currentProductData.product_overview || currentProductData.overview) ? (
-                            <ul className="space-y-2">
-                              {(currentProductData.product_overview || currentProductData.overview).split('\n').filter(line => line.trim()).map((line, index) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                  {line.trim()}
-                                </li>
-                              ))}
-                            </ul>
+                          {(selectedProduct?.overview || selectedProduct?.description) ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.overview || selectedProduct.description 
+                              }}
+                            />
                           ) : (
                             <p className="text-gray-400 italic">No overview available from admin portal</p>
                           )}
@@ -386,8 +388,13 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       )}
                       {activeTab === 'bestfor' && (
                         <div className="text-sm text-gray-500">
-                          {currentProductData.technical_details ? (
-                            <p className="leading-relaxed">{currentProductData.technical_details}</p>
+                          {selectedProduct?.technical_details ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.technical_details 
+                              }}
+                            />
                           ) : specifications.length > 0 ? (
                             <ul className="space-y-2">
                               {specifications.map((spec, index) => (
@@ -404,15 +411,13 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       )}
                       {activeTab === 'bonuses' && (
                         <div className="text-sm text-gray-500">
-                          {currentProductData.warranty ? (
-                            <ul className="space-y-2">
-                              {currentProductData.warranty.split('\n').filter(line => line.trim()).map((line, index) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                  {line.trim()}
-                                </li>
-                              ))}
-                            </ul>
+                          {selectedProduct?.warranty ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.warranty 
+                              }}
+                            />
                           ) : warranty.length > 0 ? (
                             <ul className="space-y-2">
                               {warranty.map((warrantyItem, index) => (
@@ -517,7 +522,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                               }`}
                             >
                               <span>{variant.name}</span>
-                              <span className="font-bold">{variant.price?.toLocaleString()} BDT</span>
+                              <span className="font-bold">{(variant.discount_price && variant.discount_price > 0 ? variant.discount_price : variant.price)?.toLocaleString()} BDT</span>
                             </button>
                           ))
                         ) : (
@@ -618,7 +623,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           <div className="fixed bottom-0 left-0 right-0 lg:right-0 lg:left-auto lg:w-[600px] bg-white border-t lg:border-l border-gray-200 p-3 lg:p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || currentProductData.stock === 0}
+              disabled={loading || (selectedVariant && selectedVariant.stock === 0)}
               className="w-full h-10 lg:h-12 text-sm lg:text-base font-bold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
               style={{ backgroundColor: '#7e8898' }}
             >
@@ -631,7 +636,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </svg>
                   Adding to bag...
                 </span>
-              ) : currentProductData.stock === 0 ? 'Out of stock' : (
+              ) : (selectedVariant && selectedVariant.stock === 0) ? 'Out of stock' : (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
@@ -644,9 +649,9 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
             </Button>
             
             {/* Stock Status */}
-            {currentProductData.stock <= 3 && currentProductData.stock > 0 && (
+            {selectedVariant && selectedVariant.stock <= 3 && selectedVariant.stock > 0 && (
               <p className="text-center text-sm text-black font-medium mt-2">
-                Only {currentProductData.stock} left in stock - order soon!
+                Only {selectedVariant.stock} left in stock - order soon!
               </p>
             )}
           </div>
@@ -669,10 +674,11 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           {/* Product Image */}
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
             <img
-              src={allImages[0] || '/images/smart_switch/3 gang mechanical.webp'}
-              alt={currentProductData.name}
+              src={selectedProduct?.help_image_url || allImages[0] || '/images/smart_switch/3 gang mechanical.webp'}
+              alt={selectedProduct?.name || currentProductData.name}
               className="w-32 h-32 object-cover rounded-lg"
               onError={(e) => {
+                console.log('Help image failed to load:', selectedProduct?.help_image_url);
                 const target = e.target as HTMLImageElement;
                 target.src = '/images/smart_switch/3 gang mechanical.webp';
               }}
@@ -680,32 +686,31 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           </div>
           
           <div className="p-6">
-            {/* Headline */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
-              {dynamicProducts.length > 0 && (
-                <p className="text-sm text-gray-600">Showing data from admin portal - {dynamicProducts.length} products available</p>
-              )}
-            </div>
+
             
-            {/* Options */}
-            <div className="space-y-6">
-              {/* Option 1 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Standard Track Setup (+0 BDT)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Basic roller track installation with motor setup and app configuration. Perfect for standard windows. Includes mounting hardware and basic smart home integration.
-                </p>
+            {/* Help Text from Database */}
+            {selectedProduct?.help_text ? (
+              <div 
+                className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: selectedProduct.help_text }}
+              />
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Standard Track Setup (+0 BDT)</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Basic roller track installation with motor setup and app configuration. Perfect for standard windows. Includes mounting hardware and basic smart home integration.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Premium Track Installation (+3,500 BDT)</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Complete professional service with custom track measurements, advanced mounting solutions, and full smart home ecosystem integration. Includes 1-year service warranty and priority support.
+                  </p>
+                </div>
               </div>
-              
-              {/* Option 2 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Premium Track Installation (+3,500 BDT)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Complete professional service with custom track measurements, advanced mounting solutions, and full smart home ecosystem integration. Includes 1-year service warranty and priority support.
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
