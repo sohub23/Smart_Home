@@ -127,56 +127,65 @@ const transformProductForModal = (selectedVariant: any, dbProducts: any[]) => {
 
 // Helper function to determine modal type
 const getModalType = (category: string, productName: string) => {
-    if (category === 'Curtain') {
-        return productName.toLowerCase().includes('roller') ? 'roller' : 'slider';
+    if (category === 'Curtain' || category === 'Curtains') {
+        const name = productName.toLowerCase();
+        if (name.includes('slider') || name.includes('sliding')) {
+            return 'slider';
+        }
+        if (name.includes('roller')) {
+            return 'roller';
+        }
+        return 'roller';
     }
     if (category === 'Security') {
-        if (productName.includes('Smart Security Box') || productName.includes('Panel Kit')) return 'securityBox';
-        if (productName.includes('Security Panel') || productName.includes('SP-05')) return 'securityPanel';
+        const name = productName.toLowerCase();
+        if (name.includes('sensors') || name.includes('sensor')) {
+            return 'sensors';
+        }
+        if (name.includes('camera')) {
+            return 'camera';
+        }
+        if (productName.includes('Smart Security Box') || productName.includes('Panel Kit')) {
+            return 'securityBox';
+        }
+        if (productName.includes('Security Panel') || productName.includes('SP-05')) {
+            return 'securityPanel';
+        }
         return 'sohubProtect';
     }
-    if (category === 'Switch') {
+    if (category === 'Switch' || category === 'Switches') {
         const name = productName.toLowerCase();
-        if (name.includes('smart')) return 'smartSwitch';
-        if (name.includes('fan')) return 'fanSwitch';
-        if (name.includes('boiler')) return 'boilerSwitch';
+        if (name.includes('smart')) {
+            return 'smartSwitch';
+        }
+        if (name.includes('fan')) {
+            return 'fanSwitch';
+        }
+        if (name.includes('boiler')) {
+            return 'boilerSwitch';
+        }
+        if (name.includes('light')) {
+            return 'lightSwitch';
+        }
         return 'lightSwitch';
     }
     return category.toLowerCase();
 };
 
-const getCategoryProducts = (dbProducts: any[], categoryImages: any[]) => {
-    const categories = ['Curtain', 'Switch', 'Security', 'PDLC Film', 'Services'];
-    return categories.map((category, index) => {
-        // Handle both 'Film' and 'PDLC Film' for category images
+const getCategoryProducts = (dbCategories: any[], categoryImages: any[]) => {
+    return dbCategories.map((category) => {
         const categoryImagesForCategory = categoryImages.filter(img => 
-            img.category === category || 
-            (category === 'PDLC Film' && (img.category === 'Film' || img.category === 'PDLC Film')) ||
-            (category === 'Curtain' && (img.category === 'Smart Curtain' || img.category === 'Curtain')) ||
-            (category === 'Switch' && (img.category === 'Smart Switch' || img.category === 'Switch')) ||
-            (category === 'Security' && img.category === 'Security')
+            img.category === category.name
         );
         const firstCategoryImage = categoryImagesForCategory[0];
         
-        // Handle both 'Film' and 'PDLC Film' for products
-        const categoryFilter = category === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
-                             category === 'Curtain' ? ['Smart Curtain', 'Curtain'] : 
-                             category === 'Switch' ? ['Switch', 'Light Switch', 'Fan Switch', 'Boiler Switch'] : [category];
-        const categoryProducts = dbProducts.filter(p => categoryFilter.includes(p.category));
-        const firstProduct = categoryProducts[0];
-        
-        const getImageForCategory = () => {
-            if (category === 'Services') return '/images/services/services.png';
-            return firstCategoryImage?.image_url || firstProduct?.image || '/images/smart_switch/3 gang mechanical.webp';
-        };
-        
         return {
-            id: (index + 1).toString(),
-            name: category,
-            price: category === 'Services' ? 0 : (firstProduct?.price || 0),
-            category: category,
-            image: getImageForCategory(),
-            color: category === 'Services' ? 'Available' : 'Available'
+            id: category.id,
+            name: category.name,
+            price: 0,
+            category: category.name,
+            image: category.image_url || firstCategoryImage?.image_url || '/images/smart_switch/3 gang mechanical.webp',
+            color: 'Available'
         };
     });
 };
@@ -190,6 +199,8 @@ function InteractiveCheckout({
     const navigate = useNavigate();
     const [dbProducts, setDbProducts] = useState<any[]>([]);
     const [categoryImages, setCategoryImages] = useState<any[]>([]);
+    const [dbCategories, setDbCategories] = useState<any[]>([]);
+    const [dbSubcategories, setDbSubcategories] = useState<any[]>([]);
     const [cart, setCart] = useState<CartItem[]>([]);
     const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
@@ -349,6 +360,8 @@ function InteractiveCheckout({
         
         loadProducts();
         loadCategoryImages();
+        loadCategories();
+        loadSubcategories();
         
         // Listen for cart updates to force re-render
         const handleCartUpdate = () => {
@@ -386,148 +399,77 @@ function InteractiveCheckout({
         }
     };
 
-    const getProductsByCategory = (category: string) => {
-        const sanitizedCategory = sanitizeDbInput(category);
-        // Handle Services category separately
-        if (sanitizedCategory === 'Services') {
-            return [
-                {
-                    id: 'service-1',
-                    name: 'Consultancy Services',
-                    price: 'Free',
-                    gangType: 'Consultancy',
-                    imageUrl: '/images/services/services.png',
-                    isSoldOut: false
-                }
-            ];
+    const loadCategories = async () => {
+        try {
+            const { supabase } = await import('@/supabase/client');
+            const { data, error } = await supabase
+                .from('product_categories')
+                .select('*')
+                .eq('is_active', true)
+                .order('position');
+            
+            if (error) throw error;
+            setDbCategories(data || []);
+        } catch (err) {
+            console.error('Failed to load categories:', sanitizeLogInput(err));
         }
-        
-        // For Switch category, show Light Switch, Fan Switch, and Boiler Switch
-        if (sanitizedCategory === 'Switch') {
-            const switchProducts = [];
+    };
+
+    const loadSubcategories = async () => {
+        try {
+            const { supabase } = await import('@/supabase/client');
+            const { data, error } = await supabase
+                .from('product_subcategories')
+                .select('*')
+                .eq('is_active', true)
+                .order('position');
             
-            // Get Light Switch products from database
-            const lightSwitchProducts = dbProducts.filter(p => 
-                p.category === 'Switch' && 
-                ['light', 'touch', '4 gang', '3 gang', 'mechanical'].some(term => 
-                    p.name.toLowerCase().includes(term.toLowerCase())
-                )
-            );
-            const firstLightSwitch = lightSwitchProducts[0];
-            
-            // Get Fan Switch products from database
-            const fanSwitchProducts = dbProducts.filter(p => 
-                p.category === 'Switch' && 
-                p.name.toLowerCase().includes('fan')
-            );
-            const firstFanSwitch = fanSwitchProducts[0];
-            
-            // Get Boiler Switch products from database
-            const boilerSwitchProducts = dbProducts.filter(p => 
-                p.category === 'Switch' && 
-                ['boiler', '1 gang', 'one gang'].some(term => 
-                    p.name.toLowerCase().includes(term.toLowerCase())
-                )
-            );
-            const firstBoilerSwitch = boilerSwitchProducts[0];
-            
-            // Add Light Switch
-            switchProducts.push({
-                id: 'light-switch-1',
-                name: 'Light Switch',
-                price: firstLightSwitch ? `From ${firstLightSwitch.price} BDT` : 'From 299 BDT',
-                gangType: 'Light Switch',
-                imageUrl: firstLightSwitch?.image || '/images/smart_switch/light switch.webp',
-                isSoldOut: false
-            });
-            
-            // Add Fan Switch
-            switchProducts.push({
-                id: 'fan-switch-1',
-                name: 'Fan Switch',
-                price: firstFanSwitch ? `From ${firstFanSwitch.price} BDT` : 'From 399 BDT',
-                gangType: 'Fan Switch',
-                imageUrl: firstFanSwitch?.image || '/images/smart_switch/fan touch switch.webp',
-                isSoldOut: false
-            });
-            
-            // Add Boiler Switch
-            switchProducts.push({
-                id: 'boiler-switch-1',
-                name: 'Boiler Switch',
-                price: firstBoilerSwitch ? `From ${firstBoilerSwitch.price} BDT` : 'From 499 BDT',
-                gangType: 'Boiler Switch',
-                imageUrl: firstBoilerSwitch?.image || '/images/smart_switch/one gang.webp',
-                isSoldOut: false
-            });
-            
-            return switchProducts;
+            if (error) throw error;
+            setDbSubcategories(data || []);
+        } catch (err) {
+            console.error('Failed to load subcategories:', sanitizeLogInput(err));
         }
+    };
+
+    const getProductsByCategory = (categoryName: string) => {
+        const sanitizedCategory = sanitizeDbInput(categoryName);
         
-        // For Security category, show Panel Kit and Sensors
-        if (sanitizedCategory === 'Security') {
-            const products = [];
-            
-            // Add Panel Kit
-            const panelKitProduct = dbProducts.find(p => 
-                p.category === 'Security' && 
-                p.name.includes('Panel Kit') &&
-                p.stock > 0
-            );
-            
-            if (panelKitProduct) {
-                products.push({
-                    id: panelKitProduct.id,
-                    name: 'Panel Kit',
-                    price: `${panelKitProduct.price.toLocaleString()} BDT`,
-                    gangType: panelKitProduct.category,
-                    imageUrl: panelKitProduct.image || '/images/sohub_protect/security-panel.png',
-                    isSoldOut: panelKitProduct.stock === 0
-                });
-            }
-            
-            // Add Sensors card
-            products.push({
-                id: 'sensors-1',
-                name: 'Sensors',
-                price: 'From 2,499 BDT',
-                gangType: 'Security',
-                imageUrl: '/images/sohub_protect/accesories/Motion_pr200.png',
-                isSoldOut: false
-            });
-            
-            // Add Camera card
-            products.push({
-                id: 'camera-1',
-                name: 'Camera',
-                price: 'From 8,999 BDT',
-                gangType: 'Security',
-                imageUrl: '/images/sohub_protect/accesories/camera-c11.png',
-                isSoldOut: false
-            });
-            
-            return products;
-        }
+        // Find category by name
+        const category = dbCategories.find(cat => cat.name === sanitizedCategory);
+        if (!category) return [];
         
-        // If we have database products, use them
-        if (dbProducts.length > 0) {
-            const categoryFilter = sanitizedCategory === 'PDLC Film' ? ['Film', 'PDLC Film'] : 
-                                 sanitizedCategory === 'Curtain' ? ['Smart Curtain', 'Curtain'] : 
-                                 sanitizedCategory === 'Switch' ? ['Smart Switch'] : [sanitizedCategory];
-            const filteredProducts = dbProducts.filter(p => categoryFilter.includes(p.category) && p.stock > 0);
+        // Get subcategories for this category
+        const categorySubcategories = dbSubcategories.filter(sub => sub.category_id === category.id);
+        
+        // If category has subcategories, show subcategories as products
+        if (categorySubcategories.length > 0) {
+            return categorySubcategories.map(subcategory => {
+                // Get all products for this subcategory
+                const allSubcategoryProducts = dbProducts.filter(p => p.subcategory_id === subcategory.id);
+                const productsWithStock = allSubcategoryProducts.filter(p => (p.stock || p.stock_quantity || 0) > 0);
+                const firstProduct = allSubcategoryProducts[0];
                 
-            return filteredProducts.map(p => ({
-                id: p.id,
-                name: p.name,
-                price: `${p.price.toLocaleString()} BDT`,
-                gangType: p.category,
-                imageUrl: p.image || '/images/smart_switch/one gang.webp',
-                isSoldOut: p.stock === 0
-            }));
+                return {
+                    id: subcategory.id,
+                    name: subcategory.name,
+                    price: firstProduct ? `From ${firstProduct.price} BDT` : 'Coming Soon',
+                    gangType: subcategory.name,
+                    imageUrl: subcategory.image_url || firstProduct?.image || '/images/smart_switch/3 gang mechanical.webp',
+                    isSoldOut: false
+                };
+            });
         }
         
-        // No fallback products - only show admin panel products
-        return [];
+        // If no subcategories, show direct products
+        const directProducts = dbProducts.filter(p => p.category_id === category.id && !p.subcategory_id);
+        return directProducts.map(p => ({
+            id: p.id,
+            name: p.title,
+            price: `${p.price.toLocaleString()} BDT`,
+            gangType: p.title,
+            imageUrl: '/images/smart_switch/3 gang mechanical.webp',
+            isSoldOut: p.stock_quantity === 0
+        }));
     };
 
     // Listen for back button event from BuyNowModal
@@ -635,7 +577,7 @@ function InteractiveCheckout({
         0
     );
 
-    const categories = dbProducts.length > 0 ? getCategoryProducts(dbProducts, categoryImages) : products;
+    const categories = dbCategories.length > 0 ? getCategoryProducts(dbCategories, categoryImages) : products;
     
     // Memoize products by category for better performance
     const allProductsByCategory = useMemo(() => {
@@ -695,6 +637,7 @@ function InteractiveCheckout({
             style.textContent = `
                 .category-bar-container::-webkit-scrollbar { display: none; }
                 .category-bar-container { -ms-overflow-style: none; scrollbar-width: none; }
+                .category-bar-container { scroll-behavior: smooth; }
                 .scrollbar-hide::-webkit-scrollbar { display: none; }
                 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
                 .sticky-checkout-section { position: relative; }
@@ -743,7 +686,7 @@ function InteractiveCheckout({
                 <div className="overflow-y-auto products-scroll-container h-full" data-scroll-container style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch', position: 'relative' }}>
                 {/* Category Tabs */}
                 <div className="mb-3 lg:mb-6 sticky top-0 bg-gray-100 z-40 pt-2 pb-2 lg:pt-4 lg:pb-3 shadow-sm border-b border-gray-300">
-                    <div className="flex lg:grid lg:grid-cols-5 gap-2 px-2 lg:px-4 overflow-x-auto lg:overflow-x-visible scrollbar-hide">
+                    <div className="flex gap-2 px-2 lg:px-4 overflow-x-auto scrollbar-hide category-bar-container">
                         {categories.map((category) => (
                             <motion.button
                                 key={category.id}
@@ -806,49 +749,54 @@ function InteractiveCheckout({
                                 style={{ touchAction: 'manipulation', cursor: 'pointer', userSelect: 'none' }}
                             >
                                 <span className="text-xs lg:text-base font-medium whitespace-nowrap relative z-10 flex items-center gap-1.5">
-                                    {category.name === 'Curtain' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    {/* Always show an icon */}
+                                    {(category.name?.toLowerCase().includes('curtain') || category.category?.toLowerCase().includes('curtain')) && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M3 3h18v2H3V3zm0 16h18v2H3v-2zM5 7h2v10H5V7zm4 0h2v10H9V7zm4 0h2v10h-2V7zm4 0h2v10h-2V7z"/>
                                         </svg>
                                     )}
-                                    {category.name === 'Switch' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    {(category.name?.toLowerCase().includes('switch') || category.category?.toLowerCase().includes('switch')) && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M17 7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h10c2.76 0 5-2.24 5-5s-2.24-5-5-5zM7 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/>
                                         </svg>
                                     )}
-                                    {category.name === 'Security' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    {(category.name?.toLowerCase().includes('security') || category.category?.toLowerCase().includes('security')) && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H16V18H8V11H9.2V10C9.2,8.6 10.6,7 12,7M12,8.2C11.2,8.2 10.4,8.7 10.4,10V11H13.6V10C13.6,8.7 12.8,8.2 12,8.2Z"/>
                                         </svg>
                                     )}
-                                    {category.name === 'PDLC Film' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            {/* Glass frame */}
+                                    {(category.name?.toLowerCase().includes('pdlc') || category.name?.toLowerCase().includes('film') || category.category?.toLowerCase().includes('pdlc') || category.category?.toLowerCase().includes('film')) && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                                             <rect x="2" y="4" width="20" height="16" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5"/>
-                                            {/* Clear state (left half) */}
                                             <rect x="3" y="5" width="9" height="14" fill="currentColor" opacity="0.1"/>
-                                            {/* Opaque state (right half) */}
                                             <rect x="12" y="5" width="9" height="14" fill="currentColor" opacity="0.6"/>
-                                            {/* Transition line */}
                                             <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="1" strokeDasharray="2,2"/>
-                                            {/* Smart control indicator */}
                                             <circle cx="19" cy="7" r="1.5" fill="currentColor"/>
                                             <path d="M17.5 6.5l3 1M17.5 7.5l3-1" stroke="currentColor" strokeWidth="0.8"/>
-                                            {/* Phone/control symbol */}
                                             <rect x="16.5" y="15" width="3" height="4" rx="0.5" fill="none" stroke="currentColor" strokeWidth="0.8"/>
                                             <circle cx="18" cy="17" r="0.3" fill="currentColor"/>
                                         </svg>
                                     )}
-                                    {category.name === 'Services' && (
-                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            {/* Person with headset (consultant) */}
-                                            <circle cx="12" cy="8" r="3" fill="currentColor"/>
-                                            <path d="M12 12c-2.67 0-8 1.34-8 4v4h16v-4c0-2.66-5.33-4-8-4z" fill="currentColor"/>
-                                            {/* Headset/support symbol */}
-                                            <path d="M12 5c-1.5 0-3 1-3 2.5v3c0 .5.5 1 1 1s1-.5 1-1v-3c0-.5.5-1 1-1s1 .5 1 1v3c0 .5.5 1 1 1s1-.5 1-1v-3c0-1.5-1.5-2.5-3-2.5z" fill="currentColor" opacity="0.7"/>
-                                            {/* Tools crossed */}
-                                            <path d="M18 14l2 2-2 2-2-2 2-2z" fill="currentColor"/>
-                                            <path d="M20 16l2-2-2-2-2 2 2 2z" fill="currentColor"/>
+                                    {(category.name?.toLowerCase().includes('service') || category.category?.toLowerCase().includes('service')) && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                        </svg>
+                                    )}
+                                    {(category.name?.toLowerCase().includes('light') || category.category?.toLowerCase().includes('light')) && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.2 3-3.3 3-5.7 0-3.9-3.1-7-7-7z"/>
+                                        </svg>
+                                    )}
+                                    {(category.name?.toLowerCase().includes('privacy') || category.category?.toLowerCase().includes('privacy')) && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                            <rect x="2" y="4" width="20" height="16" rx="1" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                                            <rect x="3" y="5" width="9" height="14" fill="currentColor" opacity="0.1"/>
+                                            <rect x="12" y="5" width="9" height="14" fill="currentColor" opacity="0.6"/>
+                                            <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="1" strokeDasharray="2,2"/>
+                                            <circle cx="19" cy="7" r="1.5" fill="currentColor"/>
+                                            <path d="M17.5 6.5l3 1M17.5 7.5l3-1" stroke="currentColor" strokeWidth="0.8"/>
+                                            <rect x="16.5" y="15" width="3" height="4" rx="0.5" fill="none" stroke="currentColor" strokeWidth="0.8"/>
+                                            <circle cx="18" cy="17" r="0.3" fill="currentColor"/>
                                         </svg>
                                     )}
                                     {category.name}
@@ -1014,20 +962,67 @@ function InteractiveCheckout({
                                 setSelectedVariant(variant);
                                 setSelectedProduct(categoryToIdMap[categoryGroup.category] || '3');
                                 
+                                // Debug logging
+                                console.log('Product clicked:', product.name, 'Category:', categoryGroup.category);
+                                
                                 // Open appropriate modal based on category and product
                                 const modalType = getModalType(categoryGroup.category, product.name);
+                                console.log('Modal type determined:', modalType);
+                                
                                 switch (modalType) {
-                                    case 'slider': setSliderCurtainModalOpen(true); break;
-                                    case 'roller': setRollerCurtainModalOpen(true); break;
-                                    case 'pdlc film': setPdlcFilmModalOpen(true); break;
+                                    case 'slider': 
+                                        console.log('Opening slider curtain modal');
+                                        setSliderCurtainModalOpen(true); 
+                                        break;
+                                    case 'roller': 
+                                        console.log('Opening roller curtain modal');
+                                        setRollerCurtainModalOpen(true); 
+                                        break;
+                                    case 'curtain':
+                                    case 'curtains':
+                                        console.log('Opening default curtain modal (roller)');
+                                        setRollerCurtainModalOpen(true); 
+                                        break;
+                                    case 'pdlc film': 
+                                    case 'pdlc':
+                                    case 'film':
+                                        console.log('Opening PDLC film modal');
+                                        setPdlcFilmModalOpen(true); 
+                                        break;
+                                    case 'sensors':
+                                        console.log('Opening sensors selection modal');
+                                        setSensorsSelectionModalOpen(true);
+                                        break;
+                                    case 'camera':
+                                        console.log('Opening camera selection modal');
+                                        setCameraSelectionModalOpen(true);
+                                        break;
                                     case 'securityBox': setSmartSecurityBoxModalOpen(true); break;
                                     case 'securityPanel': setSecurityPanelModalOpen(true); break;
                                     case 'sohubProtect': setSohubProtectModalOpen(true); break;
                                     case 'smartSwitch': setSmartSwitchModalOpen(true); break;
-                                    case 'lightSwitch': setLightSwitchModalOpen(true); break;
+                                    case 'lightSwitch': 
+                                        console.log('Opening light switch modal');
+                                        setLightSwitchModalOpen(true); 
+                                        break;
                                     case 'fanSwitch': setFanSwitchModalOpen(true); break;
                                     case 'boilerSwitch': setBoilerSwitchModalOpen(true); break;
-                                    default: setModalOpen(true);
+                                    case 'switch':
+                                    case 'switches':
+                                        console.log('Opening default switch modal (light switch)');
+                                        setLightSwitchModalOpen(true);
+                                        break;
+                                    default: 
+                                        // Check if it's PDLC Film by category or name
+                                        if (categoryGroup.category.toLowerCase().includes('pdlc') || 
+                                            categoryGroup.category.toLowerCase().includes('film') ||
+                                            product.name.toLowerCase().includes('pdlc') ||
+                                            product.name.toLowerCase().includes('film')) {
+                                            console.log('Opening PDLC film modal (default case)');
+                                            setPdlcFilmModalOpen(true);
+                                        } else {
+                                            setModalOpen(true);
+                                        }
                                 }
                             }}
                         >
@@ -1571,6 +1566,34 @@ function InteractiveCheckout({
                         }
                     }}
                     product={(() => {
+                        // For subcategory products, get actual products from that subcategory
+                        if (selectedVariant.gangType && dbSubcategories.find(sub => sub.name === selectedVariant.gangType)) {
+                            const subcategory = dbSubcategories.find(sub => sub.name === selectedVariant.gangType);
+                            const subcategoryProducts = dbProducts.filter(p => p.subcategory_id === subcategory?.id);
+                            const firstProduct = subcategoryProducts[0];
+                            
+                            return {
+                                id: selectedVariant.id,
+                                name: selectedVariant.name,
+                                category: selectedVariant.gangType || 'Product',
+                                price: firstProduct ? firstProduct.price : parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                                description: firstProduct?.description || '',
+                                detailed_description: firstProduct?.detailed_description || '',
+                                features: firstProduct?.features || '',
+                                specifications: firstProduct?.specifications || '',
+                                warranty: firstProduct?.warranty || '',
+                                installation_included: firstProduct?.installation_included || false,
+                                image: selectedVariant.imageUrl,
+                                image2: firstProduct?.image2 || '',
+                                image3: firstProduct?.image3 || '',
+                                image4: firstProduct?.image4 || '',
+                                image5: firstProduct?.image5 || '',
+                                stock: firstProduct?.stock || 0,
+                                subcategoryProducts: subcategoryProducts
+                            };
+                        }
+                        
+                        // For direct products
                         const productData = dbProducts.find(p => p.id === selectedVariant.id);
                         return {
                             id: selectedVariant.id,
@@ -1901,7 +1924,11 @@ function InteractiveCheckout({
                             additional_image_2: productData.additional_image_2,
                             additional_image_3: productData.additional_image_3,
                             additional_image_4: productData.additional_image_4,
-                            additional_image_5: productData.additional_image_5
+                            additional_image_5: productData.additional_image_5,
+                            engraving_available: productData.engraving_available || true,
+                            engraving_price: productData.engraving_price || 200,
+                            engraving_image: productData.engraving_image || '',
+                            engraving_text_color: productData.engraving_text_color || '#000000'
                         } : {
                             id: selectedVariant.id,
                             name: selectedVariant.name,
@@ -1909,9 +1936,13 @@ function InteractiveCheckout({
                             price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
                             description: '',
                             image: selectedVariant.imageUrl,
-                            stock: 0
+                            stock: 0,
+                            engraving_available: true,
+                            engraving_price: 200,
+                            engraving_image: '',
+                            engraving_text_color: '#000000'
                         };
-                    })()}
+                    })()} 
                     addToCart={addToCart}
                     onAddToCart={async (payload) => {
                         if (selectedVariant && payload.productId) {

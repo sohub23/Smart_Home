@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
+import { useSupabase, enhancedProductService } from '@/supabase';
 
 interface RollerCurtainModalProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface RollerCurtainModalProps {
     image4?: string;
     image5?: string;
     stock: number;
+    subcategoryProducts?: any[];
   };
   onAddToCart: (payload: any) => Promise<void>;
   onBuyNow: (payload: any) => Promise<void>;
@@ -34,7 +36,7 @@ interface RollerCurtainModalProps {
 }
 
 export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: RollerCurtainModalProps) {
-
+  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [trackSizes, setTrackSizes] = useState([0]);
   const [trackQuantities, setTrackQuantities] = useState([1]);
@@ -45,41 +47,103 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState('Standard (up to 8 feet)');
+  const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
+  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
+  const [dynamicLoading, setDynamicLoading] = useState(true);
 
-  // Reset to default when modal opens
+  // Load dynamic products from admin portal
   useEffect(() => {
     if (open) {
+      loadRollerCurtainProducts();
       setConnectionType('zigbee');
+      setSelectedProduct(product.subcategoryProducts?.[0] || product);
     }
-  }, [open]);
+  }, [open, product]);
+
+  const loadRollerCurtainProducts = async () => {
+    try {
+      setDynamicLoading(true);
+      
+      // Get categories and subcategories
+      const [categories, subcategories] = await Promise.all([
+        executeQuery(() => enhancedProductService.getCategories()),
+        executeQuery(() => enhancedProductService.getSubcategories())
+      ]);
+      
+      // Find Curtains category
+      const curtainsCategory = categories.find(cat => 
+        cat.name.toLowerCase().includes('curtain')
+      );
+      
+      if (!curtainsCategory) {
+        console.log('Curtains category not found');
+        return;
+      }
+      
+      // Find Roller Curtain subcategory
+      const rollerSubcategory = subcategories.find(sub => 
+        sub.category_id === curtainsCategory.id && 
+        sub.name.toLowerCase().includes('roller')
+      );
+      
+      if (!rollerSubcategory) {
+        console.log('Roller Curtain subcategory not found');
+        return;
+      }
+      
+      // Get products from Roller Curtain subcategory
+      const products = await executeQuery(() => 
+        enhancedProductService.getProductsBySubcategory(rollerSubcategory.id)
+      );
+      
+      setDynamicProducts(products || []);
+      
+      // Set first product as selected if available
+      if (products && products.length > 0) {
+        setSelectedProduct(products[0]);
+      }
+      
+    } catch (error) {
+      console.error('Failed to load roller curtain products:', error);
+    } finally {
+      setDynamicLoading(false);
+    }
+  };
   const [showInstallationSetup, setShowInstallationSetup] = useState(false);
   const [installationNotes, setInstallationNotes] = useState('');
   const [installationTBD, setInstallationTBD] = useState(false);
 
-  const features = product.features ? product.features.split('\n').filter(f => f.trim()) : [];
-  const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
-  const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
+  const currentProductData = dynamicProducts.length > 0 ? selectedProduct : product;
+  const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
+  const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
+  const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
+  
+  console.log('Current product data:', currentProductData);
+  console.log('Overview:', currentProductData.overview);
+  console.log('Warranty:', currentProductData.warranty);
+  const allImages = [currentProductData.image, currentProductData.image2, currentProductData.image3, currentProductData.image4, currentProductData.image5].filter(Boolean);
 
   const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
   const smartCurtainInstallation = 0;
-  const totalWithInstallation = (product.price * totalQuantity);
+  const currentPrice = selectedProduct?.price || currentProductData.price;
+  const totalWithInstallation = (currentPrice * totalQuantity);
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
       const quantity = trackQuantities[0] || 1;
-      const basePrice = product.price * quantity;
+      const basePrice = currentPrice * quantity;
       const totalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
       
       const cartPayload = {
-        productId: `${product.id}_${Date.now()}`,
-        productName: `${product.name} (${connectionType.toUpperCase()})`,
+        productId: `${selectedProduct.id}_${Date.now()}`,
+        productName: `${selectedProduct.name || product.name} (${connectionType.toUpperCase()})`,
         quantity: quantity,
         trackSize: selectedSize,
         connectionType: connectionType,
         installationCharge: 0,
         totalPrice: totalPrice,
-        unitPrice: product.price
+        unitPrice: currentPrice
       };
       
       await onAddToCart(cartPayload);
@@ -213,20 +277,34 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {product.name}
+                {currentProductData.title || currentProductData.display_name || currentProductData.name}
               </h1>
+              
+
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-base text-gray-900">
-                    {(connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation).toLocaleString()} BDT
+                    {(() => {
+                      const basePrice = selectedProduct?.variants?.[0]?.price || currentPrice;
+                      const finalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
+                      return finalPrice.toLocaleString();
+                    })()} BDT
                   </span>
                   <span className="text-xs text-gray-500 line-through">
-                    {Math.round((connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation) * 1.3).toLocaleString()} BDT
+                    {(() => {
+                      const basePrice = selectedProduct?.variants?.[0]?.price || currentPrice;
+                      const finalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
+                      return Math.round(finalPrice * 1.3).toLocaleString();
+                    })()} BDT
                   </span>
                   <span className="text-xs text-gray-500">
-                    Save {Math.round((connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation) * 0.3).toLocaleString()} BDT
+                    Save {(() => {
+                      const basePrice = selectedProduct?.variants?.[0]?.price || currentPrice;
+                      const finalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
+                      return Math.round(finalPrice * 0.3).toLocaleString();
+                    })()} BDT
                   </span>
                 </div>
               </div>
@@ -274,44 +352,63 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     </div>
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Smart motorized roller curtain with app control and voice command integration
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Automated scheduling and remote operation for enhanced privacy and comfort
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Energy-efficient design with quiet operation and premium fabric options
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {(currentProductData.product_overview || currentProductData.overview) ? (
+                            <ul className="space-y-2">
+                              {(currentProductData.product_overview || currentProductData.overview).split('\n').filter(line => line.trim()).map((line, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {line.trim()}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-gray-400 italic">No overview available from admin portal</p>
+                          )}
+                        </div>
                       )}
                       {activeTab === 'bestfor' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            DC 12V brushless motor with max load 15kg and noise level below 35dB
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Zigbee 3.0/WiFi connectivity with 30m range and voice control support
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            32mm tube diameter, max 3m width/drop with AC power and battery backup
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {currentProductData.technical_details ? (
+                            <p className="leading-relaxed">{currentProductData.technical_details}</p>
+                          ) : specifications.length > 0 ? (
+                            <ul className="space-y-2">
+                              {specifications.map((spec, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {spec}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-gray-400 italic">No technical details available from admin portal</p>
+                          )}
+                        </div>
                       )}
                       {activeTab === 'bonuses' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            1 Year Service Warranty
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {currentProductData.warranty ? (
+                            <ul className="space-y-2">
+                              {currentProductData.warranty.split('\n').filter(line => line.trim()).map((line, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {line.trim()}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : warranty.length > 0 ? (
+                            <ul className="space-y-2">
+                              {warranty.map((warrantyItem, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {warrantyItem}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-gray-400 italic">No warranty information available from admin portal</p>
+                          )}
+                        </div>
                       )}
                     </div>
                   </AccordionContent>
@@ -460,7 +557,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           <div className="fixed bottom-0 left-0 right-0 lg:right-0 lg:left-auto lg:w-[600px] bg-white border-t lg:border-l border-gray-200 p-3 lg:p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || product.stock === 0}
+              disabled={loading || currentProductData.stock === 0}
               className="w-full h-10 lg:h-12 text-sm lg:text-base font-bold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
               style={{ backgroundColor: '#7e8898' }}
             >
@@ -473,7 +570,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </svg>
                   Adding to bag...
                 </span>
-              ) : product.stock === 0 ? 'Out of stock' : (
+              ) : currentProductData.stock === 0 ? 'Out of stock' : (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
@@ -486,9 +583,9 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
             </Button>
             
             {/* Stock Status */}
-            {product.stock <= 3 && product.stock > 0 && (
+            {currentProductData.stock <= 3 && currentProductData.stock > 0 && (
               <p className="text-center text-sm text-black font-medium mt-2">
-                Only {product.stock} left in stock - order soon!
+                Only {currentProductData.stock} left in stock - order soon!
               </p>
             )}
           </div>
@@ -512,7 +609,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
             <img
               src={allImages[0] || '/images/smart_switch/3 gang mechanical.webp'}
-              alt={product.name}
+              alt={currentProductData.name}
               className="w-32 h-32 object-cover rounded-lg"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -525,6 +622,9 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
             {/* Headline */}
             <div className="text-center mb-6">
               <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
+              {dynamicProducts.length > 0 && (
+                <p className="text-sm text-gray-600">Showing data from admin portal - {dynamicProducts.length} products available</p>
+              )}
             </div>
             
             {/* Options */}

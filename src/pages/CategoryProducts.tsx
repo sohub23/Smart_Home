@@ -86,7 +86,7 @@ const CategoryProducts = () => {
   const loadProducts = async () => {
     try {
       const data = await executeQuery(() => productService.getProducts());
-      const filteredProducts = (data || []).filter(p => p.category === category);
+      const filteredProducts = (data || []).filter(p => p.product_categories?.name === category);
       setProducts(filteredProducts);
     } catch (err) {
       console.error('Failed to load products:', err);

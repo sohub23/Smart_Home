@@ -18,6 +18,14 @@ import AdminCustomers from "./pages/AdminCustomers";
 import AdminUsers from "./pages/AdminUsers";
 import AdminCategories from "./pages/AdminCategories";
 import AdminCategoriesNew from "./pages/AdminCategoriesNew";
+import AdminProductsEnhanced from "./pages/AdminProductsEnhanced";
+import AdminProductsTest from "./pages/AdminProductsTest";
+import AdminProductsEnhancedSimple from "./pages/AdminProductsEnhancedSimple";
+import AdminProductsSimple from "./pages/AdminProductsSimple";
+import AdminCategoriesEnhanced from "./pages/AdminCategoriesEnhanced";
+import AdminCategoriesSimple from "./pages/AdminCategoriesSimple";
+import TestEnhanced from "./pages/TestEnhanced";
+import AdminConnectionTest from "./pages/AdminConnectionTest";
 import CategoryProducts from "./pages/CategoryProducts";
 import SetupDatabase from "./pages/SetupDatabase";
 import SetupStorage from "./pages/SetupStorage";
@@ -45,14 +53,18 @@ const App = () => (
           <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/orders" element={<ProtectedRoute><AdminOrders /></ProtectedRoute>} />
-          <Route path="/admin/products" element={<ProtectedRoute><AdminProducts /></ProtectedRoute>} />
+          <Route path="/admin/products" element={<ProtectedRoute><AdminProductsEnhanced /></ProtectedRoute>} />
           <Route path="/admin/products-new" element={<ProtectedRoute><AdminProductsNew /></ProtectedRoute>} />
           <Route path="/admin/products/:category" element={<ProtectedRoute><CategoryProducts /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
           <Route path="/admin/customers" element={<ProtectedRoute><AdminCustomers /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
           <Route path="/admin/categories" element={<ProtectedRoute><AdminCategories /></ProtectedRoute>} />
-          <Route path="/admin/categories-new" element={<ProtectedRoute><AdminCategoriesNew /></ProtectedRoute>} />
+          <Route path="/admin/categories-new" element={<ProtectedRoute><AdminCategoriesSimple /></ProtectedRoute>} />
+          <Route path="/admin/products-enhanced" element={<ProtectedRoute><AdminProductsEnhanced /></ProtectedRoute>} />
+          <Route path="/admin/products-test" element={<ProtectedRoute><AdminProductsTest /></ProtectedRoute>} />
+          <Route path="/admin/categories-enhanced" element={<ProtectedRoute><AdminCategoriesEnhanced /></ProtectedRoute>} />
+          <Route path="/admin/connection-test" element={<ProtectedRoute><AdminConnectionTest /></ProtectedRoute>} />
           <Route path="/setup-database" element={<SetupDatabase />} />
           <Route path="/setup-storage" element={<SetupStorage />} />
           <Route path="/update-schema" element={<UpdateProductSchema />} />

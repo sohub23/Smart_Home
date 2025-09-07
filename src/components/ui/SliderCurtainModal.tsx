@@ -6,34 +6,19 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
+import { enhancedProductService } from '@/supabase';
 
 interface SliderCurtainModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  product: {
-    id: string;
-    name: string;
-    category: string;
-    price: number;
-    description?: string;
-    detailed_description?: string;
-    features?: string;
-    specifications?: string;
-    warranty?: string;
-    installation_included?: boolean;
-    image?: string;
-    image2?: string;
-    image3?: string;
-    image4?: string;
-    image5?: string;
-    stock: number;
-  };
   onAddToCart: (payload: any) => Promise<void>;
   onBuyNow: (payload: any) => Promise<void>;
   addToCart?: (item: any) => void;
 }
 
-export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: SliderCurtainModalProps) {
+export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, addToCart }: SliderCurtainModalProps) {
+  const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [trackSizes, setTrackSizes] = useState([0]);
   const [trackQuantities, setTrackQuantities] = useState([1]);
@@ -45,16 +30,56 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [selectedVariation, setSelectedVariation] = useState('Select');
 
-  // Reset to default when modal opens
   useEffect(() => {
     if (open) {
+      loadSliderCurtainProducts();
       setConnectionType('zigbee');
     }
   }, [open]);
+
+  const loadSliderCurtainProducts = async () => {
+    try {
+      const [categories, subcategories, allProducts] = await Promise.all([
+        enhancedProductService.getCategories(),
+        enhancedProductService.getSubcategories(),
+        enhancedProductService.getProducts()
+      ]);
+
+      const sliderCurtainSubcategory = subcategories.find(sub => 
+        sub.name.toLowerCase().includes('slider') && sub.name.toLowerCase().includes('curtain')
+      );
+
+      if (sliderCurtainSubcategory) {
+        const sliderProducts = allProducts.filter(product => 
+          product.subcategory_id === sliderCurtainSubcategory.id
+        );
+        setProducts(sliderProducts);
+        if (sliderProducts.length > 0) {
+          setSelectedProduct(sliderProducts[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading slider curtain products:', error);
+    }
+  };
   const [showInstallationSetup, setShowInstallationSetup] = useState(false);
   const [installationNotes, setInstallationNotes] = useState('');
   const [installationTBD, setInstallationTBD] = useState(false);
 
+  if (!selectedProduct) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md p-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading slider curtain products...</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  const product = selectedProduct;
   const features = product.features ? product.features.split('\n').filter(f => f.trim()) : [];
   const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
   const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
@@ -83,7 +108,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       
       const cartPayload = {
         productId: `${product.id}_${Date.now()}`,
-        productName: `${product.name}${variationText}`,
+        productName: `${product.title || product.display_name}${variationText}`,
         quantity: quantity,
         trackSize: selectedVariation !== 'Select' ? selectedVariation : '8',
         connectionType: connectionType,
@@ -116,7 +141,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       
       toast({
         title: "Added to Bag",
-        description: `${product.name} added to your bag.`,
+        description: `${product.title || product.display_name} added to your bag.`,
       });
       onOpenChange(false);
     } catch (error) {
@@ -144,7 +169,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
                   <img
                     src={allImages[selectedImage] || '/images/smart_switch/3 gang mechanical.webp'}
-                    alt={product.name}
+                    alt={product.title || product.display_name}
                     className="w-full h-full object-cover rounded-lg"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -222,8 +247,29 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
             <div className="p-4 lg:p-8 bg-white lg:overflow-y-auto lg:max-h-[85vh]">
             {/* Top Section */}
             <div className="mb-6">
+              {products.length > 1 && (
+                <div className="mb-4">
+                  <label className="text-sm font-medium text-gray-700 mb-2 block">Select Product:</label>
+                  <select 
+                    value={selectedProduct.id}
+                    onChange={(e) => {
+                      const product = products.find(p => p.id === e.target.value);
+                      setSelectedProduct(product);
+                      setSelectedImage(0);
+                    }}
+                    className="w-full p-2 border border-gray-300 rounded-lg text-sm"
+                  >
+                    {products.map(product => (
+                      <option key={product.id} value={product.id}>
+                        {product.title || product.display_name} - {product.price.toLocaleString()} BDT
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {product.name}
+                {product.title || product.display_name}
               </h1>
               
               {/* Price Section */}
@@ -284,44 +330,72 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     </div>
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Smart motorized sliding curtain with app control and voice command integration
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Automated scheduling and remote operation for enhanced privacy and comfort
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Energy-efficient design with quiet operation and premium track system
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {product.product_overview ? (
+                            <p>{product.product_overview}</p>
+                          ) : features.length > 0 ? (
+                            <ul className="space-y-2">
+                              {features.map((feature, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>Smart motorized sliding curtain with app control and voice command integration for enhanced privacy and comfort.</p>
+                          )}
+                        </div>
                       )}
                       {activeTab === 'bestfor' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            DC 12V brushless motor with max load 15kg and noise level below 35dB
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Zigbee 3.0/WiFi connectivity with 30m range and voice control support
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Maximum track length 8.3m with sliding mechanism and smart home integration
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {specifications.length > 0 ? (
+                            <ul className="space-y-2">
+                              {specifications.map((spec, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {spec}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <ul className="space-y-2">
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                DC 12V brushless motor with max load 15kg and noise level below 35dB
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                Zigbee 3.0/WiFi connectivity with 30m range and voice control support
+                              </li>
+                            </ul>
+                          )}
+                        </div>
                       )}
                       {activeTab === 'bonuses' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            1 Year Service Warranty
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {product.warranty ? (
+                            product.warranty.split('\n').filter(w => w.trim()).length > 0 ? (
+                              <ul className="space-y-2">
+                                {product.warranty.split('\n').filter(w => w.trim()).map((warranty, index) => (
+                                  <li key={index} className="flex items-start gap-2">
+                                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                    {warranty}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p>{product.warranty}</p>
+                            )
+                          ) : (
+                            <ul className="space-y-2">
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                1 Year Service Warranty
+                              </li>
+                            </ul>
+                          )}
+                        </div>
                       )}
                     </div>
                   </AccordionContent>
@@ -377,7 +451,13 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   </AccordionTrigger>
                   <AccordionContent className="pb-2">
                     <div className="grid grid-cols-2 gap-2">
-                      {['4.1m(161.4inch)', '2.1m(82.6inch)', '5.1m(200.8inch)', '8.1m(318.9inch)', '3.1m(122inch)', '6.1m(240.2inch)', '7.1m(279.5inch)'].map((variation) => (
+                      {(product.size_options ? 
+                        product.size_options.split('\n').filter(option => option.trim()).map(option => {
+                          const [title] = option.split('|');
+                          return title?.trim() || option;
+                        }) : 
+                        ['4.1m(161.4inch)', '2.1m(82.6inch)', '5.1m(200.8inch)', '8.1m(318.9inch)', '3.1m(122inch)', '6.1m(240.2inch)', '7.1m(279.5inch)']
+                      ).map((variation) => (
                         <button
                           key={variation}
                           onClick={() => setSelectedVariation(variation)}

@@ -40,13 +40,8 @@ export interface Product {
   discount_price?: number
   shipping_time?: string
   shipping_cost: number
-  main_image: string
+  main_image?: string
   engraving_image?: string
-  engraving_available: boolean
-  engraving_price: number
-  engraving_text_color: string
-  installation_included: boolean
-  stock: number
   status: 'Active' | 'Inactive' | 'Draft'
   created_at: string
   updated_at: string
@@ -89,5 +84,14 @@ export interface ProductImage {
   alt_text?: string
   position: number
   image_type: 'gallery' | 'variant' | 'color' | 'gang'
+  created_at: string
+}
+
+export interface CategoryImage {
+  id: string
+  category: string
+  image_url: string
+  title?: string
+  is_active: boolean
   created_at: string
 }

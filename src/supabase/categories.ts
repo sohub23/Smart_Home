@@ -93,5 +93,38 @@ export const categoryService = {
     
     if (error) throw error
     return true
+  },
+
+  // Category Images
+  async getCategoryImages() {
+    const { data, error } = await supabase
+      .from('category_images')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data
+  },
+
+  async addCategoryImage(imageData: any) {
+    const { data, error } = await supabase
+      .from('category_images')
+      .insert([imageData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deleteCategoryImage(id: string) {
+    const { error } = await supabase
+      .from('category_images')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+    return true
   }
 }

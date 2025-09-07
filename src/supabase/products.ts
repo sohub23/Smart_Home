@@ -4,11 +4,13 @@ import { Product, ProductVariant, ProductColor, ProductImage } from './types'
 export const productService = {
   async getProducts(categoryId?: string, subcategoryId?: string) {
     let query = supabase
-      .from('products_new')
+      .from('products')
       .select(`
         *,
-        product_categories(name, slug),
-        product_subcategories(name, slug)
+        product_categories(name, slug, image),
+        product_subcategories(name, slug, image),
+        product_variants(*),
+        product_colors(*)
       `)
       .order('position')
     
@@ -22,11 +24,11 @@ export const productService = {
 
   async getProduct(id: string) {
     const { data, error } = await supabase
-      .from('products_new')
+      .from('products')
       .select(`
         *,
-        product_categories(name, slug),
-        product_subcategories(name, slug),
+        product_categories(name, slug, image),
+        product_subcategories(name, slug, image),
         product_variants(*),
         product_colors(*),
         product_images(*)
@@ -40,7 +42,7 @@ export const productService = {
 
   async createProduct(productData: Omit<Product, 'id' | 'created_at' | 'updated_at'>) {
     const { data, error } = await supabase
-      .from('products_new')
+      .from('products')
       .insert([productData])
       .select()
       .single()
@@ -51,7 +53,7 @@ export const productService = {
 
   async updateProduct(id: string, productData: Partial<Product>) {
     const { data, error } = await supabase
-      .from('products_new')
+      .from('products')
       .update({ ...productData, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
@@ -63,7 +65,7 @@ export const productService = {
 
   async deleteProduct(id: string) {
     const { error } = await supabase
-      .from('products_new')
+      .from('products')
       .delete()
       .eq('id', id)
     
