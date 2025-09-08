@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
+import { useSupabase, enhancedProductService } from '@/supabase';
 import { EngravingTrigger } from '@/components/ui/EngravingTrigger';
 import { EngravingModal } from '@/components/ui/EngravingModal';
 
@@ -33,6 +34,7 @@ interface LightSwitchModalProps {
     image4?: string;
     image5?: string;
     stock: number;
+    subcategoryProducts?: any[];
   };
   onAddToCart: (payload: any) => Promise<void>;
   onBuyNow: (payload: any) => Promise<void>;
@@ -40,6 +42,7 @@ interface LightSwitchModalProps {
 }
 
 export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: LightSwitchModalProps) {
+  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -52,45 +55,166 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const [selectedGang, setSelectedGang] = useState('one');
   const [gangImageIndex, setGangImageIndex] = useState(0);
   const [selectedColor, setSelectedColor] = useState('white');
+  const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
+  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
+  const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
-  // Reset to default when modal opens
+  // Load dynamic products from admin portal
   useEffect(() => {
     if (open) {
+      loadLightSwitchProducts();
+      setQuantity(1);
+      setSelectedProduct(product.subcategoryProducts?.[0] || product);
+    }
+  }, [open, product]);
+
+  // Reset quantity when variant changes
+  useEffect(() => {
+    if (selectedVariant) {
       setQuantity(1);
     }
-  }, [open]);
+  }, [selectedVariant]);
 
-  const features = product.features ? product.features.split('\n').filter(f => f.trim()) : [];
-  const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
+  const loadLightSwitchProducts = async () => {
+    try {
+      setDynamicLoading(true);
+      
+      // Get categories and subcategories
+      const [categories, subcategories] = await Promise.all([
+        executeQuery(() => enhancedProductService.getCategories()),
+        executeQuery(() => enhancedProductService.getSubcategories())
+      ]);
+      
+      // Find Switch category
+      const switchCategory = categories.find(cat => 
+        cat.name.toLowerCase().includes('switch')
+      );
+      
+      if (!switchCategory) {
+        console.log('Switch category not found');
+        return;
+      }
+      
+      // Find Light Switch subcategory
+      const lightSwitchSubcategory = subcategories.find(sub => 
+        sub.category_id === switchCategory.id && 
+        (sub.name.toLowerCase().includes('light') || sub.name.toLowerCase().includes('mechanical'))
+      );
+      
+      if (!lightSwitchSubcategory) {
+        console.log('Light Switch subcategory not found');
+        return;
+      }
+      
+      // Get all products from Light Switch subcategory
+      const products = await executeQuery(() => 
+        enhancedProductService.getProductsBySubcategory(lightSwitchSubcategory.id)
+      );
+      
+      setDynamicProducts(products || []);
+      console.log('All loaded products:', products?.map(p => ({
+        name: p.title || p.name,
+        price: p.price,
+        base_price: p.base_price,
+        unit_price: p.unit_price,
+        allPriceFields: Object.keys(p).filter(key => key.toLowerCase().includes('price'))
+      })));
+      
+      // Find 1 gang product as default
+      const oneGangProduct = products?.find(p => 
+        p.title?.toLowerCase().includes('1 gang') || 
+        p.display_name?.toLowerCase().includes('1 gang') ||
+        p.name?.toLowerCase().includes('1 gang')
+      );
+      
+      if (oneGangProduct) {
+        console.log('Setting selected product to 1 gang:', oneGangProduct);
+        setSelectedProduct(oneGangProduct);
+      } else if (products && products.length > 0) {
+        console.log('Setting selected product to first available:', products[0]);
+        setSelectedProduct(products[0]);
+      } else {
+        console.log('No products found, using original product:', product);
+        setSelectedProduct(product);
+      }
+      
+    } catch (error) {
+      console.error('Failed to load light switch products:', error);
+    } finally {
+      setDynamicLoading(false);
+    }
+  };
+
+  const currentProductData = product;
+  const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
+  const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
+  const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
+  // Get current price from selected product variants or product price
+  const getCurrentPrice = () => {
+    if (!selectedProduct) return 0;
+    
+    // Check if variants exist and parse them
+    let variants = selectedProduct.variants;
+    if (typeof variants === 'string') {
+      try {
+        variants = JSON.parse(variants);
+      } catch (e) {
+        variants = [];
+      }
+    }
+    
+    // Get price from first variant or fallback to product price
+    if (variants && variants.length > 0) {
+      const firstVariant = variants[0];
+      return firstVariant.discount_price && firstVariant.discount_price > 0 
+        ? firstVariant.discount_price 
+        : firstVariant.price || 0;
+    }
+    
+    return selectedProduct.price || 0;
+  };
+  
+  const currentPrice = getCurrentPrice();
+  
+  console.log('Price calculation:', {
+    selectedProduct: selectedProduct?.title || selectedProduct?.name,
+    variants: selectedProduct?.variants,
+    calculatedPrice: currentPrice,
+    productPrice: selectedProduct?.price
+  });
+  
   const gangImages = [
-    (product as any).gang_1_image,
-    (product as any).gang_2_image, 
-    (product as any).gang_3_image,
-    (product as any).gang_4_image
+    (selectedProduct as any)?.gang_1_image,
+    (selectedProduct as any)?.gang_2_image, 
+    (selectedProduct as any)?.gang_3_image,
+    (selectedProduct as any)?.gang_4_image
   ].filter(Boolean);
   
   const getCurrentGangImage = () => {
-    const gangMap = {
-      'one': (product as any).gang_1_image,
-      'two': (product as any).gang_2_image,
-      'three': (product as any).gang_3_image,
-      'four': (product as any).gang_4_image
-    };
-    return gangMap[selectedGang as keyof typeof gangMap];
+    // Use the selected product's main image since we're switching products based on gang selection
+    return selectedProduct?.image || selectedProduct?.image2 || selectedProduct?.image3 || selectedProduct?.image4 || selectedProduct?.image5;
   };
   
   const additionalImages = [
-    (product as any).additional_image_1,
-    (product as any).additional_image_2,
-    (product as any).additional_image_3,
-    (product as any).additional_image_4,
-    (product as any).additional_image_5
+    (selectedProduct as any)?.additional_image_1,
+    (selectedProduct as any)?.additional_image_2,
+    (selectedProduct as any)?.additional_image_3,
+    (selectedProduct as any)?.additional_image_4,
+    (selectedProduct as any)?.additional_image_5
   ].filter(Boolean);
   
-  const allImages = [getCurrentGangImage(), ...additionalImages].filter(Boolean);
+  const allImages = [
+    selectedProduct?.image,
+    selectedProduct?.image2,
+    selectedProduct?.image3,
+    selectedProduct?.image4,
+    selectedProduct?.image5,
+    ...additionalImages
+  ].filter(Boolean);
 
-  const engravingPrice = engravingText && product.engraving_price ? product.engraving_price * quantity : 0;
-  const totalPrice = (product.price * quantity) + engravingPrice;
+  const engravingPrice = engravingText && (selectedProduct?.engraving_price || currentProductData.engraving_price) ? (selectedProduct?.engraving_price || currentProductData.engraving_price) * quantity : 0;
+  const totalPrice = (currentPrice * quantity) + engravingPrice;
 
   const handleAddToCart = async () => {
     setLoading(true);
@@ -110,7 +234,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       } else {
         await onAddToCart({
           productId: product.id,
-          productName: `${product.name} - ${selectedGang.charAt(0).toUpperCase() + selectedGang.slice(1)} Gang`,
+          productName: `${product.name} - ${selectedGang.charAt(0).toUpperCase() + selectedGang.slice(1)} Gang${engravingText ? ` (Engraved: "${engravingText}")` : ''}`,
           quantity: quantity,
           installationCharge: 0,
           engravingText: engravingText || undefined,
@@ -248,7 +372,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {product.name || 'Light Switch'}
+                {selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || currentProductData.title || currentProductData.display_name || currentProductData.name}
               </h1>
               
               {/* Price Section */}
@@ -257,15 +381,19 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                   <span className="text-base text-gray-900">
                     {totalPrice.toLocaleString()} BDT
                   </span>
-                  <span className="text-xs text-gray-500 line-through">
-                    {Math.round(totalPrice * 1.3).toLocaleString()} BDT
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Save {Math.round(totalPrice * 0.3).toLocaleString()} BDT
-                  </span>
+                  {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.price > 0 && (
+                    <>
+                      <span className="text-xs text-gray-500 line-through">
+                        {(selectedVariant.price * quantity + engravingPrice).toLocaleString()} BDT
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Save {((selectedVariant.price - selectedVariant.discount_price) * quantity).toLocaleString()} BDT
+                      </span>
+                    </>
+                  )}
                 </div>
-                {product.engraving_available && product.engraving_price && (
-                  <p className="text-sm text-gray-600">+{product.engraving_price} BDT for customization</p>
+                {(selectedProduct?.engraving_available || currentProductData.engraving_available) && (selectedProduct?.engraving_price || currentProductData.engraving_price) && (
+                  <p className="text-sm text-gray-600">+{selectedProduct?.engraving_price || currentProductData.engraving_price} BDT for customization</p>
                 )}
               </div>
               
@@ -312,44 +440,95 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                     </div>
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Traditional mechanical switch with reliable tactile feedback
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Durable construction with premium materials for long-lasting performance
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Easy installation with standard wiring compatibility
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {(selectedProduct?.overview || selectedProduct?.description) ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.overview || selectedProduct.description 
+                              }}
+                            />
+                          ) : (
+                            <ul className="space-y-2">
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                Traditional mechanical switch with reliable tactile feedback
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                Durable construction with premium materials for long-lasting performance
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                Easy installation with standard wiring compatibility
+                              </li>
+                            </ul>
+                          )}
+                        </div>
                       )}
                       {activeTab === 'bestfor' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            AC 100-240V input with mechanical switching mechanism
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Standard electrical box mounting with secure installation
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            High-quality plastic housing with smooth operation
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {selectedProduct?.technical_details ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.technical_details 
+                              }}
+                            />
+                          ) : specifications.length > 0 ? (
+                            <ul className="space-y-2">
+                              {specifications.map((spec, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {spec}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <ul className="space-y-2">
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                AC 100-240V input with mechanical switching mechanism
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                Standard electrical box mounting with secure installation
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                High-quality plastic housing with smooth operation
+                              </li>
+                            </ul>
+                          )}
+                        </div>
                       )}
                       {activeTab === 'bonuses' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            1 Year Service Warranty
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          {selectedProduct?.warranty ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.warranty 
+                              }}
+                            />
+                          ) : warranty.length > 0 ? (
+                            <ul className="space-y-2">
+                              {warranty.map((warrantyItem, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {warrantyItem}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <ul className="space-y-2">
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                1 Year Service Warranty
+                              </li>
+                            </ul>
+                          )}
+                        </div>
                       )}
                     </div>
                   </AccordionContent>
@@ -361,151 +540,85 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             <div className="mb-4">
               <h3 className="text-sm font-semibold text-gray-900 mb-3">Choose Your Model</h3>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div 
-                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    selectedGang === 'one' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                  onClick={() => {
-                    setSelectedGang('one');
-                    setSelectedImage(0);
-                  }}
-                >
-                  <div className="text-center">
-                    <div className="mb-2 flex justify-center">
-                      <div className={`w-8 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'one' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          selectedGang === 'one' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
+                {['one', 'two', 'three', 'four'].map((gang) => {
+                  const gangNumber = gang === 'one' ? '1' : gang === 'two' ? '2' : gang === 'three' ? '3' : '4';
+                  const gangProduct = dynamicProducts.find(p => 
+                    p.title?.toLowerCase().includes(`${gangNumber} gang`) || 
+                    p.display_name?.toLowerCase().includes(`${gangNumber} gang`) ||
+                    p.name?.toLowerCase().includes(`${gangNumber} gang`)
+                  );
+                  
+                  // Get price from product variants
+                  let gangPrice = 0;
+                  if (gangProduct) {
+                    // Check if variants exist and parse them
+                    let variants = gangProduct.variants;
+                    if (typeof variants === 'string') {
+                      try {
+                        variants = JSON.parse(variants);
+                      } catch (e) {
+                        variants = [];
+                      }
+                    }
+                    
+                    // Get price from first variant or fallback to product price
+                    if (variants && variants.length > 0) {
+                      const firstVariant = variants[0];
+                      gangPrice = firstVariant.discount_price && firstVariant.discount_price > 0 
+                        ? firstVariant.discount_price 
+                        : firstVariant.price || 0;
+                    } else {
+                      gangPrice = gangProduct.price || gangProduct.base_price || gangProduct.unit_price || 0;
+                    }
+                  }
+                  
+                  console.log(`Gang ${gangNumber}:`, {
+                    product: gangProduct?.title || gangProduct?.name,
+                    variants: gangProduct?.variants,
+                    finalPrice: gangPrice
+                  });
+                  
+                  const isAvailable = !!gangProduct;
+                  const isSelected = selectedGang === gang;
+                  
+                  return (
+                    <div 
+                      key={gang}
+                      className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        isSelected ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 
+                        isAvailable ? 'border-gray-200 hover:border-gray-300 bg-white' : 
+                        'border-gray-100 bg-gray-50 cursor-not-allowed opacity-50'
+                      }`}
+                      onClick={() => {
+                        if (isAvailable && gangProduct) {
+                          setSelectedGang(gang);
+                          setSelectedProduct(gangProduct);
+                          setSelectedImage(0);
+                        }
+                      }}
+                    >
+                      <div className="text-center">
+                        <div className="mb-2 flex justify-center gap-0.5">
+                          {Array.from({ length: parseInt(gangNumber) }).map((_, i) => (
+                            <div key={i} className={`${gangNumber === '1' ? 'w-8' : gangNumber === '2' ? 'w-4' : gangNumber === '3' ? 'w-3' : 'w-2'} h-6 rounded border-2 flex items-center justify-center ${
+                              isSelected ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
+                            }`}>
+                              <div className={`${gangNumber === '1' ? 'w-2 h-2' : gangNumber === '4' ? 'w-0.5 h-1' : 'w-1 h-1'} rounded-full ${
+                                isSelected ? 'bg-[#0a1d3a]' : 'bg-gray-400'
+                              }`}></div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`font-medium text-xs ${
+                          isSelected ? 'text-[#0a1d3a]' : isAvailable ? 'text-gray-700' : 'text-gray-400'
+                        }`}>{gangNumber} Gang</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {isAvailable ? `${gangPrice.toLocaleString()} BDT` : 'Not Available'}
+                        </div>
                       </div>
                     </div>
-                    <div className={`font-medium text-xs ${
-                      selectedGang === 'one' ? 'text-[#0a1d3a]' : 'text-gray-700'
-                    }`}>1 Gang</div>
-                    <div className="text-xs text-gray-500 mt-1">Single Switch</div>
-                  </div>
-                </div>
-                
-                <div 
-                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    selectedGang === 'two' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                  onClick={() => {
-                    setSelectedGang('two');
-                    setSelectedImage(0);
-                  }}
-                >
-                  <div className="text-center">
-                    <div className="mb-2 flex justify-center gap-1">
-                      <div className={`w-4 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'two' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-1 h-1 rounded-full ${
-                          selectedGang === 'two' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                      <div className={`w-4 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'two' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-1 h-1 rounded-full ${
-                          selectedGang === 'two' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                    </div>
-                    <div className={`font-medium text-xs ${
-                      selectedGang === 'two' ? 'text-[#0a1d3a]' : 'text-gray-700'
-                    }`}>2 Gang</div>
-                    <div className="text-xs text-gray-500 mt-1">Double Switch</div>
-                  </div>
-                </div>
-                
-                <div 
-                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    selectedGang === 'three' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                  onClick={() => {
-                    setSelectedGang('three');
-                    setSelectedImage(0);
-                  }}
-                >
-                  <div className="text-center">
-                    <div className="mb-2 flex justify-center gap-0.5">
-                      <div className={`w-3 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'three' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-1 h-1 rounded-full ${
-                          selectedGang === 'three' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                      <div className={`w-3 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'three' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-1 h-1 rounded-full ${
-                          selectedGang === 'three' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                      <div className={`w-3 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'three' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-1 h-1 rounded-full ${
-                          selectedGang === 'three' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                    </div>
-                    <div className={`font-medium text-xs ${
-                      selectedGang === 'three' ? 'text-[#0a1d3a]' : 'text-gray-700'
-                    }`}>3 Gang</div>
-                    <div className="text-xs text-gray-500 mt-1">Triple Switch</div>
-                  </div>
-                </div>
-                
-                <div 
-                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                    selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                  onClick={() => {
-                    setSelectedGang('four');
-                    setSelectedImage(0);
-                  }}
-                >
-                  <div className="text-center">
-                    <div className="mb-2 flex justify-center gap-0.5">
-                      <div className={`w-2 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-0.5 h-1 rounded-full ${
-                          selectedGang === 'four' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                      <div className={`w-2 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-0.5 h-1 rounded-full ${
-                          selectedGang === 'four' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                      <div className={`w-2 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-0.5 h-1 rounded-full ${
-                          selectedGang === 'four' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                      <div className={`w-2 h-6 rounded border-2 flex items-center justify-center ${
-                        selectedGang === 'four' ? 'border-[#0a1d3a] bg-[#0a1d3a]/10' : 'border-gray-300'
-                      }`}>
-                        <div className={`w-0.5 h-1 rounded-full ${
-                          selectedGang === 'four' ? 'bg-[#0a1d3a]' : 'bg-gray-400'
-                        }`}></div>
-                      </div>
-                    </div>
-                    <div className={`font-medium text-xs ${
-                      selectedGang === 'four' ? 'text-[#0a1d3a]' : 'text-gray-700'
-                    }`}>4 Gang</div>
-                    <div className="text-xs text-gray-500 mt-1">Quad Switch</div>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -544,7 +657,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             </div>
 
             {/* Customization Section */}
-            {product.engraving_available && (
+            {(selectedProduct?.engraving_available || currentProductData.engraving_available) && (
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Personalization</h3>
                 <div 
@@ -586,7 +699,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                       <div className={`text-sm font-semibold ${
                         engravingText ? 'text-[#0a1d3a]' : 'text-gray-700'
                       }`}>
-                        +{((product.engraving_price || 200) * quantity).toLocaleString()} BDT
+                        +{((selectedProduct?.engraving_price || currentProductData.engraving_price || 200) * quantity).toLocaleString()} BDT
                       </div>
                       <div className="text-xs text-gray-500 mt-0.5">
                         {engravingText ? 'Click to edit' : 'Optional'}
@@ -664,7 +777,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
           <div className="fixed bottom-0 left-0 right-0 lg:right-0 lg:left-auto lg:w-[600px] bg-white border-t lg:border-l border-gray-200 p-3 lg:p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || product.stock === 0}
+              disabled={loading || (selectedVariant && selectedVariant.stock === 0)}
               className="w-full h-10 lg:h-12 text-sm lg:text-base font-bold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
               style={{ backgroundColor: '#7e8898' }}
             >
@@ -677,7 +790,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                   </svg>
                   Adding to bag...
                 </span>
-              ) : product.stock === 0 ? 'Out of stock' : (
+              ) : (selectedVariant && selectedVariant.stock === 0) ? 'Out of stock' : (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
@@ -690,9 +803,9 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             </Button>
             
             {/* Stock Status */}
-            {product.stock <= 3 && product.stock > 0 && (
+            {selectedVariant && selectedVariant.stock <= 3 && selectedVariant.stock > 0 && (
               <p className="text-center text-sm text-black font-medium mt-2">
-                Only {product.stock} left in stock - order soon!
+                Only {selectedVariant.stock} left in stock - order soon!
               </p>
             )}
           </div>
@@ -715,12 +828,13 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
           {/* Product Image */}
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
             <img
-              src={allImages[0] || product.image}
-              alt={product.name}
+              src={selectedProduct?.help_image_url || allImages[0] || currentProductData.image}
+              alt={selectedProduct?.name || currentProductData.name}
               className="w-32 h-32 object-cover rounded-lg"
               onError={(e) => {
+                console.log('Help image failed to load:', selectedProduct?.help_image_url);
                 const target = e.target as HTMLImageElement;
-                target.src = product.image || '';
+                target.src = currentProductData.image || '';
               }}
             />
           </div>
@@ -731,39 +845,44 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
               <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
             </div>
             
-            {/* Options */}
-            <div className="space-y-6">
-              {/* Option 1 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Standard Installation (+0 BDT)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Basic light switch installation with proper wiring and mounting. Perfect for single switches or small installations. Includes safety check and testing.
-                </p>
+            {/* Help Text from Database */}
+            {selectedProduct?.help_text ? (
+              <div 
+                className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: selectedProduct.help_text }}
+              />
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Standard Installation (+0 BDT)</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Basic light switch installation with proper wiring and mounting. Perfect for single switches or small installations. Includes safety check and testing.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Premium Installation (+800 BDT)</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Complete professional service with electrical safety check, advanced wiring, and circuit testing. Includes 1-year installation warranty and priority support.
+                  </p>
+                </div>
               </div>
-              
-              {/* Option 2 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Premium Installation (+800 BDT)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Complete professional service with electrical safety check, advanced wiring, and circuit testing. Includes 1-year installation warranty and priority support.
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
       
       {/* Engraving Modal */}
-      {product.engraving_available && engravingModalOpen && (
+      {(selectedProduct?.engraving_available || currentProductData.engraving_available) && engravingModalOpen && (
         <>
           <div className="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm" />
           <EngravingModal
             open={engravingModalOpen}
             onOpenChange={setEngravingModalOpen}
-            productImage={allImages[selectedImage] || product.image || ''}
-            engravingImage={product.engraving_image}
-            productName={product.name}
-            engravingTextColor={product.engraving_text_color}
+            productImage={allImages[selectedImage] || currentProductData.image || ''}
+            engravingImage={selectedProduct?.engraving_image || currentProductData.engraving_image}
+            productName={selectedProduct?.name || currentProductData.name}
+            engravingTextColor={selectedProduct?.engraving_text_color || currentProductData.engraving_text_color}
             initialText={engravingText}
             currentQuantity={quantity}
             onSave={({ text }) => {

@@ -76,6 +76,7 @@ export function FanSwitchModal({ open, onOpenChange, product, onAddToCart, onBuy
     try {
       await onAddToCart({
         productId: product.id,
+        productName: `${product.name}${engravingText ? ` (Engraved: "${engravingText}")` : ''}`,
         quantity: quantity,
         installationCharge: 0,
         engravingText: engravingText || undefined,

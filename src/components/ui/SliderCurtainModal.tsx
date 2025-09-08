@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,19 +6,37 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { enhancedProductService } from '@/supabase';
+import { useSupabase, enhancedProductService } from '@/supabase';
 
 interface SliderCurtainModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  product: {
+    id: string;
+    name: string;
+    category: string;
+    price: number;
+    description?: string;
+    detailed_description?: string;
+    features?: string;
+    specifications?: string;
+    warranty?: string;
+    installation_included?: boolean;
+    image?: string;
+    image2?: string;
+    image3?: string;
+    image4?: string;
+    image5?: string;
+    stock: number;
+    subcategoryProducts?: any[];
+  };
   onAddToCart: (payload: any) => Promise<void>;
   onBuyNow: (payload: any) => Promise<void>;
   addToCart?: (item: any) => void;
 }
 
-export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, addToCart }: SliderCurtainModalProps) {
-  const [products, setProducts] = useState([]);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: SliderCurtainModalProps) {
+  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [trackSizes, setTrackSizes] = useState([0]);
   const [trackQuantities, setTrackQuantities] = useState([1]);
@@ -28,93 +46,140 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
   const [connectionType, setConnectionType] = useState('zigbee');
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedVariation, setSelectedVariation] = useState('Select');
+  const [selectedSize, setSelectedSize] = useState('Standard (up to 8 feet)');
+  const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
+  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
+  const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
+  // Load dynamic products from admin portal
   useEffect(() => {
     if (open) {
       loadSliderCurtainProducts();
       setConnectionType('zigbee');
+      setSelectedProduct(product.subcategoryProducts?.[0] || product);
     }
-  }, [open]);
+  }, [open, product]);
+
+  // Reset quantity when variant changes
+  useEffect(() => {
+    if (selectedVariant) {
+      setTrackQuantities([1]);
+    }
+  }, [selectedVariant]);
 
   const loadSliderCurtainProducts = async () => {
     try {
-      const [categories, subcategories, allProducts] = await Promise.all([
-        enhancedProductService.getCategories(),
-        enhancedProductService.getSubcategories(),
-        enhancedProductService.getProducts()
+      setDynamicLoading(true);
+      
+      // Get categories and subcategories
+      const [categories, subcategories] = await Promise.all([
+        executeQuery(() => enhancedProductService.getCategories()),
+        executeQuery(() => enhancedProductService.getSubcategories())
       ]);
-
-      const sliderCurtainSubcategory = subcategories.find(sub => 
-        sub.name.toLowerCase().includes('slider') && sub.name.toLowerCase().includes('curtain')
+      
+      // Find Curtains category
+      const curtainsCategory = categories.find(cat => 
+        cat.name.toLowerCase().includes('curtain')
       );
-
-      if (sliderCurtainSubcategory) {
-        const sliderProducts = allProducts.filter(product => 
-          product.subcategory_id === sliderCurtainSubcategory.id
-        );
-        setProducts(sliderProducts);
-        if (sliderProducts.length > 0) {
-          setSelectedProduct(sliderProducts[0]);
-        }
+      
+      if (!curtainsCategory) {
+        console.log('Curtains category not found');
+        return;
       }
+      
+      // Find Slider Curtain subcategory
+      const sliderSubcategory = subcategories.find(sub => 
+        sub.category_id === curtainsCategory.id && 
+        sub.name.toLowerCase().includes('slider')
+      );
+      
+      if (!sliderSubcategory) {
+        console.log('Slider Curtain subcategory not found');
+        return;
+      }
+      
+      // Get products from Slider Curtain subcategory
+      const products = await executeQuery(() => 
+        enhancedProductService.getProductsBySubcategory(sliderSubcategory.id)
+      );
+      
+      setDynamicProducts(products || []);
+      
+      // Set first product as selected if available
+      if (products && products.length > 0) {
+        console.log('Setting selected product to:', products[0]);
+        setSelectedProduct(products[0]);
+        // Parse variants if they're stored as JSON string
+        let variants = products[0].variants;
+        console.log('Raw variants from product:', variants);
+        if (typeof variants === 'string') {
+          try {
+            variants = JSON.parse(variants);
+            console.log('Parsed variants:', variants);
+          } catch (e) {
+            console.log('Failed to parse variants:', e);
+            variants = [];
+          }
+        }
+        // Set first variant as selected if available
+        if (variants && variants.length > 0) {
+          console.log('Setting selected variant to:', variants[0]);
+          setSelectedVariant(variants[0]);
+        } else {
+          console.log('No variants found, using product price:', products[0].price);
+        }
+      } else {
+        console.log('No products found, using original product:', product);
+        setSelectedProduct(product);
+      }
+      
     } catch (error) {
-      console.error('Error loading slider curtain products:', error);
+      console.error('Failed to load slider curtain products:', error);
+    } finally {
+      setDynamicLoading(false);
     }
   };
   const [showInstallationSetup, setShowInstallationSetup] = useState(false);
   const [installationNotes, setInstallationNotes] = useState('');
   const [installationTBD, setInstallationTBD] = useState(false);
 
-  if (!selectedProduct) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md p-6">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading slider curtain products...</p>
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  const product = selectedProduct;
-  const features = product.features ? product.features.split('\n').filter(f => f.trim()) : [];
-  const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
-  const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
+  const currentProductData = product;
+  const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
+  const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
+  const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
+  const currentPrice = (selectedVariant?.discount_price && selectedVariant.discount_price > 0 ? selectedVariant.discount_price : selectedVariant?.price) || selectedProduct?.price || currentProductData.price || product.price || 0;
+  
+  console.log('Current product data:', currentProductData);
+  console.log('Selected product:', selectedProduct);
+  console.log('Dynamic products:', dynamicProducts);
+  console.log('Selected variant:', selectedVariant);
+  console.log('Current price:', currentPrice);
+  console.log('Product price:', currentProductData.price);
+  console.log('Selected product price:', selectedProduct?.price);
+  console.log('Selected product variants:', selectedProduct?.variants);
+  const allImages = [currentProductData.image, currentProductData.image2, currentProductData.image3, currentProductData.image4, currentProductData.image5].filter(Boolean);
 
   const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
   const smartCurtainInstallation = 0;
-  const totalWithInstallation = (product.price * totalQuantity);
+  const totalWithInstallation = (currentPrice * totalQuantity);
 
   const handleAddToCart = async () => {
-    if (selectedVariation === 'Select') {
-      toast({
-        title: "Please Select Variation",
-        description: "Please select a variation before adding to bag.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     setLoading(true);
     try {
       const quantity = trackQuantities[0] || 1;
-      const basePrice = product.price * quantity;
+      const basePrice = currentPrice * quantity;
       const totalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
       
-      const variationText = selectedVariation !== 'Select' ? ` - ${selectedVariation}` : '';
-      
       const cartPayload = {
-        productId: `${product.id}_${Date.now()}`,
-        productName: `${product.title || product.display_name}${variationText}`,
+        productId: `${selectedProduct.id}_${Date.now()}`,
+        productName: `${selectedProduct.name || product.name} (${connectionType.toUpperCase()})`,
         quantity: quantity,
-        trackSize: selectedVariation !== 'Select' ? selectedVariation : '8',
+        trackSize: selectedSize,
         connectionType: connectionType,
         installationCharge: 0,
         totalPrice: totalPrice,
-        unitPrice: product.price
+        unitPrice: currentPrice
       };
       
       await onAddToCart(cartPayload);
@@ -141,7 +206,7 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
       
       toast({
         title: "Added to Bag",
-        description: `${product.title || product.display_name} added to your bag.`,
+        description: `${product.name} added to your bag.`,
       });
       onOpenChange(false);
     } catch (error) {
@@ -247,43 +312,26 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
             <div className="p-4 lg:p-8 bg-white lg:overflow-y-auto lg:max-h-[85vh]">
             {/* Top Section */}
             <div className="mb-6">
-              {products.length > 1 && (
-                <div className="mb-4">
-                  <label className="text-sm font-medium text-gray-700 mb-2 block">Select Product:</label>
-                  <select 
-                    value={selectedProduct.id}
-                    onChange={(e) => {
-                      const product = products.find(p => p.id === e.target.value);
-                      setSelectedProduct(product);
-                      setSelectedImage(0);
-                    }}
-                    className="w-full p-2 border border-gray-300 rounded-lg text-sm"
-                  >
-                    {products.map(product => (
-                      <option key={product.id} value={product.id}>
-                        {product.title || product.display_name} - {product.price.toLocaleString()} BDT
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {product.title || product.display_name}
+                {selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || currentProductData.title || currentProductData.display_name || currentProductData.name}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-base text-gray-900">
-                    {(connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation).toLocaleString()} BDT
+                    {currentPrice.toLocaleString()} BDT
                   </span>
-                  <span className="text-xs text-gray-500 line-through">
-                    {Math.round((connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation) * 1.3).toLocaleString()} BDT
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Save {Math.round((connectionType === 'wifi' ? totalWithInstallation + 2000 : totalWithInstallation) * 0.3).toLocaleString()} BDT
-                  </span>
+                  {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.price > 0 && (
+                    <>
+                      <span className="text-xs text-gray-500 line-through">
+                        {selectedVariant.price.toLocaleString()} BDT
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        Save {(selectedVariant.price - selectedVariant.discount_price).toLocaleString()} BDT
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -331,25 +379,28 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          {product.product_overview ? (
-                            <p>{product.product_overview}</p>
-                          ) : features.length > 0 ? (
-                            <ul className="space-y-2">
-                              {features.map((feature, index) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                  {feature}
-                                </li>
-                              ))}
-                            </ul>
+                          {(selectedProduct?.overview || selectedProduct?.description) ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.overview || selectedProduct.description 
+                              }}
+                            />
                           ) : (
-                            <p>Smart motorized sliding curtain with app control and voice command integration for enhanced privacy and comfort.</p>
+                            <p className="text-gray-400 italic">No overview available from admin portal</p>
                           )}
                         </div>
                       )}
                       {activeTab === 'bestfor' && (
                         <div className="text-sm text-gray-500">
-                          {specifications.length > 0 ? (
+                          {selectedProduct?.technical_details ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.technical_details 
+                              }}
+                            />
+                          ) : specifications.length > 0 ? (
                             <ul className="space-y-2">
                               {specifications.map((spec, index) => (
                                 <li key={index} className="flex items-start gap-2">
@@ -359,41 +410,30 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
                               ))}
                             </ul>
                           ) : (
-                            <ul className="space-y-2">
-                              <li className="flex items-start gap-2">
-                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                DC 12V brushless motor with max load 15kg and noise level below 35dB
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Zigbee 3.0/WiFi connectivity with 30m range and voice control support
-                              </li>
-                            </ul>
+                            <p className="text-gray-400 italic">No technical details available from admin portal</p>
                           )}
                         </div>
                       )}
                       {activeTab === 'bonuses' && (
                         <div className="text-sm text-gray-500">
-                          {product.warranty ? (
-                            product.warranty.split('\n').filter(w => w.trim()).length > 0 ? (
-                              <ul className="space-y-2">
-                                {product.warranty.split('\n').filter(w => w.trim()).map((warranty, index) => (
-                                  <li key={index} className="flex items-start gap-2">
-                                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                    {warranty}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <p>{product.warranty}</p>
-                            )
-                          ) : (
+                          {selectedProduct?.warranty ? (
+                            <div 
+                              className="prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: selectedProduct.warranty 
+                              }}
+                            />
+                          ) : warranty.length > 0 ? (
                             <ul className="space-y-2">
-                              <li className="flex items-start gap-2">
-                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                1 Year Service Warranty
-                              </li>
+                              {warranty.map((warrantyItem, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {warrantyItem}
+                                </li>
+                              ))}
                             </ul>
+                          ) : (
+                            <p className="text-gray-400 italic">No warranty information available from admin portal</p>
                           )}
                         </div>
                       )}
@@ -445,29 +485,65 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
                 <AccordionItem value="variations" className="border-none">
                   <AccordionTrigger className="text-left text-sm font-medium no-underline hover:no-underline py-2">
                     <div className="flex items-center justify-between w-full">
-                      <span className="font-semibold">Variations - {selectedVariation}</span>
-                      {selectedVariation === 'Select' && <span className="text-xs text-red-700">(Required)</span>}
+                      <span className="font-semibold">
+                        {(() => {
+                          let variants = selectedProduct?.variants || [];
+                          if (typeof variants === 'string') {
+                            try {
+                              variants = JSON.parse(variants);
+                            } catch (e) {
+                              variants = [];
+                            }
+                          }
+                          return variants.length > 0 ? 
+                            `Variant - ${selectedVariant?.name || 'Select variant'}` : 
+                            `Size - ${selectedSize}`;
+                        })()
+                        }
+                      </span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pb-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      {(product.size_options ? 
-                        product.size_options.split('\n').filter(option => option.trim()).map(option => {
-                          const [title] = option.split('|');
-                          return title?.trim() || option;
-                        }) : 
-                        ['4.1m(161.4inch)', '2.1m(82.6inch)', '5.1m(200.8inch)', '8.1m(318.9inch)', '3.1m(122inch)', '6.1m(240.2inch)', '7.1m(279.5inch)']
-                      ).map((variation) => (
-                        <button
-                          key={variation}
-                          onClick={() => setSelectedVariation(variation)}
-                          className={`p-3 text-xs rounded-lg border-2 transition-all ${
-                            selectedVariation === variation ? 'border-gray-400 bg-gray-100 font-bold' : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          {variation}
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-1 gap-2">
+                      {(() => {
+                        let variants = selectedProduct?.variants || [];
+                        if (typeof variants === 'string') {
+                          try {
+                            variants = JSON.parse(variants);
+                          } catch (e) {
+                            variants = [];
+                          }
+                        }
+                        return variants.length > 0 ? (
+                          variants.map((variant: any, index: number) => (
+                            <button
+                              key={variant.id || index}
+                              onClick={() => {
+                                setSelectedVariant(variant);
+                                setSelectedSize(variant.name);
+                              }}
+                              className={`p-3 text-xs rounded-lg border-2 transition-all flex justify-between items-center ${
+                                selectedVariant?.name === variant.name ? 'border-gray-400 bg-gray-100 font-bold' : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <span>{variant.name}</span>
+                              <span className="font-bold">{(variant.discount_price && variant.discount_price > 0 ? variant.discount_price : variant.price)?.toLocaleString()} BDT</span>
+                            </button>
+                          ))
+                        ) : (
+                          ['Standard (up to 8 feet)', 'Large (8-12 feet) - Requires 2 motors', 'Extra Large (12+ feet) - Custom quote'].map((size) => (
+                            <button
+                              key={size}
+                              onClick={() => setSelectedSize(size)}
+                              className={`p-3 text-xs rounded-lg border-2 transition-all ${
+                                selectedSize === size ? 'border-gray-400 bg-gray-100 font-bold' : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              {size}
+                            </button>
+                          ))
+                        );
+                      })()}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -552,7 +628,7 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
           <div className="fixed bottom-0 left-0 right-0 lg:right-0 lg:left-auto lg:w-[600px] bg-white border-t lg:border-l border-gray-200 p-3 lg:p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || product.stock === 0}
+              disabled={loading || (selectedVariant && selectedVariant.stock === 0)}
               className="w-full h-10 lg:h-12 text-sm lg:text-base font-bold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
               style={{ backgroundColor: '#7e8898' }}
             >
@@ -565,7 +641,7 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
                   </svg>
                   Adding to bag...
                 </span>
-              ) : product.stock === 0 ? 'Out of stock' : (
+              ) : (selectedVariant && selectedVariant.stock === 0) ? 'Out of stock' : (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
@@ -578,9 +654,9 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
             </Button>
             
             {/* Stock Status */}
-            {product.stock <= 3 && product.stock > 0 && (
+            {selectedVariant && selectedVariant.stock <= 3 && selectedVariant.stock > 0 && (
               <p className="text-center text-sm text-black font-medium mt-2">
-                Only {product.stock} left in stock - order soon!
+                Only {selectedVariant.stock} left in stock - order soon!
               </p>
             )}
           </div>
@@ -603,10 +679,11 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
           {/* Product Image */}
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
             <img
-              src={allImages[0] || '/images/smart_switch/3 gang mechanical.webp'}
-              alt={product.name}
+              src={selectedProduct?.help_image_url || allImages[0] || '/images/smart_switch/3 gang mechanical.webp'}
+              alt={selectedProduct?.name || currentProductData.name}
               className="w-32 h-32 object-cover rounded-lg"
               onError={(e) => {
+                console.log('Help image failed to load:', selectedProduct?.help_image_url);
                 const target = e.target as HTMLImageElement;
                 target.src = '/images/smart_switch/3 gang mechanical.webp';
               }}
@@ -614,29 +691,31 @@ export function SliderCurtainModal({ open, onOpenChange, onAddToCart, onBuyNow, 
           </div>
           
           <div className="p-6">
-            {/* Headline */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
-            </div>
+
             
-            {/* Options */}
-            <div className="space-y-6">
-              {/* Option 1 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Standard Track Setup (+0 BDT)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Basic sliding track installation with motor setup and app configuration. Perfect for standard windows. Includes mounting hardware and basic smart home integration.
-                </p>
+            {/* Help Text from Database */}
+            {selectedProduct?.help_text ? (
+              <div 
+                className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: selectedProduct.help_text }}
+              />
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Standard Track Setup (+0 BDT)</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Basic sliding track installation with motor setup and app configuration. Perfect for standard windows. Includes mounting hardware and basic smart home integration.
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Premium Track Installation (+3,500 BDT)</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Complete professional service with custom track measurements, advanced mounting solutions, and full smart home ecosystem integration. Includes 1-year service warranty and priority support.
+                  </p>
+                </div>
               </div>
-              
-              {/* Option 2 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Premium Track Installation (+3,500 BDT)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Complete professional service with custom track measurements, advanced mounting solutions, and full smart home ecosystem integration. Includes 1-year service warranty and priority support.
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

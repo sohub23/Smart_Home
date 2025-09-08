@@ -95,12 +95,12 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
           <div className="relative rounded-lg overflow-hidden h-48">
             <div className="relative flex items-center justify-center h-full">
               <img
-                src={engravingImage || "/images/engreving_new.png"}
+                src={engravingImage || productImage || "/images/engreving_new.png"}
                 alt="Product preview"
                 className="max-w-[250px] sm:max-w-[300px] max-h-[160px] sm:max-h-[200px] object-contain"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = '/images/engreving_new.png';
+                  target.src = productImage || '/images/engreving_new.png';
                 }}
               />
               {text && (
