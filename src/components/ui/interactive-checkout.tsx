@@ -20,6 +20,8 @@ import { LightSwitchModal } from "@/components/ui/LightSwitchModal";
 import { FanSwitchModal } from "@/components/ui/FanSwitchModal";
 import { BoilerSwitchModal } from "@/components/ui/BoilerSwitchModal";
 import { productData } from "@/lib/productData";
+import { SpotLightModal } from '@/components/ui/SpotLightModal';
+import { StripLightModal } from '@/components/ui/StripLightModal';
 
 import { ServicesModal } from "@/components/ui/ServicesModal";
 import { InstallationModal } from "@/components/ui/InstallationModal";
@@ -217,6 +219,8 @@ function InteractiveCheckout({
     const [lightSwitchModalOpen, setLightSwitchModalOpen] = useState(false);
     const [fanSwitchModalOpen, setFanSwitchModalOpen] = useState(false);
     const [boilerSwitchModalOpen, setBoilerSwitchModalOpen] = useState(false);
+    const [spotLightModalOpen, setSpotLightModalOpen] = useState(false);
+    const [stripLightModalOpen, setStripLightModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -1007,6 +1011,18 @@ function InteractiveCheckout({
                                         break;
                                     case 'fanSwitch': setFanSwitchModalOpen(true); break;
                                     case 'boilerSwitch': setBoilerSwitchModalOpen(true); break;
+                                    case 'lighting':
+                                        if (product.name.toLowerCase().includes('spot')) {
+                                            console.log('Opening spot light modal');
+                                            setSpotLightModalOpen(true);
+                                        } else if (product.name.toLowerCase().includes('strip')) {
+                                            console.log('Opening strip light modal');
+                                            setStripLightModalOpen(true);
+                                        } else {
+                                            console.log('Opening default spot light modal');
+                                            setSpotLightModalOpen(true);
+                                        }
+                                        break;
                                     case 'switch':
                                     case 'switches':
                                         console.log('Opening default switch modal (light switch)');
@@ -2235,6 +2251,98 @@ function InteractiveCheckout({
                     }}
                     product={selectedVariant}
                     addToCart={addToCart}
+                />
+            )}
+            
+            {/* Spot Light Modal */}
+            {selectedVariant && (
+                <SpotLightModal
+                    open={spotLightModalOpen}
+                    onOpenChange={(open) => {
+                        setSpotLightModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return productData ? {
+                            ...productData
+                        } : {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Lighting',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: '',
+                            image: selectedVariant.imageUrl,
+                            stock: 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'Lighting',
+                                image: selectedVariant.imageUrl,
+                                color: 'Lighting',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Spot Light products
+                    }}
+                />
+            )}
+
+            {/* Strip Light Modal */}
+            {selectedVariant && (
+                <StripLightModal
+                    open={stripLightModalOpen}
+                    onOpenChange={(open) => {
+                        setStripLightModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return productData ? {
+                            ...productData
+                        } : {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Lighting',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: '',
+                            image: selectedVariant.imageUrl,
+                            stock: 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'Lighting',
+                                image: selectedVariant.imageUrl,
+                                color: 'Lighting',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Strip Light products
+                    }}
                 />
             )}
             
