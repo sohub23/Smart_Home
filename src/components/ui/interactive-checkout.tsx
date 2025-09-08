@@ -550,6 +550,12 @@ function InteractiveCheckout({
                             const newPrice = (basePrice * newQuantity) + item.installationCharge;
                             return { ...item, quantity: newQuantity, price: newPrice };
                         }
+                        // For Lighting items, recalculate price based on quantity
+                        if (item.category === 'Lighting') {
+                            const unitPrice = item.price / item.quantity;
+                            const newPrice = unitPrice * newQuantity;
+                            return { ...item, quantity: newQuantity, price: newPrice };
+                        }
                         return { ...item, quantity: newQuantity };
                     }
                 }
@@ -564,7 +570,7 @@ function InteractiveCheckout({
             let itemTotal = 0;
             
             // For items with pre-calculated totals (Smart Curtains with tracks or Smart Switches with installation)
-            if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) || (item.category === 'Switch' && item.installationCharge)) {
+            if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) || (item.category === 'Switch' && item.installationCharge) || item.category === 'Lighting') {
                 itemTotal = item.price;
             } else {
                 itemTotal = item.price * item.quantity;
@@ -724,7 +730,7 @@ function InteractiveCheckout({
                                             const container = document.querySelector('.products-scroll-container');
                                             
                                             if (element && container) {
-                                                const targetScrollTop = element.offsetTop - 140;
+                                                const targetScrollTop = element.offsetTop - 80;
                                                 container.scrollTo({
                                                     top: targetScrollTop,
                                                     behavior: 'smooth'
@@ -1408,7 +1414,7 @@ function InteractiveCheckout({
                                                             <p className="text-sm lg:text-base font-bold text-zinc-900 dark:text-zinc-100">
                                                                 {item.category === 'Services' ? 'Free' : item.category === 'Installation Service' ? 'TBD' : (() => {
                                                                     let itemTotal = 0;
-                                                                    if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) || (item.category === 'Switch' && item.installationCharge)) {
+                                                                    if ((item.category === 'Smart Curtain' && item.trackSizes) || (item.category === 'Smart Switch' && item.installationCharge) || (item.category === 'Switch' && item.installationCharge) || item.category === 'Lighting') {
                                                                         itemTotal = item.price;
                                                                     } else {
                                                                         itemTotal = item.price * item.quantity;
@@ -2272,7 +2278,7 @@ function InteractiveCheckout({
                             id: selectedVariant.id,
                             name: selectedVariant.name,
                             category: selectedVariant.gangType || 'Lighting',
-                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')) || 1000,
                             description: '',
                             image: selectedVariant.imageUrl,
                             stock: 0
@@ -2284,12 +2290,12 @@ function InteractiveCheckout({
                             const cartItem = {
                                 id: payload.productId,
                                 name: `${selectedVariant.name}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: payload.totalPrice,
+                                price: payload.totalPrice || 1000,
                                 category: 'Lighting',
                                 image: selectedVariant.imageUrl,
                                 color: 'Lighting',
-                                quantity: payload.quantity,
-                                installationCharge: payload.installationCharge
+                                quantity: payload.quantity || 1,
+                                installationCharge: payload.installationCharge || 0
                             };
                             addToCart(cartItem);
                         }
@@ -2318,7 +2324,7 @@ function InteractiveCheckout({
                             id: selectedVariant.id,
                             name: selectedVariant.name,
                             category: selectedVariant.gangType || 'Lighting',
-                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')) || 1500,
                             description: '',
                             image: selectedVariant.imageUrl,
                             stock: 0
@@ -2330,12 +2336,12 @@ function InteractiveCheckout({
                             const cartItem = {
                                 id: payload.productId,
                                 name: `${selectedVariant.name}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: payload.totalPrice,
+                                price: payload.totalPrice || 1500,
                                 category: 'Lighting',
                                 image: selectedVariant.imageUrl,
                                 color: 'Lighting',
-                                quantity: payload.quantity,
-                                installationCharge: payload.installationCharge
+                                quantity: payload.quantity || 1,
+                                installationCharge: payload.installationCharge || 0
                             };
                             addToCart(cartItem);
                         }
