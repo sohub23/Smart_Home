@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
+import { useSupabase, enhancedProductService } from '@/supabase';
 import { EngravingTrigger } from '@/components/ui/EngravingTrigger';
 import { EngravingModal } from '@/components/ui/EngravingModal';
 
@@ -40,6 +41,7 @@ interface BoilerSwitchModalProps {
 }
 
 export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: BoilerSwitchModalProps) {
+  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -49,37 +51,141 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
   const [installationSelected, setInstallationSelected] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(product);
+  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
+  const [dynamicLoading, setDynamicLoading] = useState(true);
 
-  // Reset to default when modal opens
+  // Load dynamic products from database when modal opens
   useEffect(() => {
     if (open) {
+      loadBoilerSwitchProducts();
       setQuantity(1);
+      setSelectedProduct(product);
     }
-  }, [open]);
+  }, [open, product]);
 
-  const features = product.features ? product.features.split('\n').filter(f => f.trim()) : [];
-  const specifications = product.specifications ? product.specifications.split('\n').filter(s => s.trim()) : [];
+  const loadBoilerSwitchProducts = async () => {
+    try {
+      setDynamicLoading(true);
+      
+      // Get categories and subcategories
+      const [categories, subcategories] = await Promise.all([
+        executeQuery(() => enhancedProductService.getCategories()),
+        executeQuery(() => enhancedProductService.getSubcategories())
+      ]);
+      
+      // Find Switch category
+      const switchCategory = categories.find(cat => 
+        cat.name.toLowerCase().includes('switch')
+      );
+      
+      if (!switchCategory) return;
+      
+      // Find Boiler Switch subcategory
+      const boilerSwitchSubcategory = subcategories.find(sub => 
+        sub.category_id === switchCategory.id && 
+        sub.name.toLowerCase().includes('boiler')
+      );
+      
+      if (!boilerSwitchSubcategory) return;
+      
+      // Get all products from Boiler Switch subcategory
+      const products = await executeQuery(() => 
+        enhancedProductService.getProductsBySubcategory(boilerSwitchSubcategory.id)
+      );
+      
+      setDynamicProducts(products || []);
+      
+      if (products && products.length > 0) {
+        setSelectedProduct(products[0]);
+      }
+      
+    } catch (error) {
+      console.error('Failed to load boiler switch products:', error);
+    } finally {
+      setDynamicLoading(false);
+    }
+  };
+
+  const currentProductData = selectedProduct || product;
+  
+  const getCurrentStock = () => {
+    if (!currentProductData) return 0;
+    
+    let variants = currentProductData.variants;
+    if (typeof variants === 'string') {
+      try {
+        variants = JSON.parse(variants);
+      } catch (e) {
+        variants = [];
+      }
+    }
+    
+    if (variants && variants.length > 0) {
+      const firstVariant = variants[0];
+      return firstVariant.stock || 0;
+    }
+    
+    return currentProductData.stock || product.stock || 0;
+  };
+  
+  const currentStock = getCurrentStock();
+  const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
+  const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
+  
+  // Parse additional images from database
+  let additionalImages = [];
+  try {
+    if (currentProductData?.additional_images) {
+      additionalImages = typeof currentProductData.additional_images === 'string' 
+        ? JSON.parse(currentProductData.additional_images)
+        : currentProductData.additional_images;
+    }
+  } catch (e) {
+    console.log('Failed to parse additional images:', e);
+    additionalImages = [];
+  }
+  
   const allImages = [
-    product.image,
-    (product as any).additional_image_1,
-    (product as any).additional_image_2,
-    (product as any).additional_image_3,
-    (product as any).additional_image_4,
-    (product as any).additional_image_5
+    currentProductData?.image,
+    ...(Array.isArray(additionalImages) ? additionalImages : [])
   ].filter(Boolean);
 
-  const engravingPrice = engravingText && product.engraving_price ? product.engraving_price * quantity : 0;
-  const totalPrice = (product.price * quantity) + engravingPrice;
+  const getCurrentPrice = () => {
+    if (!currentProductData) return 0;
+    
+    let variants = currentProductData.variants;
+    if (typeof variants === 'string') {
+      try {
+        variants = JSON.parse(variants);
+      } catch (e) {
+        variants = [];
+      }
+    }
+    
+    if (variants && variants.length > 0) {
+      const firstVariant = variants[0];
+      return firstVariant.discount_price && firstVariant.discount_price > 0 
+        ? firstVariant.discount_price 
+        : firstVariant.price || 0;
+    }
+    
+    return currentProductData.price || 0;
+  };
+  
+  const currentPrice = getCurrentPrice();
+  const engravingPrice = engravingText && (currentProductData.engraving_price || 200) ? (currentProductData.engraving_price || 200) * quantity : 0;
+  const totalPrice = (currentPrice * quantity) + engravingPrice;
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
       await onAddToCart({
-        productId: product.id,
+        productId: currentProductData.id || product.id,
         quantity: quantity,
         installationCharge: 0,
         engravingText: engravingText || undefined,
-        totalPrice: totalPrice / quantity
+        totalPrice: currentPrice * quantity
       });
       
       // Add installation service if selected
@@ -131,15 +237,17 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
               {/* Main Product Image */}
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
-                  <img
-                    src={allImages[selectedImage] || product.image || ''}
-                    alt={product.name}
-                    className="w-full h-full object-contain lg:object-cover rounded-lg"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = product.image || '';
-                    }}
-                  />
+                  {allImages.length > 0 ? (
+                    <img
+                      src={allImages[selectedImage]}
+                      alt={currentProductData.name || product.name}
+                      className="w-full h-full object-contain lg:object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-500">No image available</span>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Mobile Navigation Arrows */}
@@ -186,10 +294,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                           src={image} 
                           alt={`${product.name} ${index + 1}`} 
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = product.image || '';
-                          }}
+
                         />
                       </button>
                     ))}
@@ -210,7 +315,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {product.name}
+                {currentProductData.title || currentProductData.name || product.name}
               </h1>
               
               {/* Price Section */}
@@ -219,15 +324,40 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                   <span className="text-base text-gray-900">
                     {totalPrice.toLocaleString()} BDT
                   </span>
-                  <span className="text-xs text-gray-500 line-through">
-                    {Math.round(totalPrice * 1.3).toLocaleString()} BDT
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Save {Math.round(totalPrice * 0.3).toLocaleString()} BDT
-                  </span>
+                  {(() => {
+                    // Check if variants exist and parse them
+                    let variants = currentProductData?.variants;
+                    if (typeof variants === 'string') {
+                      try {
+                        variants = JSON.parse(variants);
+                      } catch (e) {
+                        variants = [];
+                      }
+                    }
+                    
+                    // Get first variant for discount calculation
+                    const firstVariant = variants && variants.length > 0 ? variants[0] : null;
+                    
+                    if (firstVariant && firstVariant.discount_price > 0 && firstVariant.discount_price < firstVariant.price) {
+                      const originalTotal = (firstVariant.price * quantity) + engravingPrice;
+                      const savings = (firstVariant.price - firstVariant.discount_price) * quantity;
+                      
+                      return (
+                        <>
+                          <span className="text-xs text-gray-500 line-through">
+                            {originalTotal.toLocaleString()} BDT
+                          </span>
+                          <span className="text-xs text-green-600 font-medium">
+                            Save {savings.toLocaleString()} BDT
+                          </span>
+                        </>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
-                {product.engraving_available && product.engraving_price && (
-                  <p className="text-sm text-gray-600">+{product.engraving_price} BDT for customization</p>
+                {(currentProductData.engraving_available || product.engraving_available) && (currentProductData.engraving_price || product.engraving_price) && (
+                  <p className="text-sm text-gray-600">+{currentProductData.engraving_price || product.engraving_price} BDT for customization</p>
                 )}
               </div>
               
@@ -275,8 +405,13 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          {product.detailed_description ? (
-                            <p>{product.detailed_description}</p>
+                          {(currentProductData?.overview || currentProductData?.description) ? (
+                            <div 
+                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
+                              dangerouslySetInnerHTML={{ 
+                                __html: currentProductData.overview || currentProductData.description 
+                              }}
+                            />
                           ) : features.length > 0 ? (
                             <ul className="space-y-2">
                               {features.map((feature, index) => (
@@ -306,7 +441,14 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                       )}
                       {activeTab === 'bestfor' && (
                         <div className="text-sm text-gray-500">
-                          {specifications.length > 0 ? (
+                          {currentProductData?.technical_details ? (
+                            <div 
+                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
+                              dangerouslySetInnerHTML={{ 
+                                __html: currentProductData.technical_details 
+                              }}
+                            />
+                          ) : specifications.length > 0 ? (
                             <ul className="space-y-2">
                               {specifications.map((spec, index) => (
                                 <li key={index} className="flex items-start gap-2">
@@ -335,12 +477,23 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                       )}
                       {activeTab === 'bonuses' && (
                         <div className="text-sm text-gray-500">
-                          <ul className="space-y-2">
-                            <li className="flex items-start gap-2">
-                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                              {product.warranty || '1 Year Service Warranty'}
-                            </li>
-                          </ul>
+                          {currentProductData?.warranty ? (
+                            <div className="text-sm text-gray-500">
+                              {currentProductData.warranty.split('\n').filter(w => w.trim()).map((warrantyItem, index) => (
+                                <div key={index} className="flex items-start gap-2 mb-2">
+                                  <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
+                                  <span dangerouslySetInnerHTML={{ __html: warrantyItem.trim() }} />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <ul className="space-y-2">
+                              <li className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                {product.warranty || '1 Year Service Warranty'}
+                              </li>
+                            </ul>
+                          )}
                         </div>
                       )}
                     </div>
@@ -418,7 +571,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
           <div className="fixed bottom-0 left-0 right-0 lg:right-0 lg:left-auto lg:w-[600px] bg-white border-t lg:border-l border-gray-200 p-3 lg:p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || product.stock === 0}
+              disabled={loading || currentStock === 0}
               className="w-full h-10 lg:h-12 text-sm lg:text-base font-bold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
               style={{ backgroundColor: '#7e8898' }}
             >
@@ -431,7 +584,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                   </svg>
                   Adding to bag...
                 </span>
-              ) : product.stock === 0 ? 'Out of stock' : (
+              ) : currentStock === 0 ? 'Out of stock' : (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
@@ -444,9 +597,9 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
             </Button>
             
             {/* Stock Status */}
-            {product.stock <= 3 && product.stock > 0 && (
+            {currentStock <= 3 && currentStock > 0 && (
               <p className="text-center text-sm text-black font-medium mt-2">
-                Only {product.stock} left in stock - order soon!
+                Only {currentStock} left in stock - order soon!
               </p>
             )}
           </div>
@@ -468,44 +621,33 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
           
           {/* Product Image */}
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
-            <img
-              src={allImages[0] || product.image || ''}
-              alt={product.name}
-              className="w-32 h-32 object-cover rounded-lg"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = product.image || '';
-              }}
-            />
+            {selectedProduct?.help_image_url ? (
+              <img
+                src={selectedProduct.help_image_url}
+                alt={currentProductData.name || product.name}
+                className="w-32 h-32 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+                <span className="text-gray-500 text-sm">No image</span>
+              </div>
+            )}
           </div>
           
           <div className="p-6">
-            {/* Headline */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
-            </div>
+
             
-            {/* Options */}
-            <div className="space-y-6">
-              {/* Option 1 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Standard Installation (+0 BDT)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {product.installation_included ? 
-                    'Installation included with this product. Professional mounting and wiring setup with safety checks.' :
-                    'Basic boiler switch installation with proper wiring and safety checks. Perfect for single switches or small installations. Includes mounting and testing.'
-                  }
-                </p>
-              </div>
-              
-              {/* Option 2 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Premium Installation (+1,200 BDT)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Complete professional service with electrical safety check, advanced wiring, and comprehensive testing. Includes 1-year installation warranty and priority support.
-                </p>
-              </div>
-            </div>
+            {/* Help Text from Database */}
+            {selectedProduct?.help_text ? (
+              <div 
+                className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: selectedProduct.help_text }}
+              />
+            ) : (
+              <p className="text-sm text-gray-600 text-center py-4">
+                No help information available for this product.
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { X } from 'lucide-react';
 import { validateEngraving } from '@/hooks/useEngraving';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { supabase } from '@/supabase/client';
 
 interface EngravingModalProps {
   open: boolean;
@@ -26,7 +27,51 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showMinOrderAlert, setShowMinOrderAlert] = useState(false);
+  const [engravingImages, setEngravingImages] = useState<string[]>([]);
+  const [selectedEngravingImage, setSelectedEngravingImage] = useState(0);
+  const [loading, setLoading] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      loadEngravingImages();
+    }
+  }, [open]);
+
+  const loadEngravingImages = async () => {
+    try {
+      setLoading(true);
+      console.log('Loading engraving images from database...');
+      
+      const { data, error } = await supabase
+        .from('product_images')
+        .select('image_url')
+        .eq('image_type', 'engraving')
+        .order('position');
+      
+      console.log('Database query result:', { data, error });
+      
+      const imageUrls = data?.map(img => img.image_url) || [];
+      console.log('Extracted image URLs:', imageUrls);
+      
+      const allImages = [];
+      if (engravingImage) {
+        console.log('Adding product engraving image:', engravingImage);
+        allImages.push(engravingImage);
+      }
+      allImages.push(...imageUrls);
+      
+      console.log('Final engraving images array:', allImages);
+      setEngravingImages(allImages.length > 0 ? allImages : [productImage].filter(Boolean));
+    } catch (error) {
+      console.error('Error loading engraving images:', error);
+      setEngravingImages([engravingImage || productImage].filter(Boolean));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentEngravingImage = engravingImages[selectedEngravingImage] || engravingImage || productImage;
 
   const validation = validateEngraving(text);
   const isValid = validation.ok;
@@ -92,25 +137,53 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
 
         <div className="flex-1 p-3 sm:p-4 space-y-3 sm:space-y-4 overflow-y-auto">
           {/* Preview */}
-          <div className="relative rounded-lg overflow-hidden h-48">
-            <div className="relative flex items-center justify-center h-full">
-              <img
-                src={engravingImage || productImage || "/images/engreving_new.png"}
-                alt="Product preview"
-                className="max-w-[250px] sm:max-w-[300px] max-h-[160px] sm:max-h-[200px] object-contain"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = productImage || '/images/engreving_new.png';
-                }}
-              />
-              {text && (
-                <div className="absolute bottom-6 right-16 sm:bottom-6 sm:right-36">
-                  <div className="font-semibold" style={{ fontSize: '12px', color: engravingTextColor, textShadow: '2px 2px 4px rgba(255,255,255,0.8)' }}>
-                    {text}
-                  </div>
+          <div className="space-y-3">
+            <div className="relative rounded-lg overflow-hidden h-48">
+              {loading ? (
+                <div className="flex items-center justify-center h-full bg-gray-100">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : (
+                <div className="relative flex items-center justify-center h-full">
+                  <img
+                    src={currentEngravingImage}
+                    alt="Engraving preview"
+                    className="max-w-[250px] sm:max-w-[300px] max-h-[160px] sm:max-h-[200px] object-contain"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = productImage || '';
+                    }}
+                  />
+                  {text && (
+                    <div className="absolute bottom-6 right-16 sm:bottom-6 sm:right-36">
+                      <div className="font-semibold" style={{ fontSize: '12px', color: engravingTextColor, textShadow: '2px 2px 4px rgba(255,255,255,0.8)' }}>
+                        {text}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
+            
+            {engravingImages.length > 1 && (
+              <div className="flex gap-2 justify-center">
+                {engravingImages.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedEngravingImage(index)}
+                    className={`w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedEngravingImage === index ? 'border-blue-500' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <img 
+                      src={image} 
+                      alt={`Engraving option ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Text Input */}

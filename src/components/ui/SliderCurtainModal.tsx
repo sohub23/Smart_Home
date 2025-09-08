@@ -68,6 +68,11 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
     }
   }, [selectedVariant]);
 
+  // Reset image selection when product changes
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [selectedProduct]);
+
   const loadSliderCurtainProducts = async () => {
     try {
       setDynamicLoading(true);
@@ -110,6 +115,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       if (products && products.length > 0) {
         console.log('Setting selected product to:', products[0]);
         setSelectedProduct(products[0]);
+        setSelectedImage(0);
         // Parse variants if they're stored as JSON string
         let variants = products[0].variants;
         console.log('Raw variants from product:', variants);
@@ -158,7 +164,23 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   console.log('Product price:', currentProductData.price);
   console.log('Selected product price:', selectedProduct?.price);
   console.log('Selected product variants:', selectedProduct?.variants);
-  const allImages = [currentProductData.image, currentProductData.image2, currentProductData.image3, currentProductData.image4, currentProductData.image5].filter(Boolean);
+  // Parse additional images from database
+  let additionalImages = [];
+  try {
+    if (selectedProduct?.additional_images) {
+      additionalImages = typeof selectedProduct.additional_images === 'string' 
+        ? JSON.parse(selectedProduct.additional_images)
+        : selectedProduct.additional_images;
+    }
+  } catch (e) {
+    console.log('Failed to parse additional images:', e);
+    additionalImages = [];
+  }
+  
+  const allImages = [
+    selectedProduct?.image,
+    ...(Array.isArray(additionalImages) ? additionalImages : [])
+  ].filter(Boolean);
 
   const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
   const smartCurtainInstallation = 0;
@@ -232,15 +254,17 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               {/* Main Product Image */}
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
-                  <img
-                    src={allImages[selectedImage] || '/images/smart_switch/3 gang mechanical.webp'}
-                    alt={product.title || product.display_name}
-                    className="w-full h-full object-cover rounded-lg"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/images/smart_switch/3 gang mechanical.webp';
-                    }}
-                  />
+                  {allImages.length > 0 ? (
+                    <img
+                      src={allImages[selectedImage]}
+                      alt={selectedProduct?.title || selectedProduct?.display_name || product.name}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-500">No image available</span>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Mobile Navigation Arrows */}
@@ -289,10 +313,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                           src={image} 
                           alt={`${product.name} ${index + 1}`} 
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/images/smart_switch/3 gang mechanical.webp';
-                          }}
+
                         />
                       </button>
                     ))}
@@ -322,12 +343,12 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   <span className="text-base text-gray-900">
                     {currentPrice.toLocaleString()} BDT
                   </span>
-                  {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.price > 0 && (
+                  {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
                     <>
                       <span className="text-xs text-gray-500 line-through">
                         {selectedVariant.price.toLocaleString()} BDT
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-green-600 font-medium">
                         Save {(selectedVariant.price - selectedVariant.discount_price).toLocaleString()} BDT
                       </span>
                     </>
@@ -381,7 +402,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                         <div className="text-sm text-gray-500">
                           {(selectedProduct?.overview || selectedProduct?.description) ? (
                             <div 
-                              className="prose prose-sm max-w-none"
+                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
                               dangerouslySetInnerHTML={{ 
                                 __html: selectedProduct.overview || selectedProduct.description 
                               }}
@@ -395,7 +416,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                         <div className="text-sm text-gray-500">
                           {selectedProduct?.technical_details ? (
                             <div 
-                              className="prose prose-sm max-w-none"
+                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
                               dangerouslySetInnerHTML={{ 
                                 __html: selectedProduct.technical_details 
                               }}
@@ -404,7 +425,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                             <ul className="space-y-2">
                               {specifications.map((spec, index) => (
                                 <li key={index} className="flex items-start gap-2">
-                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
                                   {spec}
                                 </li>
                               ))}
@@ -417,17 +438,19 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       {activeTab === 'bonuses' && (
                         <div className="text-sm text-gray-500">
                           {selectedProduct?.warranty ? (
-                            <div 
-                              className="prose prose-sm max-w-none"
-                              dangerouslySetInnerHTML={{ 
-                                __html: selectedProduct.warranty 
-                              }}
-                            />
+                            <div className="text-sm text-gray-500">
+                              {selectedProduct.warranty.split('\n').filter(w => w.trim()).map((warrantyItem, index) => (
+                                <div key={index} className="flex items-start gap-2 mb-2">
+                                  <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
+                                  <span dangerouslySetInnerHTML={{ __html: warrantyItem.trim() }} />
+                                </div>
+                              ))}
+                            </div>
                           ) : warranty.length > 0 ? (
                             <ul className="space-y-2">
                               {warranty.map((warrantyItem, index) => (
                                 <li key={index} className="flex items-start gap-2">
-                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
                                   {warrantyItem}
                                 </li>
                               ))}
@@ -678,16 +701,17 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
           
           {/* Product Image */}
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
-            <img
-              src={selectedProduct?.help_image_url || allImages[0] || '/images/smart_switch/3 gang mechanical.webp'}
-              alt={selectedProduct?.name || currentProductData.name}
-              className="w-32 h-32 object-cover rounded-lg"
-              onError={(e) => {
-                console.log('Help image failed to load:', selectedProduct?.help_image_url);
-                const target = e.target as HTMLImageElement;
-                target.src = '/images/smart_switch/3 gang mechanical.webp';
-              }}
-            />
+            {(selectedProduct?.help_image_url || allImages[0]) ? (
+              <img
+                src={selectedProduct?.help_image_url || allImages[0]}
+                alt={selectedProduct?.name || currentProductData.name}
+                className="w-32 h-32 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+                <span className="text-gray-500 text-sm">No image</span>
+              </div>
+            )}
           </div>
           
           <div className="p-6">

@@ -1949,7 +1949,7 @@ function InteractiveCheckout({
                             const cartItem = {
                                 id: payload.productId,
                                 name: payload.productName || `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: payload.totalPrice / payload.quantity,
+                                price: payload.totalPrice,
                                 category: 'Switch',
                                 image: selectedVariant.imageUrl,
                                 color: 'Switch',
@@ -2000,7 +2000,7 @@ function InteractiveCheckout({
                             const cartItem = {
                                 id: payload.productId,
                                 name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: payload.totalPrice / payload.quantity,
+                                price: payload.totalPrice,
                                 category: 'Switch',
                                 image: selectedVariant.imageUrl,
                                 color: 'Switch',
@@ -2051,7 +2051,7 @@ function InteractiveCheckout({
                             const cartItem = {
                                 id: payload.productId,
                                 name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
-                                price: payload.totalPrice / payload.quantity,
+                                price: payload.totalPrice,
                                 category: 'Switch',
                                 image: selectedVariant.imageUrl,
                                 color: 'Switch',

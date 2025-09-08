@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Minus, Plus, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
+import { useSupabase, enhancedProductService, supabase } from '@/supabase';
 import { productService } from '@/supabase/products';
 
 interface SecurityPanelModalProps {
@@ -25,6 +26,7 @@ interface SecurityPanelModalProps {
 }
 
 export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, addToCart }: SecurityPanelModalProps) {
+  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -34,71 +36,156 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
   const [accessoryQuantities, setAccessoryQuantities] = useState<{[key: number]: number}>({});
   const [installationSelected, setInstallationSelected] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(product);
+  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
-      setActiveTab('included');
+      setActiveTab('benefits');
       fetchAccessories();
+      loadSecurityPanelProducts();
+      setSelectedProduct(product);
     }
-  }, [open]);
+  }, [open, product]);
 
-  const fetchAccessories = async () => {
+  const loadSecurityPanelProducts = async () => {
     try {
-      const products = await productService.getProducts();
-      const accessoryProducts = products.filter(p => 
-        ['SOS Band', 'Doorbell Button', 'Signal Extender', 'Indoor AI Camera', 'Smoke Detector', 'Gas Detector', 'Shutter Sensor', 'Motion Sensor', 'Door Sensor', 'Vibration Sensor', 'Wireless Siren'].some(name => 
-          p.name.toLowerCase().includes(name.toLowerCase())
-        )
-      );
+      // Direct supabase query
+      const { data: allProducts, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      if (accessoryProducts.length > 0) {
-        setAccessories(accessoryProducts.map(p => ({
-          name: p.name,
-          desc: p.description || 'Security accessory',
-          price: p.price,
-          image: p.image || '/images/sohub_protect/accesories/default.png'
-        })));
-      } else {
-        setAccessories([
-          { name: 'SOS Band', desc: 'Emergency panic button', price: 3999, image: '/images/sohub_protect/accesories/B020-SOS-SOS-Band.png' },
-          { name: 'Doorbell Button', desc: 'Smart doorbell system', price: 4999, image: '/images/sohub_protect/accesories/doorbell-b100.png' },
-          { name: 'Signal Extender', desc: 'Extend wireless range', price: 3499, image: '/images/sohub_protect/accesories/EX010-Signal-extender.png' },
-          { name: 'Indoor AI Camera 2.4G/5G', desc: 'HD AI surveillance', price: 8999, image: '/images/sohub_protect/accesories/camera-c11.png' },
-          { name: 'Smoke Detector Fire Alarm Sensor', desc: 'Fire safety monitoring', price: 3999, image: '/images/sohub_protect/accesories/smoke-detector.png' },
-          { name: 'Gas Detector', desc: 'Gas leak detection', price: 4499, image: '/images/sohub_protect/accesories/GS020-Gas-Detector.png' },
-          { name: 'Shutter Sensor', desc: 'Window shutter monitoring', price: 2999, image: '/images/sohub_protect/accesories/shutter_sensor_ss010.png' },
-          { name: 'Motion Sensor', desc: 'Advanced motion detection', price: 2999, image: '/images/sohub_protect/accesories/Motion_pr200.png' },
-          { name: 'Door Sensor', desc: 'Smart door monitoring', price: 2499, image: '/images/sohub_protect/accesories/door_Sensor_DS200.png' },
-          { name: 'Vibration Sensor', desc: 'Vibration detection', price: 3299, image: '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png' },
-          { name: 'Wireless Siren', desc: 'Loud security alert', price: 4999, image: '/images/sohub_protect/accesories/WSR101-Wireless_siren.png' }
-        ]);
+      if (error) {
+        console.error('Supabase error:', error);
+        return;
       }
+      
+      console.log('All products from database:', allProducts);
+      setDynamicProducts(allProducts || []);
+      
+      if (allProducts && allProducts.length > 0) {
+        setSelectedProduct(allProducts[0]);
+      }
+      
     } catch (error) {
-      console.error('Error fetching accessories:', error);
-      setAccessories([
-        { name: 'SOS Band', desc: 'Emergency panic button', price: 3999, image: '/images/sohub_protect/accesories/B020-SOS-SOS-Band.png' },
-        { name: 'Doorbell Button', desc: 'Smart doorbell system', price: 4999, image: '/images/sohub_protect/accesories/doorbell-b100.png' },
-        { name: 'Signal Extender', desc: 'Extend wireless range', price: 3499, image: '/images/sohub_protect/accesories/EX010-Signal-extender.png' },
-        { name: 'Indoor AI Camera 2.4G/5G', desc: 'HD AI surveillance', price: 8999, image: '/images/sohub_protect/accesories/camera-c11.png' },
-        { name: 'Smoke Detector Fire Alarm Sensor', desc: 'Fire safety monitoring', price: 3999, image: '/images/sohub_protect/accesories/smoke-detector.png' },
-        { name: 'Gas Detector', desc: 'Gas leak detection', price: 4499, image: '/images/sohub_protect/accesories/GS020-Gas-Detector.png' },
-        { name: 'Shutter Sensor', desc: 'Window shutter monitoring', price: 2999, image: '/images/sohub_protect/accesories/shutter_sensor_ss010.png' },
-        { name: 'Motion Sensor', desc: 'Advanced motion detection', price: 2999, image: '/images/sohub_protect/accesories/Motion_pr200.png' },
-        { name: 'Door Sensor', desc: 'Smart door monitoring', price: 2499, image: '/images/sohub_protect/accesories/door_Sensor_DS200.png' },
-        { name: 'Vibration Sensor', desc: 'Vibration detection', price: 3299, image: '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png' },
-        { name: 'Wireless Siren', desc: 'Loud security alert', price: 4999, image: '/images/sohub_protect/accesories/WSR101-Wireless_siren.png' }
-      ]);
+      console.error('Failed to load products:', error);
     }
   };
 
-  const allImages = [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean);
+  const fetchAccessories = async () => {
+    try {
+      // Direct supabase query for accessories
+      const { data: allProducts, error } = await supabase
+        .from('products')
+        .select('*');
+      
+      if (error) {
+        console.error('Accessories fetch error:', error);
+        setAccessories([]);
+        return;
+      }
+      
+      console.log('Fetched products for accessories:', allProducts);
+      
+      // Convert database products to accessory format
+      const accessoryProducts = (allProducts || []).map(p => ({
+        id: p.id,
+        name: p.title || p.display_name || 'Unnamed Product',
+        desc: p.product_overview || p.overview || 'Database product',
+        price: p.base_price || 0,
+        image: p.image || p.main_image || '/placeholder.png'
+      }));
+      
+      setAccessories(accessoryProducts);
+      
+    } catch (error) {
+      console.error('Error fetching accessories:', error);
+      setAccessories([]);
+    }
+  };
+
+  const currentProductData = selectedProduct || product;
+  
+  const getCurrentStock = () => {
+    if (!currentProductData) return 0;
+    
+    let variants = currentProductData.variants;
+    if (typeof variants === 'string') {
+      try {
+        variants = JSON.parse(variants);
+      } catch (e) {
+        variants = [];
+      }
+    }
+    
+    if (variants && variants.length > 0) {
+      const firstVariant = variants[0];
+      return firstVariant.stock || 0;
+    }
+    
+    return currentProductData.stock || product.stock || 0;
+  };
+  
+  const getCurrentPrice = () => {
+    if (!currentProductData) return 0;
+    
+    // Try database fields first
+    if (currentProductData.discount_price && currentProductData.discount_price > 0) {
+      return currentProductData.discount_price;
+    }
+    if (currentProductData.base_price) {
+      return currentProductData.base_price;
+    }
+    
+    let variants = currentProductData.variants;
+    if (typeof variants === 'string') {
+      try {
+        variants = JSON.parse(variants);
+      } catch (e) {
+        variants = [];
+      }
+    }
+    
+    if (variants && variants.length > 0) {
+      const firstVariant = variants[0];
+      return firstVariant.discount_price && firstVariant.discount_price > 0 
+        ? firstVariant.discount_price 
+        : firstVariant.price || 0;
+    }
+    
+    return currentProductData.price || product.price || 0;
+  };
+  
+  const currentStock = getCurrentStock();
+  const currentPrice = getCurrentPrice();
+  
+  let additionalImages = [];
+  try {
+    if (currentProductData?.additional_images) {
+      additionalImages = typeof currentProductData.additional_images === 'string' 
+        ? JSON.parse(currentProductData.additional_images)
+        : currentProductData.additional_images;
+    }
+  } catch (e) {
+    additionalImages = [];
+  }
+  
+  const allImages = [
+    currentProductData?.image || currentProductData?.main_image,
+    ...(Array.isArray(additionalImages) ? additionalImages : [])
+  ].filter(Boolean);
+  
+  console.log('Current product data:', currentProductData);
+  console.log('All images:', allImages);
+  
   const accessoryTotal = selectedAccessories.reduce((sum, index) => {
     const accessory = accessories[index];
     const qty = accessoryQuantities[index] || 1;
     return sum + (Number(accessory?.price) || 0) * qty;
   }, 0);
-  const totalPrice = (product.price * quantity) + accessoryTotal;
+  const totalPrice = (currentPrice * quantity) + accessoryTotal;
 
   const toggleAccessory = (index: number) => {
     const currentQty = accessoryQuantities[index] || 0;
@@ -116,9 +203,9 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
     try {
       // Add main product
       await onAddToCart({
-        productId: product.id,
+        productId: currentProductData.id || product.id,
         quantity: quantity,
-        totalPrice: product.price * quantity,
+        totalPrice: currentPrice,
         accessories: []
       });
       
@@ -184,11 +271,17 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 flex flex-col">
             <div className="flex-1 flex items-center justify-center mb-6">
               <div className="w-full max-w-lg aspect-square">
-                <img
-                  src={allImages[selectedImage] || '/images/sohub_protect/security-panel.png'}
-                  alt={product.name}
-                  className="w-full h-full object-cover rounded-lg"
-                />
+                {allImages.length > 0 ? (
+                  <img
+                    src={allImages[selectedImage]}
+                    alt={currentProductData.name || product.name}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
+                    <span className="text-gray-500">No image available</span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -232,10 +325,62 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
 
           {/* Right: Product Details */}
           <div className="p-8 overflow-y-auto max-h-[95vh] bg-white pb-24">
+            {/* Product Selection Dropdown */}
+            <div className="mb-6">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Select Product from Database:
+              </label>
+              <select 
+                value={selectedProduct?.id || ''}
+                onChange={(e) => {
+                  const product = dynamicProducts.find(p => p.id === e.target.value);
+                  if (product) setSelectedProduct(product);
+                }}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Choose a product...</option>
+                {dynamicProducts.map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.title || product.display_name} - {product.id}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                Panel Kit
+                {currentProductData.title || currentProductData.display_name || currentProductData.name || product.name}
               </h1>
+              
+              {/* Product Description from Database */}
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Product Description</h3>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  {currentProductData?.product_overview ? (
+                    <div 
+                      className="text-sm text-gray-700 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: currentProductData.product_overview }}
+                    />
+                  ) : currentProductData?.overview ? (
+                    <div 
+                      className="text-sm text-gray-700 prose prose-sm max-w-none"
+                      dangerouslySetInnerHTML={{ __html: currentProductData.overview }}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No product description available in database</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Database Debug Info */}
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs">
+                <p><strong>DB ID:</strong> {currentProductData.id}</p>
+                <p><strong>Category ID:</strong> {currentProductData.category_id || 'None'}</p>
+                <p><strong>Subcategory ID:</strong> {currentProductData.subcategory_id || 'None'}</p>
+                <p><strong>Status:</strong> {currentProductData.status || 'Unknown'}</p>
+                <p><strong>Model:</strong> {currentProductData.model || 'Not specified'}</p>
+                <p><strong>Created:</strong> {currentProductData.created_at ? new Date(currentProductData.created_at).toLocaleDateString() : 'Unknown'}</p>
+              </div>
               
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
@@ -261,14 +406,7 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
             <div className="mb-6">
               <div className="border-b border-gray-200">
                 <div className="flex space-x-8">
-                  <button 
-                    onClick={() => setActiveTab('included')}
-                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                      activeTab === 'included' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    What's Included
-                  </button>
+
                   <button 
                     onClick={() => setActiveTab('benefits')}
                     className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -296,85 +434,49 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
                 </div>
               </div>
               <div className="pt-4">
-                {activeTab === 'included' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Touch Screen Control Panel
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Wall Mount Kit
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      2x RFID Key Cards
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Power Adapter & Battery
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Installation Manual
-                    </li>
-                  </ul>
-                )}
+
                 {activeTab === 'benefits' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Touch screen control panel with keypad
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Arm/disarm security system with PIN or RFID
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Real-time status display and alerts
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-purple-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Emergency panic button with instant alerts
-                    </li>
-                  </ul>
+                  <div className="text-sm text-gray-700">
+                    {(currentProductData?.overview || currentProductData?.product_overview || currentProductData?.description) ? (
+                      <div 
+                        className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-1.5 [&_li]:before:h-1.5 [&_li]:before:bg-purple-500 [&_li]:before:rounded-full [&_li]:before:mt-2 [&_li]:before:flex-shrink-0"
+                        dangerouslySetInnerHTML={{ __html: currentProductData.overview || currentProductData.product_overview || currentProductData.description }}
+                      />
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-gray-500">No overview/description data</p>
+                        <div className="text-xs bg-blue-50 p-2 rounded">
+                          <p><strong>Overview:</strong> {currentProductData?.overview || 'Empty'}</p>
+                          <p><strong>Product Overview:</strong> {currentProductData?.product_overview || 'Empty'}</p>
+                          <p><strong>Description:</strong> {currentProductData?.description || 'Empty'}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
                 {activeTab === 'specs' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Display: 4.3" color touchscreen LCD
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Connectivity: WiFi, Zigbee, cellular backup
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Power: 12V DC adapter + backup battery
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Dimensions: 150mm x 100mm x 25mm
-                    </li>
-                  </ul>
+                  <div className="text-sm text-gray-700">
+                    {currentProductData?.technical_details ? (
+                      <div 
+                        className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-1.5 [&_li]:before:h-1.5 [&_li]:before:bg-green-500 [&_li]:before:rounded-full [&_li]:before:mt-2 [&_li]:before:flex-shrink-0"
+                        dangerouslySetInnerHTML={{ __html: currentProductData.technical_details }}
+                      />
+                    ) : (
+                      <p className="text-center py-4 text-gray-500">No information available</p>
+                    )}
+                  </div>
                 )}
                 {activeTab === 'warranty' && (
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      3 Year Manufacturer Warranty
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Free software updates for life
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                      Priority technical support included
-                    </li>
-                  </ul>
+                  <div className="text-sm text-gray-700">
+                    {currentProductData?.warranty ? (
+                      <div 
+                        className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-1.5 [&_li]:before:h-1.5 [&_li]:before:bg-green-500 [&_li]:before:rounded-full [&_li]:before:mt-2 [&_li]:before:flex-shrink-0"
+                        dangerouslySetInnerHTML={{ __html: currentProductData.warranty }}
+                      />
+                    ) : (
+                      <p className="text-center py-4 text-gray-500">No information available</p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -405,6 +507,43 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
               </div>
             </div>
 
+            {/* Database Products List */}
+            <div className="mb-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-gray-900">All Database Products ({dynamicProducts.length})</h3>
+                <p className="text-sm text-gray-500">Click to select different products</p>
+              </div>
+              
+              <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg">
+                {dynamicProducts.map((dbProduct, index) => (
+                  <div 
+                    key={dbProduct.id}
+                    onClick={() => setSelectedProduct(dbProduct)}
+                    className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                      selectedProduct?.id === dbProduct.id ? 'bg-blue-50 border-blue-200' : ''
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm text-gray-900">
+                          {dbProduct.title || dbProduct.display_name || 'Untitled'}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-1">
+                          ID: {dbProduct.id} | Status: {dbProduct.status || 'Unknown'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Price: {dbProduct.base_price || dbProduct.price || 0} BDT
+                        </p>
+                      </div>
+                      {selectedProduct?.id === dbProduct.id && (
+                        <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded">Selected</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
             {/* Add Accessories */}
             <div className="mb-6">
               <div className="mb-4">
@@ -541,15 +680,15 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
           <div className="fixed bottom-0 right-0 w-[600px] bg-white border-t border-l border-gray-200 p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || product.stock === 0}
+              disabled={loading || currentStock === 0}
               className="w-full h-12 text-base font-bold bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
             >
-              {loading ? 'Adding to cart...' : product.stock === 0 ? 'Out of stock' : 'Add to cart'}
+              {loading ? 'Adding to cart...' : currentStock === 0 ? 'Out of stock' : 'Add to cart'}
             </Button>
             
-            {product.stock <= 3 && product.stock > 0 && (
+            {currentStock <= 3 && currentStock > 0 && (
               <p className="text-center text-sm text-orange-600 font-medium mt-2">
-                Only {product.stock} left in stock - order soon!
+                Only {currentStock} left in stock - order soon!
               </p>
             )}
           </div>
@@ -569,33 +708,30 @@ export function SecurityPanelModal({ open, onOpenChange, product, onAddToCart, a
           </button>
           
           <div className="w-full h-48 bg-gradient-to-br from-blue-50 to-blue-100 rounded-t-2xl flex items-center justify-center">
-            <img
-              src={allImages[0] || '/images/sohub_protect/security-panel.png'}
-              alt={product.name}
-              className="w-32 h-32 object-cover rounded-lg"
-            />
+            {selectedProduct?.help_image_url ? (
+              <img
+                src={selectedProduct.help_image_url}
+                alt={currentProductData.name || product.name}
+                className="w-32 h-32 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+                <span className="text-gray-500 text-sm">No image</span>
+              </div>
+            )}
           </div>
           
           <div className="p-6">
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
-            </div>
-            
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Standard Installation (TBD)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Basic setup with panel installation and system configuration. Perfect for standard security control. Includes wall mounting and basic smart home integration.
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Premium Installation (TBD)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Complete professional service with custom security assessment, advanced panel placement, and full smart home ecosystem integration. Includes 3-year service warranty.
-                </p>
-              </div>
-            </div>
+            {selectedProduct?.help_text ? (
+              <div 
+                className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: selectedProduct.help_text }}
+              />
+            ) : (
+              <p className="text-sm text-gray-600 text-center py-4">
+                No help information available for this product.
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>

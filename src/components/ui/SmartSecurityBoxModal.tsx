@@ -6,7 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { productService } from '@/supabase/products';
+import { enhancedProductService } from '@/supabase';
 
 interface SmartSecurityBoxModalProps {
   open: boolean;
@@ -46,96 +46,187 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState('SP-01');
   const [sp05Product, setSp05Product] = useState(null);
+  const [productDetails, setProductDetails] = useState(product);
   
   useEffect(() => {
-    const fetchSp05Product = async () => {
-      try {
-        const products = await productService.getProducts();
-        const sp05 = products.find(p => p.name.toLowerCase().includes('sp-05') || p.name.toLowerCase().includes('sp05'));
-        setSp05Product(sp05);
-      } catch (error) {
-        console.error('Error fetching SP-05 product:', error);
-      }
-    };
     if (open) {
-      fetchSp05Product();
+      const fetchProductData = async () => {
+        try {
+          const allProducts = await enhancedProductService.getProducts();
+          
+          const sp05 = allProducts?.find(p => 
+            (p.title && p.title.toLowerCase().includes('sp-05')) || 
+            (p.display_name && p.display_name.toLowerCase().includes('sp-05')) ||
+            (p.name && p.name.toLowerCase().includes('sp-05'))
+          );
+          if (sp05) setSp05Product(sp05);
+          
+          const sp01Product = allProducts?.find(p => 
+            (p.title && p.title.toLowerCase().includes('sp-01')) || 
+            (p.display_name && p.display_name.toLowerCase().includes('sp-01')) ||
+            (p.name && p.name.toLowerCase().includes('sp-01')) ||
+            p.id === product.id
+          );
+          if (sp01Product) setProductDetails(sp01Product);
+          
+        } catch (error) {
+          console.error('Error fetching product data:', error);
+        }
+      };
+      
+      fetchProductData();
     }
-  }, [open]);
+  }, [open, product.id]);
+  
+  const getProductPrice = (productData) => {
+    if (!productData) return 0;
+    
+    // Check variants first
+    let variants = productData.variants;
+    if (typeof variants === 'string') {
+      try {
+        variants = JSON.parse(variants);
+      } catch (e) {
+        variants = [];
+      }
+    }
+    
+    if (variants && variants.length > 0) {
+      const firstVariant = variants[0];
+      return firstVariant.discount_price && firstVariant.discount_price > 0 
+        ? firstVariant.discount_price 
+        : firstVariant.price || 0;
+    }
+    
+    return productData.price || productData.base_price || 0;
+  };
+  
+  const getProductStock = (productData) => {
+    if (!productData) return 0;
+    
+    let variants = productData.variants;
+    if (typeof variants === 'string') {
+      try {
+        variants = JSON.parse(variants);
+      } catch (e) {
+        variants = [];
+      }
+    }
+    
+    if (variants && variants.length > 0) {
+      return variants[0].stock || 0;
+    }
+    
+    return productData.stock || 0;
+  };
+  
+  const getProductImages = (productData) => {
+    if (!productData) return [];
+    
+    const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5].filter(Boolean);
+    
+    // Add additional images if they exist
+    if (productData.additional_images) {
+      try {
+        const additionalImages = typeof productData.additional_images === 'string' 
+          ? JSON.parse(productData.additional_images) 
+          : productData.additional_images;
+        if (Array.isArray(additionalImages)) {
+          images.push(...additionalImages.filter(Boolean));
+        }
+      } catch (e) {
+        console.log('Failed to parse additional images:', e);
+      }
+    }
+    
+    return images;
+  };
   
   const modelData = {
     'SP-01': {
-      price: 7490,
-      images: [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean)
+      price: getProductPrice(productDetails) || product.price || 0,
+      images: getProductImages(productDetails).length > 0 ? getProductImages(productDetails) : [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean)
     },
     'SP-05': {
-      price: 15990,
-      images: sp05Product ? [sp05Product.image, sp05Product.image2, sp05Product.image3, sp05Product.image4, sp05Product.image5].filter(Boolean) : []
+      price: getProductPrice(sp05Product) || 0,
+      images: getProductImages(sp05Product)
     }
   };
   
   const currentModel = modelData[selectedModel];
   const currentPrice = currentModel.price;
   const currentImages = currentModel.images;
+  const currentStock = selectedModel === 'SP-01' ? getProductStock(productDetails) : getProductStock(sp05Product);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Reset to default when modal opens
   useEffect(() => {
     if (open) {
       setSelectedModel('SP-01');
-      setActiveTab('included');
+      setActiveTab('benefits');
       fetchAccessories();
       setSelectedImage(0);
+      console.log('Modal opened with product:', product);
+      console.log('Product details state:', productDetails);
     }
-  }, [open]);
+  }, [open, productDetails]);
 
   const fetchAccessories = async () => {
     try {
-      const products = await productService.getProducts();
-      const accessoryProducts = products.filter(p => 
-        ['SOS Band', 'Doorbell Button', 'Signal Extender', 'Indoor AI Camera', 'Smoke Detector', 'Gas Detector', 'Shutter Sensor', 'Motion Sensor', 'Door Sensor', 'Vibration Sensor', 'Wireless Siren'].some(name => 
-          p.name.toLowerCase().includes(name.toLowerCase())
-        )
+      // Get categories and all products
+      const [categories, allProducts] = await Promise.all([
+        enhancedProductService.getCategories(),
+        enhancedProductService.getProducts()
+      ]);
+      
+      // Find Security category
+      const securityCategory = categories.find(cat => 
+        cat.name.toLowerCase().includes('security')
       );
       
-      if (accessoryProducts.length > 0) {
-        setAccessories(accessoryProducts.map(p => ({
-          name: p.name,
-          desc: p.description || 'Security accessory',
-          price: p.price,
-          image: p.image || '/images/sohub_protect/accesories/default.png'
-        })));
-      } else {
-        // Fallback data if no products found in database
-        setAccessories([
-          { name: 'SOS Band', desc: 'Emergency panic button', price: 3999, image: '/images/sohub_protect/accesories/B020-SOS-SOS-Band.png' },
-          { name: 'Doorbell Button', desc: 'Smart doorbell system', price: 4999, image: '/images/sohub_protect/accesories/doorbell-b100.png' },
-          { name: 'Signal Extender', desc: 'Extend wireless range', price: 3499, image: '/images/sohub_protect/accesories/EX010-Signal-extender.png' },
-          { name: 'Indoor AI Camera 2.4G/5G', desc: 'HD AI surveillance', price: 8999, image: '/images/sohub_protect/accesories/camera-c11.png' },
-          { name: 'Smoke Detector Fire Alarm Sensor', desc: 'Fire safety monitoring', price: 3999, image: '/images/sohub_protect/accesories/smoke-detector.png' },
-          { name: 'Gas Detector', desc: 'Gas leak detection', price: 4499, image: '/images/sohub_protect/accesories/GS020-Gas-Detector.png' },
-          { name: 'Shutter Sensor', desc: 'Window shutter monitoring', price: 2999, image: '/images/sohub_protect/accesories/shutter_sensor_ss010.png' },
-          { name: 'Motion Sensor', desc: 'Advanced motion detection', price: 2999, image: '/images/sohub_protect/accesories/Motion_pr200.png' },
-          { name: 'Door Sensor', desc: 'Smart door monitoring', price: 2499, image: '/images/sohub_protect/accesories/door_Sensor_DS200.png' },
-          { name: 'Vibration Sensor', desc: 'Vibration detection', price: 3299, image: '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png' },
-          { name: 'Wireless Siren', desc: 'Loud security alert', price: 4999, image: '/images/sohub_protect/accesories/WSR101-Wireless_siren.png' }
-        ]);
+      if (!securityCategory) {
+        console.log('Security category not found');
+        return;
       }
+      
+      // Filter products in Security category excluding SP-01 and SP-05
+      const accessoryProducts = allProducts?.filter(p => {
+        const isSecurityCategory = p.category_id === securityCategory.id;
+        const name = (p.title || p.display_name || p.name || '').toLowerCase();
+        const isNotPanel = !name.includes('sp-01') && !name.includes('sp01') && !name.includes('sp-05') && !name.includes('sp05');
+        
+        return isSecurityCategory && isNotPanel;
+      }) || [];
+      
+      console.log('Found security accessories:', accessoryProducts);
+      
+      setAccessories(accessoryProducts.map(p => {
+        // Get price from variants or product price
+        let productPrice = 0;
+        if (p.variants) {
+          let variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
+          if (variants && variants.length > 0) {
+            const firstVariant = variants[0];
+            productPrice = firstVariant.discount_price && firstVariant.discount_price > 0 
+              ? firstVariant.discount_price 
+              : firstVariant.price || 0;
+          }
+        }
+        if (!productPrice) {
+          productPrice = p.price || p.base_price || 0;
+        }
+        
+        return {
+          id: p.id,
+          name: p.title || p.display_name || p.name,
+          desc: p.product_overview || p.overview || p.description || 'Security accessory',
+          price: productPrice,
+          image: p.image || p.main_image
+        };
+      }));
     } catch (error) {
       console.error('Error fetching accessories:', error);
-      // Use fallback data on error
-      setAccessories([
-        { name: 'SOS Band', desc: 'Emergency panic button', price: 3999, image: '/images/sohub_protect/accesories/B020-SOS-SOS-Band.png' },
-        { name: 'Doorbell Button', desc: 'Smart doorbell system', price: 4999, image: '/images/sohub_protect/accesories/doorbell-b100.png' },
-        { name: 'Signal Extender', desc: 'Extend wireless range', price: 3499, image: '/images/sohub_protect/accesories/EX010-Signal-extender.png' },
-        { name: 'Indoor AI Camera 2.4G/5G', desc: 'HD AI surveillance', price: 8999, image: '/images/sohub_protect/accesories/camera-c11.png' },
-        { name: 'Smoke Detector Fire Alarm Sensor', desc: 'Fire safety monitoring', price: 3999, image: '/images/sohub_protect/accesories/smoke-detector.png' },
-        { name: 'Gas Detector', desc: 'Gas leak detection', price: 4499, image: '/images/sohub_protect/accesories/GS020-Gas-Detector.png' },
-        { name: 'Shutter Sensor', desc: 'Window shutter monitoring', price: 2999, image: '/images/sohub_protect/accesories/shutter_sensor_ss010.png' },
-        { name: 'Motion Sensor', desc: 'Advanced motion detection', price: 2999, image: '/images/sohub_protect/accesories/Motion_pr200.png' },
-        { name: 'Door Sensor', desc: 'Smart door monitoring', price: 2499, image: '/images/sohub_protect/accesories/door_Sensor_DS200.png' },
-        { name: 'Vibration Sensor', desc: 'Vibration detection', price: 3299, image: '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png' },
-        { name: 'Wireless Siren', desc: 'Loud security alert', price: 4999, image: '/images/sohub_protect/accesories/WSR101-Wireless_siren.png' }
-      ]);
+      setAccessories([]);
     }
   };
 
@@ -180,7 +271,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
           name: `${product.name}${variationText}`,
           price: currentPrice,
           category: 'Security System',
-          image: currentImages[0] || '/images/sohub_protect/smart-security-box.png',
+          image: currentImages[0],
           color: `Model: ${selectedModel}`,
           model: selectedModel,
           quantity: quantity
@@ -211,7 +302,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: '/images/sohub_protect/installation-icon.png',
+          image: null,
           color: 'Service',
           quantity: 1
         });
@@ -253,13 +344,9 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
                   <img
-                    src={currentImages[selectedImage] || '/images/sohub_protect/smart-security-box.png'}
+                    src={currentImages[selectedImage] || product.image}
                     alt={product.name}
                     className="w-full h-full object-cover rounded-lg"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/images/sohub_protect/smart-security-box.png';
-                    }}
                   />
                 </div>
                 
@@ -307,10 +394,6 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                           src={image} 
                           alt={`${product.name} ${index + 1}`} 
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/images/sohub_protect/smart-security-box.png';
-                          }}
                         />
                       </button>
                     ))}
@@ -331,7 +414,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {product.name}
+                {selectedModel === 'SP-05' ? (sp05Product?.title || sp05Product?.display_name || sp05Product?.name) : (productDetails?.title || productDetails?.display_name || productDetails?.name)}
               </h1>
               
               {/* Price Section */}
@@ -340,12 +423,39 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                   <span className="text-base text-gray-900">
                     {totalPrice.toLocaleString()} BDT
                   </span>
-                  <span className="text-xs text-gray-500 line-through">
-                    {Math.round(totalPrice * 1.3).toLocaleString()} BDT
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Save {Math.round(totalPrice * 0.3).toLocaleString()} BDT
-                  </span>
+                  {(() => {
+                    const currentProductData = selectedModel === 'SP-01' ? productDetails : sp05Product;
+                    if (!currentProductData) return null;
+                    
+                    let variants = currentProductData.variants;
+                    if (typeof variants === 'string') {
+                      try {
+                        variants = JSON.parse(variants);
+                      } catch (e) {
+                        variants = [];
+                      }
+                    }
+                    
+                    if (variants && variants.length > 0) {
+                      const firstVariant = variants[0];
+                      if (firstVariant.discount_price > 0 && firstVariant.discount_price < firstVariant.price) {
+                        const originalTotal = (firstVariant.price * quantity) + accessoryTotal;
+                        const savings = (firstVariant.price - firstVariant.discount_price) * quantity;
+                        
+                        return (
+                          <>
+                            <span className="text-xs text-gray-500 line-through">
+                              {originalTotal.toLocaleString()} BDT
+                            </span>
+                            <span className="text-xs text-green-600">
+                              Save {savings.toLocaleString()} BDT
+                            </span>
+                          </>
+                        );
+                      }
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
               
@@ -360,18 +470,12 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
             <div className="mb-6">
               <Accordion type="single" collapsible className="w-full border-t border-b border-gray-200">
                 <AccordionItem value="details" className="border-none">
-                  <AccordionTrigger className="text-left text-sm font-semibold no-underline hover:no-underline py-3">Product description</AccordionTrigger>
+                  <AccordionTrigger className="text-left text-sm font-semibold no-underline hover:no-underline py-3">
+                    {productDetails?.display_name || productDetails?.title || 'Product description'}
+                  </AccordionTrigger>
                   <AccordionContent className="pb-2">
                     <div className="border-b border-gray-200">
                       <div className="flex space-x-8">
-                        <button 
-                          onClick={() => setActiveTab('included')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'included' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
-                          }`}
-                        >
-                          What's Included
-                        </button>
                         <button 
                           onClick={() => setActiveTab('benefits')}
                           className={`py-2 px-1 border-b-2 font-medium text-xs ${
@@ -399,65 +503,20 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                       </div>
                     </div>
                     <div className="pt-4">
-                      {activeTab === 'included' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Smart Security Hub Unit
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Power Adapter & Backup Battery
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Quick Setup Guide
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Mobile App Access
-                          </li>
-                        </ul>
-                      )}
                       {activeTab === 'benefits' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Complete security hub with central control unit and smart home integration
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Supports up to 50 connected security devices with wireless connectivity
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Built-in backup battery for 24/7 operation and voice control support
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          <div dangerouslySetInnerHTML={{ __html: (selectedModel === 'SP-05' ? sp05Product : productDetails)?.overview || (selectedModel === 'SP-05' ? sp05Product : productDetails)?.product_overview || (selectedModel === 'SP-05' ? sp05Product : productDetails)?.description || '' }} />
+                        </div>
                       )}
                       {activeTab === 'specs' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Connectivity: WiFi 6, Zigbee 3.0, Bluetooth 5.0 with 100m outdoor range
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Power: AC adapter with 8-hour backup battery and low power consumption
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            Dimensions: 200mm x 150mm x 50mm with wall mounting hardware included
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          <div dangerouslySetInnerHTML={{ __html: (selectedModel === 'SP-05' ? sp05Product : productDetails)?.technical_details || (selectedModel === 'SP-05' ? sp05Product : productDetails)?.specifications || '' }} />
+                        </div>
                       )}
                       {activeTab === 'warranty' && (
-                        <ul className="space-y-2 text-sm text-gray-500">
-                          <li className="flex items-start gap-2">
-                            <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                            2 Year Service Warranty
-                          </li>
-                        </ul>
+                        <div className="text-sm text-gray-500">
+                          <div dangerouslySetInnerHTML={{ __html: (selectedModel === 'SP-05' ? sp05Product : productDetails)?.warranty || '' }} />
+                        </div>
                       )}
                     </div>
                   </AccordionContent>
@@ -472,27 +531,41 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                 <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   selectedModel === 'SP-01' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
                 }`} onClick={() => setSelectedModel('SP-01')} style={selectedModel === 'SP-01' ? {backgroundColor: '#e8e8ed'} : {}}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`text-xs flex items-center gap-2 ${
-                      selectedModel === 'SP-01' ? 'text-black font-bold' : 'text-gray-900 font-medium'
-                    }`}>
-                      SP-01
+                  <div className="flex items-center gap-3 mb-2">
+                    <img 
+                      src={getProductImages(productDetails)[0] || product.image} 
+                      alt="SP-01" 
+                      className="w-8 h-8 object-cover rounded"
+                    />
+                    <div>
+                      <div className={`text-xs ${
+                        selectedModel === 'SP-01' ? 'text-black font-bold' : 'text-gray-900 font-medium'
+                      }`}>
+                        SP-01
+                      </div>
+                      <div className="text-xs text-gray-600">Standard Security Kit</div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600">Standard Security Kit</div>
                 </div>
                 
                 <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
                   selectedModel === 'SP-05' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
                 }`} onClick={() => setSelectedModel('SP-05')} style={selectedModel === 'SP-05' ? {backgroundColor: '#e8e8ed'} : {}}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`text-xs flex items-center gap-2 ${
-                      selectedModel === 'SP-05' ? 'text-black font-bold' : 'text-gray-900 font-medium'
-                    }`}>
-                      SP-05
+                  <div className="flex items-center gap-3 mb-2">
+                    <img 
+                      src={getProductImages(sp05Product)[0] || product.image} 
+                      alt="SP-05" 
+                      className="w-8 h-8 object-cover rounded"
+                    />
+                    <div>
+                      <div className={`text-xs ${
+                        selectedModel === 'SP-05' ? 'text-black font-bold' : 'text-gray-900 font-medium'
+                      }`}>
+                        SP-05
+                      </div>
+                      <div className="text-xs text-gray-600">Advanced Security Kit</div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600">Advanced Security Kit</div>
                 </div>
               </div>
             </div>
@@ -563,7 +636,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                             <img src={accessory.image} alt={accessory.name} className="w-20 h-20 object-contain" />
                           </div>
                           <h4 className="font-bold text-black text-sm mb-1">{accessory.name}</h4>
-                          <p className="text-xs text-gray-500 mb-2">{accessory.desc}</p>
+                          <p className="text-xs text-gray-500 mb-2 line-clamp-2">{accessory.desc.replace(/<[^>]*>/g, '').substring(0, 50)}...</p>
                           <p className="text-xs mb-2">+{Number(accessory.price).toLocaleString()} BDT</p>
                           
                           {isSelected && (
@@ -655,7 +728,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
           <div className="fixed bottom-0 left-0 right-0 lg:right-0 lg:left-auto lg:w-[600px] bg-white border-t lg:border-l border-gray-200 p-3 lg:p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || product.stock === 0}
+              disabled={loading || currentStock === 0}
               className="w-full h-10 lg:h-12 text-sm lg:text-base font-bold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
               style={{ backgroundColor: '#7e8898' }}
             >
@@ -668,7 +741,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                   </svg>
                   Adding to bag...
                 </span>
-              ) : product.stock === 0 ? 'Out of stock' : (
+              ) : currentStock === 0 ? 'Out of stock' : (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
@@ -681,9 +754,9 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
             </Button>
             
             {/* Stock Status */}
-            {product.stock <= 3 && product.stock > 0 && (
+            {currentStock <= 3 && currentStock > 0 && (
               <p className="text-center text-sm text-black font-medium mt-2">
-                Only {product.stock} left in stock - order soon!
+                Only {currentStock} left in stock - order soon!
               </p>
             )}
           </div>
@@ -706,40 +779,20 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
           {/* Product Image */}
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
             <img
-              src={currentImages[0] || '/images/sohub_protect/smart-security-box.png'}
-              alt={product.name}
+              src={(selectedModel === 'SP-05' ? sp05Product?.help_image_url : productDetails?.help_image_url) || currentImages[0] || product.image}
+              alt={(selectedModel === 'SP-05' ? sp05Product?.title : productDetails?.title) || product.name}
               className="w-32 h-32 object-cover rounded-lg"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/images/sohub_protect/smart-security-box.png';
-              }}
             />
           </div>
           
           <div className="p-6">
-            {/* Headline */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
-            </div>
+
             
-            {/* Options */}
-            <div className="space-y-6">
-              {/* Option 1 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Standard Installation (TBD)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Basic setup with panel installation and system configuration. Perfect for standard security control. Includes wall mounting and basic smart home integration.
-                </p>
-              </div>
-              
-              {/* Option 2 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Premium Installation (TBD)</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Complete professional service with custom security assessment, advanced panel placement, and full smart home ecosystem integration. Includes 3-year service warranty.
-                </p>
-              </div>
-            </div>
+            {/* Help Text from Database */}
+            <div 
+              className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: (selectedModel === 'SP-05' ? sp05Product?.help_text : productDetails?.help_text) || '' }}
+            />
           </div>
         </DialogContent>
       </Dialog>
