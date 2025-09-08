@@ -5,8 +5,18 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Add custom styles for text truncation
+const styles = `
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+`;
 import { toast } from '@/components/ui/use-toast';
-import { productService } from '@/supabase/products';
+import { supabase } from '@/supabase/client';
 
 interface CameraSelectionModalProps {
   open: boolean;
@@ -17,6 +27,13 @@ interface CameraSelectionModalProps {
 }
 
 export function CameraSelectionModal({ open, onOpenChange, product, addToCart, onAddToCart }: CameraSelectionModalProps) {
+  // Inject styles
+  if (typeof document !== 'undefined' && !document.getElementById('camera-modal-styles')) {
+    const styleSheet = document.createElement('style');
+    styleSheet.id = 'camera-modal-styles';
+    styleSheet.textContent = styles;
+    document.head.appendChild(styleSheet);
+  }
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -43,36 +60,44 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
 
   const fetchAccessories = async () => {
     try {
-      const products = await productService.getProducts();
-      const accessoryProducts = products.filter(p => 
-        ['Indoor AI Camera', 'Outdoor Camera', 'Security Camera'].some(name => 
-          p.name.toLowerCase().includes(name.toLowerCase())
-        )
-      );
+      console.log('Fetching camera products...');
       
-      if (accessoryProducts.length > 0) {
-        setAccessories(accessoryProducts.map(p => ({
-          name: p.name,
-          desc: p.description || 'Security camera',
-          price: p.price,
-          image: p.image || '/images/sohub_protect/accesories/default.png'
-        })));
-      } else {
-        // Fallback data if no products found in database
-        setAccessories([
-          { name: 'Indoor AI Camera 2.4G/5G', desc: 'HD AI surveillance', price: 8999, image: '/images/sohub_protect/accesories/camera-c11.png' },
-          { name: 'Outdoor Security Camera', desc: 'Weatherproof outdoor monitoring', price: 12999, image: '/images/sohub_protect/accesories/camera-c11.png' },
-          { name: 'PTZ Camera', desc: 'Pan-tilt-zoom security camera', price: 15999, image: '/images/sohub_protect/accesories/camera-c11.png' }
-        ]);
+      // Get all products and filter for AI Camera
+      const { data: allProducts, error } = await supabase
+        .from('products')
+        .select('*');
+      
+      if (error) {
+        console.error('Database error:', error);
+        setAccessories([]);
+        return;
       }
+      
+      console.log('All products from DB:', allProducts);
+      
+      // Filter for AI Camera products specifically
+      const aiCameraProducts = allProducts?.filter(p => 
+        p.title?.toLowerCase().includes('ai camera') ||
+        p.display_name?.toLowerCase().includes('ai camera') ||
+        (p.title?.toLowerCase().includes('camera') && p.title?.toLowerCase().includes('ai'))
+      ) || [];
+      
+      console.log('AI Camera products found:', aiCameraProducts);
+      
+      const mappedProducts = aiCameraProducts.map(p => ({
+        id: p.id,
+        name: p.display_name || p.title || 'AI Camera',
+        desc: p.product_overview || 'AI-powered security camera',
+        price: p.variants?.[0]?.price || p.base_price || 0,
+        image: p.image || '/images/sohub_protect/accesories/camera-c11.png',
+        originalProduct: p
+      }));
+      
+      console.log('Final mapped AI Camera products:', mappedProducts);
+      setAccessories(mappedProducts);
     } catch (error) {
-      console.error('Error fetching accessories:', error);
-      // Use fallback data on error
-      setAccessories([
-        { name: 'Indoor AI Camera 2.4G/5G', desc: 'HD AI surveillance', price: 8999, image: '/images/sohub_protect/accesories/camera-c11.png' },
-        { name: 'Outdoor Security Camera', desc: 'Weatherproof outdoor monitoring', price: 12999, image: '/images/sohub_protect/accesories/camera-c11.png' },
-        { name: 'PTZ Camera', desc: 'Pan-tilt-zoom security camera', price: 15999, image: '/images/sohub_protect/accesories/camera-c11.png' }
-      ]);
+      console.error('Error fetching camera products:', error);
+      setAccessories([]);
     }
   };
 
@@ -110,9 +135,9 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
       selectedAccessories.forEach(index => {
         const accessory = accessories[index];
         const qty = accessoryQuantities[index] || 1;
-        if (addToCart) {
+        if (addToCart && accessories[index]) {
           addToCart({
-            id: `camera_${index}_${Date.now()}`,
+            id: accessory.id || `camera_${index}_${Date.now()}`,
             name: accessory.name,
             price: Number(accessory.price),
             category: 'Security Camera',
@@ -276,6 +301,7 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
                 
                 <div ref={scrollRef} className="overflow-x-auto scrollbar-hide pl-2 pr-10">
                   <div className="flex gap-3 pb-2" style={{ width: 'max-content' }}>
+
                     {accessories.map((accessory, index) => {
                       const isSelected = (accessoryQuantities[index] || 0) > 0;
                       return (
@@ -291,12 +317,28 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
                               +
                             </button>
                           )}
-                          <div className="aspect-square bg-gray-50 rounded-md mb-2 flex items-center justify-center">
-                            <img src={accessory.image} alt={accessory.name} className="w-20 h-20 object-contain" />
+                          <div className="aspect-square bg-gray-50 rounded-md mb-2 flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={accessory.image} 
+                              alt={accessory.name} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/images/sohub_protect/accesories/camera-c11.png';
+                              }}
+                            />
                           </div>
-                          <h4 className="font-bold text-black text-sm mb-1">{accessory.name}</h4>
-                          <p className="text-xs text-gray-500 mb-2">{accessory.desc}</p>
-                          <p className="text-xs mb-2">{Number(accessory.price).toLocaleString()} BDT</p>
+                          <h4 className="font-bold text-black text-sm mb-1 line-clamp-2">{accessory.name}</h4>
+                          <p className="text-xs text-gray-500 mb-2 line-clamp-2">{accessory.desc}</p>
+                          <div className="mb-2">
+                            {accessory.originalProduct?.discount_price ? (
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-green-600">{Number(accessory.price).toLocaleString()} BDT</span>
+                                <span className="text-xs text-gray-400 line-through">{Number(accessory.originalProduct.base_price).toLocaleString()} BDT</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs font-bold">{Number(accessory.price).toLocaleString()} BDT</span>
+                            )}
+                          </div>
                           
                           {isSelected && (
                             <div className="absolute top-2 right-2 flex items-center gap-1 bg-white rounded-md border border-gray-200 p-1">
@@ -340,7 +382,10 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
               </div>
               
               <p className="text-xs text-gray-500 text-center mt-3">
-                Note: Cameras are compatible with most security systems
+                {accessories.length > 0 
+                  ? 'Note: Cameras are compatible with most security systems'
+                  : `Found ${accessories.length} camera products`
+                }
               </p>
             </div>
 
