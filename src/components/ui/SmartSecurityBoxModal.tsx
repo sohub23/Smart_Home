@@ -471,7 +471,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
               <Accordion type="single" collapsible className="w-full border-t border-b border-gray-200">
                 <AccordionItem value="details" className="border-none">
                   <AccordionTrigger className="text-left text-sm font-semibold no-underline hover:no-underline py-3">
-                    {productDetails?.display_name || productDetails?.title || 'Product description'}
+                    Product description
                   </AccordionTrigger>
                   <AccordionContent className="pb-2">
                     <div className="border-b border-gray-200">

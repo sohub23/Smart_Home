@@ -7,6 +7,7 @@ import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } fr
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 import { productService } from '@/supabase/products';
+import { enhancedProductService } from '@/supabase';
 
 interface SensorsSelectionModalProps {
   open: boolean;
@@ -26,6 +27,9 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
   const [accessoryQuantities, setAccessoryQuantities] = useState<{[key: number]: number}>({});
   const [installationSelected, setInstallationSelected] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [productDetailModal, setProductDetailModal] = useState(false);
+  const [selectedProductDetail, setSelectedProductDetail] = useState(null);
+  const [detailImageIndex, setDetailImageIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const sensorImages = [
@@ -37,7 +41,7 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
   // Reset to default when modal opens
   useEffect(() => {
     if (open) {
-      setActiveTab('included');
+      setActiveTab('overview');
       fetchAccessories();
       setSelectedImage(0);
     }
@@ -45,42 +49,57 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
 
   const fetchAccessories = async () => {
     try {
-      const products = await productService.getProducts();
-      const accessoryProducts = products.filter(p => 
-        ['Motion Sensor', 'Door Sensor', 'Vibration Sensor', 'Shutter Sensor', 'Smoke Detector', 'Gas Detector'].some(name => 
-          p.name.toLowerCase().includes(name.toLowerCase())
-        )
+      const categories = await enhancedProductService.getCategories();
+      const securityCategory = categories.find(cat => 
+        cat.name?.toLowerCase().includes('security')
       );
       
-      if (accessoryProducts.length > 0) {
-        setAccessories(accessoryProducts.map(p => ({
-          name: p.name,
-          desc: p.description || 'Security sensor',
-          price: p.price,
-          image: p.image || '/images/sohub_protect/accesories/default.png'
-        })));
-      } else {
-        // Fallback data if no products found in database
-        setAccessories([
-          { name: 'Motion Sensor', desc: 'Advanced motion detection', price: 2999, image: '/images/sohub_protect/accesories/Motion_pr200.png' },
-          { name: 'Door Sensor', desc: 'Smart door monitoring', price: 2499, image: '/images/sohub_protect/accesories/door_Sensor_DS200.png' },
-          { name: 'Vibration Sensor', desc: 'Vibration detection', price: 3299, image: '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png' },
-          { name: 'Shutter Sensor', desc: 'Window shutter monitoring', price: 2999, image: '/images/sohub_protect/accesories/shutter_sensor_ss010.png' },
-          { name: 'Smoke Detector', desc: 'Fire safety monitoring', price: 3999, image: '/images/sohub_protect/accesories/smoke-detector.png' },
-          { name: 'Gas Detector', desc: 'Gas leak detection', price: 4499, image: '/images/sohub_protect/accesories/GS020-Gas-Detector.png' }
-        ]);
+      if (!securityCategory) {
+        setAccessories([]);
+        return;
       }
+      
+      const accessoryProducts = await enhancedProductService.getProductsByCategory(securityCategory.id);
+      const filteredProducts = accessoryProducts?.filter(p => {
+        const name = (p.title || p.display_name || '').toLowerCase();
+        return !name.includes('camera') && !name.includes('sp-01') && !name.includes('sp05');
+      }) || [];
+      
+      const formattedAccessories = filteredProducts.map(p => {
+        let productPrice = 0;
+        if (p.variants && p.variants.length > 0) {
+          const firstVariant = p.variants[0];
+          productPrice = firstVariant.discount_price > 0 ? firstVariant.discount_price : firstVariant.price || 0;
+        }
+        if (!productPrice) {
+          productPrice = p.price || 0;
+        }
+        
+        // Fallback prices
+        if (!productPrice) {
+          const fallbackPrices = {
+            'motion sensor': 2500, 'door sensor': 1800, 'vibration sensor': 2200,
+            'wireless siren': 3500, 'gas detector': 4500, 'fire alarm': 3800,
+            'sos band': 2800, 'doorbell button': 2000, 'shutter sensor': 2300, 'signal extender': 3200
+          };
+          const productName = (p.title || p.display_name || '').toLowerCase();
+          productPrice = Object.keys(fallbackPrices).find(key => productName.includes(key)) 
+            ? fallbackPrices[Object.keys(fallbackPrices).find(key => productName.includes(key))] : 2500;
+        }
+        
+        return {
+          id: p.id,
+          name: p.title || p.display_name,
+          desc: (p.overview || p.product_overview || 'Security sensor').replace(/<[^>]*>/g, '').trim(),
+          price: productPrice,
+          image: p.image || '/images/sohub_protect/accesories/Motion_pr200.png'
+        };
+      });
+      
+      setAccessories(formattedAccessories);
     } catch (error) {
       console.error('Error fetching accessories:', error);
-      // Use fallback data on error
-      setAccessories([
-        { name: 'Motion Sensor', desc: 'Advanced motion detection', price: 2999, image: '/images/sohub_protect/accesories/Motion_pr200.png' },
-        { name: 'Door Sensor', desc: 'Smart door monitoring', price: 2499, image: '/images/sohub_protect/accesories/door_Sensor_DS200.png' },
-        { name: 'Vibration Sensor', desc: 'Vibration detection', price: 3299, image: '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png' },
-        { name: 'Shutter Sensor', desc: 'Window shutter monitoring', price: 2999, image: '/images/sohub_protect/accesories/shutter_sensor_ss010.png' },
-        { name: 'Smoke Detector', desc: 'Fire safety monitoring', price: 3999, image: '/images/sohub_protect/accesories/smoke-detector.png' },
-        { name: 'Gas Detector', desc: 'Gas leak detection', price: 4499, image: '/images/sohub_protect/accesories/GS020-Gas-Detector.png' }
-      ]);
+      setAccessories([]);
     }
   };
 
@@ -120,7 +139,7 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
         const qty = accessoryQuantities[index] || 1;
         if (addToCart) {
           addToCart({
-            id: `sensor_${index}_${Date.now()}`,
+            id: accessory.id || `sensor_${index}_${Date.now()}`,
             name: accessory.name,
             price: Number(accessory.price),
             category: 'Security Sensor',
@@ -261,6 +280,8 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
               </div>
             </div>
 
+
+
             {/* Add Sensors */}
             <div className="mb-4">
               <div className="mb-3">
@@ -287,14 +308,21 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
                     {accessories.map((accessory, index) => {
                       const isSelected = (accessoryQuantities[index] || 0) > 0;
                       return (
-                        <div key={index} className={`bg-white rounded-lg border p-3 hover:shadow-md transition-all duration-200 relative flex-shrink-0 w-40 ${
+                        <div key={index} className={`bg-white rounded-lg border p-3 hover:shadow-md transition-all duration-200 relative flex-shrink-0 w-40 cursor-pointer ${
                           isSelected ? 'border-black border-2 bg-gray-50' : 'border-gray-200'
-                        }`}>
+                        }`} onClick={() => {
+                          setSelectedProductDetail(accessory);
+                          setDetailImageIndex(0);
+                          setProductDetailModal(true);
+                        }}>
                           {!isSelected && (
                             <button 
                               className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold transition-colors text-white"
                               style={{backgroundColor: '#9ca3af'}}
-                              onClick={() => toggleAccessory(index)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleAccessory(index);
+                              }}
                             >
                               +
                             </button>
@@ -303,7 +331,6 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
                             <img src={accessory.image} alt={accessory.name} className="w-20 h-20 object-contain" />
                           </div>
                           <h4 className="font-bold text-black text-sm mb-1">{accessory.name}</h4>
-                          <p className="text-xs text-gray-500 mb-2">{accessory.desc}</p>
                           <p className="text-xs mb-2">{Number(accessory.price).toLocaleString()} BDT</p>
                           
                           {isSelected && (
@@ -423,6 +450,148 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
         </div>
       </DialogContent>
       
+      {/* Product Detail Modal */}
+      <Dialog open={productDetailModal} onOpenChange={setProductDetailModal}>
+        <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
+          <button 
+            onClick={() => setProductDetailModal(false)}
+            className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <div className="w-full h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex flex-col">
+            <div className="flex-1 flex items-center justify-center relative">
+              <img
+                src={(() => {
+                  const images = [selectedProductDetail?.image].filter(Boolean);
+                  if (selectedProductDetail?.additional_images) {
+                    try {
+                      const additional = typeof selectedProductDetail.additional_images === 'string' 
+                        ? JSON.parse(selectedProductDetail.additional_images) 
+                        : selectedProductDetail.additional_images;
+                      if (Array.isArray(additional)) {
+                        images.push(...additional.filter(Boolean));
+                      }
+                    } catch (e) {}
+                  }
+                  
+                  // Add fallback images for testing
+                  if (images.length === 1) {
+                    images.push(
+                      '/images/sohub_protect/accesories/door_Sensor_DS200.png',
+                      '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png'
+                    );
+                  }
+                  
+                  return images[detailImageIndex] || '/images/sohub_protect/accesories/Motion_pr200.png';
+                })()}
+                alt={selectedProductDetail?.name}
+                className="w-48 h-48 object-contain rounded-lg"
+              />
+              
+              {(() => {
+                const images = [selectedProductDetail?.image].filter(Boolean);
+                if (selectedProductDetail?.additional_images) {
+                  try {
+                    const additional = typeof selectedProductDetail.additional_images === 'string' 
+                      ? JSON.parse(selectedProductDetail.additional_images) 
+                      : selectedProductDetail.additional_images;
+                    if (Array.isArray(additional)) {
+                      images.push(...additional.filter(Boolean));
+                    }
+                  } catch (e) {}
+                }
+                
+                // Add fallback images for testing
+                if (images.length === 1) {
+                  images.push(
+                    '/images/sohub_protect/accesories/door_Sensor_DS200.png',
+                    '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png'
+                  );
+                }
+                
+                if (images.length > 1) {
+                  return (
+                    <>
+                      <button
+                        onClick={() => setDetailImageIndex(detailImageIndex > 0 ? detailImageIndex - 1 : images.length - 1)}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-gray-600" />
+                      </button>
+                      
+                      <button
+                        onClick={() => setDetailImageIndex(detailImageIndex < images.length - 1 ? detailImageIndex + 1 : 0)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
+                      >
+                        <ChevronRight className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+            
+            {(() => {
+              const images = [selectedProductDetail?.image].filter(Boolean);
+              if (selectedProductDetail?.additional_images) {
+                try {
+                  const additional = typeof selectedProductDetail.additional_images === 'string' 
+                    ? JSON.parse(selectedProductDetail.additional_images) 
+                    : selectedProductDetail.additional_images;
+                  if (Array.isArray(additional)) {
+                    images.push(...additional.filter(Boolean));
+                  }
+                } catch (e) {}
+              }
+              
+              // Add fallback images for testing
+              if (images.length === 1) {
+                images.push(
+                  '/images/sohub_protect/accesories/door_Sensor_DS200.png',
+                  '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png'
+                );
+              }
+              
+              if (images.length > 1) {
+                return (
+                  <div className="flex gap-2 justify-center p-4">
+                    {images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setDetailImageIndex(index)}
+                        className={`w-12 h-12 rounded-lg overflow-hidden transition-all duration-200 ${
+                          detailImageIndex === index ? 'ring-2 ring-black' : 'opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <img 
+                          src={image} 
+                          alt={`${selectedProductDetail?.name} ${index + 1}`} 
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
+          
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{selectedProductDetail?.name}</h2>
+            <p className="text-lg font-semibold text-gray-900 mb-4">{selectedProductDetail?.price?.toLocaleString()} BDT</p>
+            <div className="text-sm text-gray-600 leading-relaxed">
+              <p>{selectedProductDetail?.desc}</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Help Modal */}
       <Dialog open={helpModalOpen} onOpenChange={setHelpModalOpen}>
         <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
