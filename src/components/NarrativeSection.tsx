@@ -74,14 +74,12 @@ const NarrativeSection = () => {
 
           {/* Visual */}
           <div className="relative">
-            <div className="aspect-[4/3] rounded-[var(--radius-large)] overflow-hidden shadow-medium">
-              <video
-                src="http://202.59.208.112/smart_curtain/videos/ati_bazar.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                className="w-full h-full object-cover"
+            <div className="aspect-video rounded-[var(--radius-large)] overflow-hidden shadow-medium">
+              <iframe
+                src="https://www.youtube.com/embed/K0MZDn2Tw_4?autoplay=1&mute=1&loop=1&playlist=K0MZDn2Tw_4"
+                className="w-full h-full"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
               />
             </div>
             
