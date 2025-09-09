@@ -13,7 +13,7 @@ const loadPDLCTextData = async () => {
   const { supabase } = await import('@/supabase/client');
   const { data } = await supabase
     .from('products')
-    .select('id, title, display_name, price, variants, overview, technical_details, warranty')
+    .select('id, title, display_name, price, variants, overview, technical_details, warranty, help_text, help_image_url')
     .ilike('title', '%pdlc%')
     .limit(5);
   return data || [];

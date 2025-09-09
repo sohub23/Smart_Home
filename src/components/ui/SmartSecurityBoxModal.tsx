@@ -109,7 +109,9 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
           overview: sp01Product.overview,
           technical_details: sp01Product.technical_details,
           warranty: sp01Product.warranty,
-          description: sp01Product.description
+          description: sp01Product.description,
+          help_text: sp01Product.help_text,
+          help_image_url: sp01Product.help_image_url
         });
         setDataLoaded(true);
         
@@ -135,7 +137,9 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
           overview: sp05Product.overview,
           technical_details: sp05Product.technical_details,
           warranty: sp05Product.warranty,
-          description: sp05Product.description
+          description: sp05Product.description,
+          help_text: sp05Product.help_text,
+          help_image_url: sp05Product.help_image_url
         });
         
         // Load SP-05 images after

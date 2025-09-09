@@ -75,7 +75,7 @@ export function FanSwitchModal({ open, onOpenChange, product, onAddToCart, onBuy
       
       const { data } = await supabase
         .from('products')
-        .select('id, title, display_name, price, image, image2, image3, image4, image5, additional_images, variants, overview, technical_details, warranty')
+        .select('id, title, display_name, price, image, image2, image3, image4, image5, additional_images, variants, overview, technical_details, warranty, help_text, help_image_url')
         .ilike('title', '%fan%')
         .limit(10);
       

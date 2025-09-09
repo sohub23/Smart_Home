@@ -12,7 +12,7 @@ const loadStripLightData = async () => {
   const { supabase } = await import('@/supabase/client');
   const { data } = await supabase
     .from('products')
-    .select('id, title, display_name, price, image, variants, overview, technical_details, warranty, additional_images')
+    .select('id, title, display_name, price, image, variants, overview, technical_details, warranty, additional_images, help_text, help_image_url')
     .ilike('title', '%strip%')
     .limit(5);
   return data || [];

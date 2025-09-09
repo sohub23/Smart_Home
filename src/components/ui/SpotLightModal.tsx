@@ -5,27 +5,21 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { enhancedProductService } from '@/supabase';
+
 import { useQuery } from '@tanstack/react-query';
 
-// Progressive loading - text first
-const loadSpotlightTextData = async () => {
+const loadSpotlightProducts = async () => {
   const { supabase } = await import('@/supabase/client');
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('products')
-    .select('id, title, display_name, price, variants, overview, technical_details, warranty')
-    .ilike('title', '%spot%')
-    .limit(5);
-  return data || [];
-};
-
-const loadSpotlightImages = async () => {
-  const { supabase } = await import('@/supabase/client');
-  const { data } = await supabase
-    .from('products')
-    .select('id, image, additional_images')
-    .ilike('title', '%spot%')
-    .limit(5);
+    .select('*, help_text, help_image_url')
+    .or('title.ilike.%spot%,display_name.ilike.%spot%,category.ilike.%spot%')
+    .limit(10);
+  
+  if (error) {
+    console.error('Error fetching spotlight products:', error);
+    return [];
+  }
   return data || [];
 };
 
@@ -57,22 +51,16 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
+
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [connectionType, setConnectionType] = useState('zigbee');
-  const [selectedSize, setSelectedSize] = useState('Standard');
+
 
   const { data: spotlightProducts, isLoading } = useQuery({
-    queryKey: ['spotlight-text-data'],
-    queryFn: loadSpotlightTextData,
-    enabled: open
-  });
-
-  const { data: spotlightImages } = useQuery({
-    queryKey: ['spotlight-images'],
-    queryFn: loadSpotlightImages,
-    enabled: open && !!spotlightProducts?.length,
-    staleTime: 10 * 60 * 1000
+    queryKey: ['spotlight-products'],
+    queryFn: loadSpotlightProducts,
+    enabled: open,
+    staleTime: 5 * 60 * 1000
   });
 
   useEffect(() => {
@@ -80,36 +68,41 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
       setQuantity(1);
       setSelectedImage(0);
       
-      const textData = spotlightProducts[0];
-      const imageData = spotlightImages?.find(img => img.id === textData.id);
-      
-      // Combine text and image data
-      const combinedProduct = {
-        ...textData,
-        image: imageData?.image,
-        additional_images: imageData?.additional_images
-      };
-      
-      setSelectedProduct(combinedProduct);
+      const productData = spotlightProducts[0];
+      setSelectedProduct(productData);
       
       try {
-        const variants = typeof textData.variants === 'string' 
-          ? JSON.parse(textData.variants) 
-          : textData.variants || [];
-        if (variants[0]) {
-          setSelectedVariant(variants[0]);
-          setSelectedSize(variants[0].name);
+        let variants = [];
+        if (productData.variants) {
+          variants = typeof productData.variants === 'string' 
+            ? JSON.parse(productData.variants) 
+            : productData.variants;
         }
-      } catch {
-        // Fallback to default
+        
+        if (variants.length > 0) {
+          setSelectedVariant(variants[0]);
+        } else {
+          // Create default variant if none exists
+          setSelectedVariant({
+            name: 'Standard',
+            price: productData.price || 0,
+            discount_price: productData.discount_price || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing variants:', error);
+        setSelectedVariant({
+          name: 'Standard',
+          price: productData.price || 0,
+          discount_price: productData.discount_price || 0
+        });
       }
     }
-  }, [open, spotlightProducts, spotlightImages]);
+  }, [open, spotlightProducts]);
 
-  const currentProductData = selectedProduct;
-  
-  const currentPrice = selectedVariant?.discount_price && selectedVariant.discount_price > 0 ? selectedVariant.discount_price : selectedVariant?.price || selectedProduct?.price || 0;
-  const totalPrice = currentPrice * quantity;
+  const currentPrice = selectedVariant?.discount_price && selectedVariant.discount_price > 0 
+    ? selectedVariant.discount_price 
+    : selectedVariant?.price || selectedProduct?.price || 0;
   
   let additionalImages = [];
   try {
@@ -139,7 +132,7 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
         productName: `${selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || ''}`,
         quantity: quantity,
         connectionType: connectionType,
-        variant: selectedVariant?.name || selectedSize,
+        variant: selectedVariant?.name || 'Standard',
         model: connectionType === 'zigbee' ? 'Zigbee' : 'Wifi',
         installationCharge: 0,
         totalPrice: totalPrice,
@@ -161,8 +154,12 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
       }
       
       setTimeout(() => {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('cartUpdated'));
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('cartUpdated'));
+          }
+        } catch (error) {
+          console.error('Failed to dispatch cart update event:', error);
         }
       }, 100);
       
@@ -196,11 +193,15 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
                   {allImages.length > 0 ? (
                     <img
                       src={allImages[selectedImage]}
-                      alt={currentProductData?.name || ''}
+                      alt={selectedProduct?.title || selectedProduct?.name || 'Spotlight'}
                       className="w-full h-full object-contain lg:object-cover rounded-lg"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                        const target = e.currentTarget;
+                        const fallback = target.nextElementSibling as HTMLElement;
+                        if (fallback) {
+                          target.style.display = 'none';
+                          fallback.style.display = 'flex';
+                        }
                       }}
                     />
                   ) : null}

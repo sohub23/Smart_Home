@@ -90,7 +90,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       
       const { data } = await supabase
         .from('products')
-        .select('id, title, display_name, price, image, image2, image3, image4, image5, additional_images, variants')
+        .select('id, title, display_name, price, image, image2, image3, image4, image5, additional_images, variants, help_text, help_image_url')
         .ilike('title', '%gang%')
         .limit(10);
       
@@ -835,10 +835,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
           </div>
           
           <div className="p-6">
-            {/* Headline */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
-            </div>
+
             
             {/* Help Text from Database */}
             {selectedProduct?.help_text ? (
