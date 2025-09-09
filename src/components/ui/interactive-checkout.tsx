@@ -34,7 +34,7 @@ import { orderService } from "@/supabase/orders";
 import { useNavigate } from "react-router-dom";
 import { SaveEmailModal } from "@/components/ui/SaveEmailModal";
 import { Mail, Printer } from "lucide-react";
-import { sanitizeLogInput, sanitizeDbInput } from "@/utils/sanitize";
+import { sanitizeForLog, sanitizeString } from "@/utils/sanitize";
 import { useMemo, useCallback } from "react";
 
 interface Product {
@@ -56,6 +56,8 @@ interface CartItem extends Product {
     accessories?: any[];
     selectedGang?: string;
     selectedColor?: string;
+    model?: string;
+    connectionType?: string;
 }
 
 interface InteractiveCheckoutProps {
@@ -105,7 +107,7 @@ const safeParsePrice = (priceString: string): number => {
 
 // Helper function to transform product data for modals
 const transformProductForModal = (selectedVariant: any, dbProducts: any[]) => {
-    const sanitizedId = sanitizeDbInput(selectedVariant.id);
+    const sanitizedId = sanitizeString(selectedVariant.id);
     const productData = dbProducts.find(p => p.id === sanitizedId);
     return {
         id: sanitizedId,
@@ -310,15 +312,15 @@ function InteractiveCheckout({
             // Validate order data before submission
             const validatedOrderData = {
                 ...orderData,
-                customer_name: sanitizeDbInput(orderData.customer_name),
-                customer_email: sanitizeDbInput(orderData.customer_email),
-                customer_phone: sanitizeDbInput(orderData.customer_phone),
-                customer_address: sanitizeDbInput(orderData.customer_address)
+                customer_name: sanitizeString(orderData.customer_name),
+                customer_email: sanitizeString(orderData.customer_email),
+                customer_phone: sanitizeString(orderData.customer_phone),
+                customer_address: sanitizeString(orderData.customer_address)
             };
             
-            console.log('Submitting order:', sanitizeLogInput(validatedOrderData));
+            console.log('Submitting order with customer:', sanitizeForLog(validatedOrderData.customer_name));
             const createdOrder = await orderService.createOrder(validatedOrderData);
-            console.log('Order created:', sanitizeLogInput(createdOrder));
+            console.log('Order created with ID:', sanitizeForLog(createdOrder?.id || 'unknown'));
             
             if (!createdOrder) {
                 throw new Error('Order creation failed - no data returned');
@@ -331,12 +333,12 @@ function InteractiveCheckout({
             setFormData({ name: '', email: '', phone: '', address: '' });
             
             // Navigate to thank you page with sanitized data
-            const sanitizedOrderNumber = sanitizeDbInput(createdOrder.order_number || '');
+            const sanitizedOrderNumber = sanitizeString(createdOrder.order_number || '');
             const safeOrderData = {
-                customer_name: sanitizeDbInput(validatedOrderData.customer_name),
-                customer_email: sanitizeDbInput(validatedOrderData.customer_email),
-                customer_phone: sanitizeDbInput(validatedOrderData.customer_phone),
-                customer_address: sanitizeDbInput(validatedOrderData.customer_address),
+                customer_name: sanitizeString(validatedOrderData.customer_name),
+                customer_email: sanitizeString(validatedOrderData.customer_email),
+                customer_phone: sanitizeString(validatedOrderData.customer_phone),
+                customer_address: sanitizeString(validatedOrderData.customer_address),
                 total_amount: Math.max(0, Number(validatedOrderData.total_amount) || 0),
                 order_number: sanitizedOrderNumber,
                 payment_method: validatedOrderData.payment_method,
@@ -350,7 +352,7 @@ function InteractiveCheckout({
             // Don't show toast here as we're navigating away
             console.log('Order confirmed, navigating to thank you page');
         } catch (error) {
-            console.error('Order submission failed:', sanitizeLogInput(error));
+            console.error('Order submission failed:', sanitizeForLog(error));
             toast({
                 title: "Order Failed",
                 description: error instanceof Error ? error.message : "Failed to submit order. Please try again.",
@@ -378,19 +380,26 @@ function InteractiveCheckout({
 
     const loadProducts = async () => {
         try {
-            const data = await executeQuery(() => productService.getProducts());
-            // Validate and sanitize product data
+            const { supabase } = await import('@/supabase/client');
+            const { data, error } = await supabase
+                .from('products')
+                .select('id, title, category_id, subcategory_id, price, image, stock_quantity')
+                .eq('is_active', true)
+                .limit(50);
+            
+            if (error) throw error;
+            
             const sanitizedProducts = (data || []).map((product: any) => ({
                 ...product,
-                id: sanitizeDbInput(product.id || ''),
-                name: sanitizeDbInput(product.name || ''),
-                category: sanitizeDbInput(product.category || ''),
+                id: sanitizeString(product.id || ''),
+                name: sanitizeString(product.title || ''),
+                category: sanitizeString(product.category || ''),
                 price: Math.max(0, Number(product.price) || 0),
-                stock: Math.max(0, Number(product.stock) || 0)
+                stock: Math.max(0, Number(product.stock_quantity) || 0)
             }));
             setDbProducts(sanitizedProducts);
         } catch (err) {
-            console.error('Failed to load products:', sanitizeLogInput(err));
+            console.error('Failed to load products:', sanitizeForLog(err));
         }
     };
 
@@ -399,7 +408,7 @@ function InteractiveCheckout({
             const data = await executeQuery(() => categoryService.getCategoryImages());
             setCategoryImages(data || []);
         } catch (err) {
-            console.error('Failed to load category images:', sanitizeLogInput(err));
+            console.error('Failed to load category images:', sanitizeForLog(err));
         }
     };
 
@@ -408,14 +417,14 @@ function InteractiveCheckout({
             const { supabase } = await import('@/supabase/client');
             const { data, error } = await supabase
                 .from('product_categories')
-                .select('*')
+                .select('id, name, image_url, position')
                 .eq('is_active', true)
                 .order('position');
             
             if (error) throw error;
             setDbCategories(data || []);
         } catch (err) {
-            console.error('Failed to load categories:', sanitizeLogInput(err));
+            console.error('Failed to load categories:', sanitizeForLog(err));
         }
     };
 
@@ -431,12 +440,12 @@ function InteractiveCheckout({
             if (error) throw error;
             setDbSubcategories(data || []);
         } catch (err) {
-            console.error('Failed to load subcategories:', sanitizeLogInput(err));
+            console.error('Failed to load subcategories:', sanitizeForLog(err));
         }
     };
 
     const getProductsByCategory = (categoryName: string) => {
-        const sanitizedCategory = sanitizeDbInput(categoryName);
+        const sanitizedCategory = sanitizeString(categoryName);
         
         // Find category by name
         const category = dbCategories.find(cat => cat.name === sanitizedCategory);
@@ -486,31 +495,31 @@ function InteractiveCheckout({
     }, []);
 
     const addToCart = (product: Product | CartItem) => {
-        console.log('addToCart called with:', sanitizeLogInput(product));
+        console.log('addToCart called with:', sanitizeForLog(product));
         setCart((currentCart) => {
-            console.log('Current cart before adding:', sanitizeLogInput(currentCart));
+            console.log('Current cart before adding:', sanitizeForLog(currentCart));
             
             // For Smart Curtain with specific track sizes, use the provided ID (already unique)
             if (product.category === 'Smart Curtain' && product.id.includes('_') && product.id.includes('ft')) {
                 const newCart = [...currentCart, { ...product, quantity: 'quantity' in product ? product.quantity : 1 }];
-                console.log('New cart after adding Smart Curtain:', sanitizeLogInput(newCart));
+                console.log('New cart after adding Smart Curtain:', sanitizeForLog(newCart));
                 return newCart;
             }
             
             // For PDLC Film and other Smart Curtain, always add as new item with unique ID
             if (product.category === 'PDLC Film' || product.category === 'Film' || product.category === 'Smart Curtain') {
-                const uniqueId = `${sanitizeDbInput(product.id)}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+                const uniqueId = `${sanitizeString(product.id)}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
                 return [...currentCart, { ...product, id: uniqueId, quantity: 'quantity' in product ? product.quantity : 1 }];
             }
             
             // For Security products with accessories, always add as new item with unique ID
             if (product.category === 'Security' && 'accessories' in product && product.accessories && product.accessories.length > 0) {
-                const uniqueId = `${sanitizeDbInput(product.id)}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+                const uniqueId = `${sanitizeString(product.id)}-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
                 return [...currentCart, { ...product, id: uniqueId, quantity: 'quantity' in product ? product.quantity : 1 }];
             }
             
             // For other products, check for existing items
-            const sanitizedProductId = sanitizeDbInput(product.id);
+            const sanitizedProductId = sanitizeString(product.id);
             const existingItem = currentCart.find(
                 (item) => item.id === sanitizedProductId
             );
@@ -528,14 +537,14 @@ function InteractiveCheckout({
     };
 
     const removeFromCart = (productId: string) => {
-        const sanitizedId = sanitizeDbInput(productId);
+        const sanitizedId = sanitizeString(productId);
         setCart((currentCart) =>
             currentCart.filter((item) => item.id !== sanitizedId)
         );
     };
 
     const updateQuantity = (productId: string, delta: number) => {
-        const sanitizedId = sanitizeDbInput(productId);
+        const sanitizedId = sanitizeString(productId);
         setCart((currentCart) =>
             currentCart.map((item) => {
                 if (item.id === sanitizedId) {
@@ -1334,9 +1343,9 @@ function InteractiveCheckout({
                                                             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-tight mb-1">
                                                                 {item.name}
                                                             </p>
-                                                            {item.name.includes('ZIGBEE') || item.name.includes('WIFI') ? (
+                                                            {(item.name.includes('ZIGBEE') || item.name.includes('WIFI') || item.connectionType || item.model) ? (
                                                                 <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                                                                    Model: {item.name.includes('ZIGBEE') ? 'Zigbee' : 'Wifi'}
+                                                                    Model: {item.model || (item.name.includes('ZIGBEE') ? 'Zigbee' : item.name.includes('WIFI') ? 'Wifi' : item.connectionType || 'Standard')}
                                                                 </p>
                                                             ) : null}
                                                             {(item.trackSize || item.name.match(/\d+\.\d+m\([^)]+\)/) || item.name.includes('Standard') || item.name.includes('Large') || item.name.includes('Extra Large')) ? (
@@ -1468,7 +1477,7 @@ function InteractiveCheckout({
                                             onClick={() => {
                                                 try {
                                                     const sanitizedCartItems = cart.map(item => ({
-                                                        name: sanitizeDbInput(item.name),
+                                                        name: sanitizeString(item.name),
                                                         quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
                                                         price: Math.max(0, Number(item.price) || 0)
                                                     }));
@@ -2295,7 +2304,9 @@ function InteractiveCheckout({
                                 image: selectedVariant.imageUrl,
                                 color: 'Lighting',
                                 quantity: payload.quantity || 1,
-                                installationCharge: payload.installationCharge || 0
+                                installationCharge: payload.installationCharge || 0,
+                                model: payload.model,
+                                connectionType: payload.connectionType
                             };
                             addToCart(cartItem);
                         }
@@ -2341,7 +2352,9 @@ function InteractiveCheckout({
                                 image: selectedVariant.imageUrl,
                                 color: 'Lighting',
                                 quantity: payload.quantity || 1,
-                                installationCharge: payload.installationCharge || 0
+                                installationCharge: payload.installationCharge || 0,
+                                model: payload.model,
+                                connectionType: payload.connectionType
                             };
                             addToCart(cartItem);
                         }

@@ -5,7 +5,29 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { useSupabase, enhancedProductService } from '@/supabase';
+import { enhancedProductService } from '@/supabase';
+import { useQuery } from '@tanstack/react-query';
+
+// Progressive loading - text first
+const loadSpotlightTextData = async () => {
+  const { supabase } = await import('@/supabase/client');
+  const { data } = await supabase
+    .from('products')
+    .select('id, title, display_name, price, variants, overview, technical_details, warranty')
+    .ilike('title', '%spot%')
+    .limit(5);
+  return data || [];
+};
+
+const loadSpotlightImages = async () => {
+  const { supabase } = await import('@/supabase/client');
+  const { data } = await supabase
+    .from('products')
+    .select('id, image, additional_images')
+    .ilike('title', '%spot%')
+    .limit(5);
+  return data || [];
+};
 
 interface SpotLightModalProps {
   open: boolean;
@@ -28,118 +50,103 @@ interface SpotLightModalProps {
 }
 
 export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: SpotLightModalProps) {
-  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [installationSelected, setInstallationSelected] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(product);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
-  const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [connectionType, setConnectionType] = useState('zigbee');
+  const [selectedSize, setSelectedSize] = useState('Standard');
+
+  const { data: spotlightProducts, isLoading } = useQuery({
+    queryKey: ['spotlight-text-data'],
+    queryFn: loadSpotlightTextData,
+    enabled: open
+  });
+
+  const { data: spotlightImages } = useQuery({
+    queryKey: ['spotlight-images'],
+    queryFn: loadSpotlightImages,
+    enabled: open && !!spotlightProducts?.length,
+    staleTime: 10 * 60 * 1000
+  });
 
   useEffect(() => {
-    if (open) {
-      loadSpotLightProducts();
+    if (open && spotlightProducts?.length) {
       setQuantity(1);
-      setSelectedProduct(product);
-    }
-  }, [open, product]);
-
-  const loadSpotLightProducts = async () => {
-    try {
-      setDynamicLoading(true);
+      setSelectedImage(0);
       
-      const [categories, subcategories] = await Promise.all([
-        executeQuery(() => enhancedProductService.getCategories()),
-        executeQuery(() => enhancedProductService.getSubcategories())
-      ]);
+      const textData = spotlightProducts[0];
+      const imageData = spotlightImages?.find(img => img.id === textData.id);
       
-      const lightingCategory = categories.find(cat => 
-        cat.name.toLowerCase().includes('lighting') || cat.name.toLowerCase().includes('light')
-      );
+      // Combine text and image data
+      const combinedProduct = {
+        ...textData,
+        image: imageData?.image,
+        additional_images: imageData?.additional_images
+      };
       
-      if (!lightingCategory) return;
+      setSelectedProduct(combinedProduct);
       
-      const spotLightSubcategory = subcategories.find(sub => 
-        sub.category_id === lightingCategory.id && 
-        sub.name.toLowerCase().includes('spot')
-      );
-      
-      if (!spotLightSubcategory) return;
-      
-      const products = await executeQuery(() => 
-        enhancedProductService.getProductsBySubcategory(spotLightSubcategory.id)
-      );
-      
-      setDynamicProducts(products || []);
-      
-      if (products && products.length > 0) {
-        setSelectedProduct(products[0]);
-      }
-      
-    } catch (error) {
-      console.error('Failed to load spot light products:', error);
-    } finally {
-      setDynamicLoading(false);
-    }
-  };
-
-  const currentProductData = selectedProduct || product;
-  
-  const getCurrentPrice = () => {
-    if (!currentProductData) return 0;
-    
-    let variants = currentProductData.variants;
-    if (typeof variants === 'string') {
       try {
-        variants = JSON.parse(variants);
-      } catch (e) {
-        variants = [];
+        const variants = typeof textData.variants === 'string' 
+          ? JSON.parse(textData.variants) 
+          : textData.variants || [];
+        if (variants[0]) {
+          setSelectedVariant(variants[0]);
+          setSelectedSize(variants[0].name);
+        }
+      } catch {
+        // Fallback to default
       }
     }
-    
-    if (variants && variants.length > 0) {
-      const firstVariant = variants[0];
-      return firstVariant.discount_price && firstVariant.discount_price > 0 
-        ? firstVariant.discount_price 
-        : firstVariant.price || 0;
-    }
-    
-    // Fallback to original product price if currentProductData price is invalid
-    const price = currentProductData.price || product.price || 0;
-    return isNaN(price) ? 1000 : price; // Default price if NaN
-  };
+  }, [open, spotlightProducts, spotlightImages]);
+
+  const currentProductData = selectedProduct;
   
-  const currentPrice = getCurrentPrice();
+  const currentPrice = selectedVariant?.discount_price && selectedVariant.discount_price > 0 ? selectedVariant.discount_price : selectedVariant?.price || selectedProduct?.price || 0;
   const totalPrice = currentPrice * quantity;
   
   let additionalImages = [];
   try {
-    if (currentProductData?.additional_images) {
-      additionalImages = typeof currentProductData.additional_images === 'string' 
-        ? JSON.parse(currentProductData.additional_images)
-        : currentProductData.additional_images;
+    if (selectedProduct?.additional_images) {
+      additionalImages = typeof selectedProduct.additional_images === 'string' 
+        ? JSON.parse(selectedProduct.additional_images)
+        : selectedProduct.additional_images;
     }
   } catch (e) {
     additionalImages = [];
   }
   
   const allImages = [
-    currentProductData?.image,
+    selectedProduct?.image,
     ...(Array.isArray(additionalImages) ? additionalImages : [])
   ].filter(Boolean);
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      await onAddToCart({
-        productId: currentProductData.id || product.id,
+      const basePrice = currentPrice * quantity;
+      const wifiUpcharge = selectedVariant?.wifi_upcharge || 0;
+      const totalPrice = connectionType === 'wifi' ? basePrice + wifiUpcharge : basePrice;
+      
+      const cartPayload = {
+        productId: `${selectedProduct.id}_${Date.now()}`,
+        productName: `${selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || ''}`,
         quantity: quantity,
+        connectionType: connectionType,
+        variant: selectedVariant?.name || selectedSize,
+        model: connectionType === 'zigbee' ? 'Zigbee' : 'Wifi',
         installationCharge: 0,
-        totalPrice: totalPrice
-      });
+        totalPrice: totalPrice,
+        unitPrice: currentPrice
+      };
+      
+      await onAddToCart(cartPayload);
       
       if (installationSelected && addToCart) {
         addToCart({
@@ -147,7 +154,7 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: '/images/sohub_protect/installation-icon.png',
+          image: selectedProduct?.image || product.image,
           color: 'Service',
           quantity: 1
         });
@@ -161,7 +168,7 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
       
       toast({
         title: "Added to Bag",
-        description: `${product.name} added to your bag.`,
+        description: `Product added to your bag.`,
       });
       onOpenChange(false);
     } catch (error) {
@@ -189,14 +196,18 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
                   {allImages.length > 0 ? (
                     <img
                       src={allImages[selectedImage]}
-                      alt={currentProductData.name || product.name}
+                      alt={currentProductData?.name || ''}
                       className="w-full h-full object-contain lg:object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-500">No image available</span>
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`w-full h-full bg-gray-100 rounded-lg flex flex-col items-center justify-center ${allImages.length > 0 ? 'hidden' : ''}`}>
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg mb-3 animate-pulse"></div>
+                    <span className="text-gray-400 text-sm">Loading image...</span>
+                  </div>
                 </div>
                 
                 {allImages.length > 1 && (
@@ -219,57 +230,84 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
               </div>
               
               {allImages.length > 1 && (
-                <div className="hidden lg:flex items-center gap-3 justify-center mt-6">
-                  <button
-                    onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : allImages.length - 1)}
-                    className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-gray-600" />
-                  </button>
-                  
-                  <div className="flex gap-3">
-                    {allImages.map((image, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedImage(index)}
-                        className={cn(
-                          "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200",
-                          selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
-                        )}
-                      >
-                        <img 
-                          src={image} 
-                          alt={`${product.name} ${index + 1}`} 
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
+                <div className="hidden lg:flex justify-center mt-6">
+                  <div className="relative">
+                    <div className="flex gap-3 overflow-x-auto scrollbar-hide px-8" id="spotlight-thumbnails" style={{maxWidth: '400px'}}>
+                      {allImages.map((image, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSelectedImage(index)}
+                          className={cn(
+                            "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 flex-shrink-0",
+                            selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
+                          )}
+                        >
+                          <img 
+                            src={image} 
+                            alt={`Product ${index + 1}`} 
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('spotlight-thumbnails');
+                        container?.scrollBy({ left: -100, behavior: 'smooth' });
+                      }}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
+                    >
+                      <ChevronLeft className="w-4 h-4 text-gray-600" />
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('spotlight-thumbnails');
+                        container?.scrollBy({ left: 100, behavior: 'smooth' });
+                      }}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
+                    >
+                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={() => setSelectedImage(selectedImage < allImages.length - 1 ? selectedImage + 1 : 0)}
-                    className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
-                  >
-                    <ChevronRight className="w-4 h-4 text-gray-600" />
-                  </button>
                 </div>
               )}
             </div>
 
             {/* Right: Product Purchase Panel */}
             <div className="p-4 lg:p-8 bg-white lg:overflow-y-auto lg:max-h-[85vh]">
+            <>
             <div className="mb-6">
-              <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {currentProductData.title || currentProductData.name || product.name}
-              </h1>
+              {!isLoading && selectedProduct ? (
+                <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
+                  {selectedProduct.title || selectedProduct.display_name || selectedProduct.name}
+                </h1>
+              ) : (
+                <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
+              )}
               
-              <div className="mb-4">
-                <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-base text-gray-900">
-                    {totalPrice.toLocaleString()} BDT
-                  </span>
+              {!isLoading ? (
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-3 mb-2">
+                    <span className="text-base text-gray-900">
+                      {((currentPrice || 0) * quantity).toLocaleString()} BDT
+                    </span>
+                    {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
+                      <>
+                        <span className="text-xs text-gray-500 line-through">
+                          {(selectedVariant.price * quantity).toLocaleString()} BDT
+                        </span>
+                        <span className="text-xs text-green-600 font-medium">
+                          Save {((selectedVariant.price - selectedVariant.discount_price) * quantity).toLocaleString()} BDT
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="h-4 bg-gray-200 rounded animate-pulse mb-4 w-24"></div>
+              )}
               
               <div className="flex items-center gap-2 text-gray-600 text-sm mb-6">
                 <Truck className="w-4 h-4" />
@@ -313,45 +351,66 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          {(currentProductData?.overview || currentProductData?.description) ? (
-                            <div 
-                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
-                              dangerouslySetInnerHTML={{ 
-                                __html: currentProductData.overview || currentProductData.description 
-                              }}
-                            />
+                          {!isLoading ? (
+                            selectedProduct?.overview ? (
+                              <div className="text-sm text-gray-500">
+                                {selectedProduct.overview.replace(/<[^>]*>/g, '')}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-500">
+                                No overview available
+                              </div>
+                            )
                           ) : (
-                            <p className="text-gray-400 italic">No overview available from admin portal</p>
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            </div>
                           )}
                         </div>
                       )}
                       {activeTab === 'bestfor' && (
                         <div className="text-sm text-gray-500">
-                          {currentProductData?.technical_details ? (
-                            <div 
-                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
-                              dangerouslySetInnerHTML={{ 
-                                __html: currentProductData.technical_details 
-                              }}
-                            />
+                          {!isLoading ? (
+                            selectedProduct?.technical_details ? (
+                              <div className="text-sm text-gray-500">
+                                {selectedProduct.technical_details.replace(/<[^>]*>/g, '')}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-500">
+                                No technical details available
+                              </div>
+                            )
                           ) : (
-                            <p className="text-gray-400 italic">No technical details available from admin portal</p>
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                            </div>
                           )}
                         </div>
                       )}
                       {activeTab === 'bonuses' && (
                         <div className="text-sm text-gray-500">
-                          {currentProductData?.warranty ? (
-                            <div className="text-sm text-gray-500">
-                              {currentProductData.warranty.split('\n').filter(w => w.trim()).map((warrantyItem, index) => (
-                                <div key={index} className="flex items-start gap-2 mb-2">
-                                  <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
-                                  <span dangerouslySetInnerHTML={{ __html: warrantyItem.trim() }} />
-                                </div>
-                              ))}
-                            </div>
+                          {!isLoading ? (
+                            selectedProduct?.warranty ? (
+                              <div className="text-sm text-gray-500">
+                                {selectedProduct.warranty.split('\n').filter(w => w.trim()).map((warrantyItem, index) => (
+                                  <div key={index} className="flex items-start gap-2 mb-2">
+                                    <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
+                                    <span>{warrantyItem.trim().replace(/<[^>]*>/g, '')}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-500">
+                                No warranty information available
+                              </div>
+                            )
                           ) : (
-                            <p className="text-gray-400 italic">No warranty information available from admin portal</p>
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            </div>
                           )}
                         </div>
                       )}
@@ -360,6 +419,44 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
                 </AccordionItem>
               </Accordion>
             </div>
+
+            {/* Choose Model Section */}
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Choose Model</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  connectionType === 'zigbee' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
+                }`} onClick={() => setConnectionType('zigbee')} style={connectionType === 'zigbee' ? {backgroundColor: '#e8e8ed'} : {}}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`text-xs flex items-center gap-2 ${
+                      connectionType === 'zigbee' ? 'text-black font-bold' : 'text-gray-900 font-medium'
+                    }`}>
+                      <img src="/images/zigbee.svg" alt="Zigbee" className="w-4 h-4" />
+                      Zigbee
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600">Wifi + Hub required</div>
+                </div>
+                
+                <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  connectionType === 'wifi' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
+                }`} onClick={() => setConnectionType('wifi')} style={connectionType === 'wifi' ? {backgroundColor: '#e8e8ed'} : {}}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`text-xs flex items-center gap-2 ${
+                      connectionType === 'wifi' ? 'text-black font-bold' : 'text-gray-900 font-medium'
+                    }`}>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+                      </svg>
+                      Wifi
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600">Only Wifi required</div>
+                </div>
+              </div>
+            </div>
+
+
 
             <div className="mb-4">
               <div className="flex items-center justify-between">
@@ -419,6 +516,7 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
             </div>
 
             <div className="mb-20 lg:mb-16"></div>
+            </>
             </div>
           </div>
           
@@ -481,10 +579,9 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
           
           <div className="p-6">
             {selectedProduct?.help_text ? (
-              <div 
-                className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: selectedProduct.help_text }}
-              />
+              <div className="text-sm text-gray-600 leading-relaxed">
+                {selectedProduct.help_text?.replace(/<[^>]*>/g, '') || 'No help information available'}
+              </div>
             ) : (
               <>
                 <div className="text-center mb-6">
@@ -495,16 +592,9 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
                 
                 <div className="space-y-6">
                   <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Standard Installation (+0 BDT)</h3>
+                    <h3 className="font-bold text-gray-900 mb-2">Installation Service</h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
-                      Basic spot light installation with proper wiring and mounting. Perfect for single lights or small installations.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Premium Installation (+1,500 BDT)</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      Complete professional service with electrical safety check, advanced wiring, and dimmer integration. Includes 1-year installation warranty.
+                      Professional installation service available. Our team will contact you with pricing and scheduling details.
                     </p>
                   </div>
                 </div>

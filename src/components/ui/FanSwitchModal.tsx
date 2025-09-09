@@ -68,48 +68,23 @@ export function FanSwitchModal({ open, onOpenChange, product, onAddToCart, onBuy
   }, [open, product]);
 
   const loadFanSwitchProducts = async () => {
+    setDynamicLoading(false); // Show UI immediately
+    
     try {
-      setDynamicLoading(true);
+      const { supabase } = await import('@/supabase/client');
       
-      // Get categories and subcategories
-      const [categories, subcategories] = await Promise.all([
-        executeQuery(() => enhancedProductService.getCategories()),
-        executeQuery(() => enhancedProductService.getSubcategories())
-      ]);
+      const { data } = await supabase
+        .from('products')
+        .select('id, title, display_name, price, image, variants, overview, technical_details, warranty')
+        .ilike('title', '%fan%')
+        .limit(10);
       
-      // Find Switch category
-      const switchCategory = categories.find(cat => 
-        cat.name.toLowerCase().includes('switch')
-      );
-      
-      if (!switchCategory) return;
-      
-      // Find Fan Switch subcategory
-      const fanSwitchSubcategory = subcategories.find(sub => 
-        sub.category_id === switchCategory.id && 
-        sub.name.toLowerCase().includes('fan')
-      );
-      
-      if (!fanSwitchSubcategory) return;
-      
-      // Get all products from Fan Switch subcategory
-      const products = await executeQuery(() => 
-        enhancedProductService.getProductsBySubcategory(fanSwitchSubcategory.id)
-      );
-      
-      setDynamicProducts(products || []);
-      
-      if (products && products.length > 0) {
-        console.log('Setting selectedProduct to database product:', products[0]);
-        setSelectedProduct(products[0]);
-      } else {
-        console.log('No database products found, keeping original product');
+      if (data?.length) {
+        setDynamicProducts(data);
+        setSelectedProduct(data[0]);
       }
-      
     } catch (error) {
-      console.error('Failed to load fan switch products:', error);
-    } finally {
-      setDynamicLoading(false);
+      console.error('Load error:', error);
     }
   };
 

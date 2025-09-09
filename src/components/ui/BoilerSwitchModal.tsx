@@ -65,45 +65,23 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
   }, [open, product]);
 
   const loadBoilerSwitchProducts = async () => {
+    setDynamicLoading(false); // Show UI immediately
+    
     try {
-      setDynamicLoading(true);
+      const { supabase } = await import('@/supabase/client');
       
-      // Get categories and subcategories
-      const [categories, subcategories] = await Promise.all([
-        executeQuery(() => enhancedProductService.getCategories()),
-        executeQuery(() => enhancedProductService.getSubcategories())
-      ]);
+      const { data } = await supabase
+        .from('products')
+        .select('id, title, display_name, price, image, variants, overview, technical_details, warranty')
+        .ilike('title', '%boiler%')
+        .limit(10);
       
-      // Find Switch category
-      const switchCategory = categories.find(cat => 
-        cat.name.toLowerCase().includes('switch')
-      );
-      
-      if (!switchCategory) return;
-      
-      // Find Boiler Switch subcategory
-      const boilerSwitchSubcategory = subcategories.find(sub => 
-        sub.category_id === switchCategory.id && 
-        sub.name.toLowerCase().includes('boiler')
-      );
-      
-      if (!boilerSwitchSubcategory) return;
-      
-      // Get all products from Boiler Switch subcategory
-      const products = await executeQuery(() => 
-        enhancedProductService.getProductsBySubcategory(boilerSwitchSubcategory.id)
-      );
-      
-      setDynamicProducts(products || []);
-      
-      if (products && products.length > 0) {
-        setSelectedProduct(products[0]);
+      if (data?.length) {
+        setDynamicProducts(data);
+        setSelectedProduct(data[0]);
       }
-      
     } catch (error) {
-      console.error('Failed to load boiler switch products:', error);
-    } finally {
-      setDynamicLoading(false);
+      console.error('Load error:', error);
     }
   };
 

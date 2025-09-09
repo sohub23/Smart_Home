@@ -5,7 +5,18 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { useSupabase, enhancedProductService } from '@/supabase';
+import { useQuery } from '@tanstack/react-query';
+
+// Database-only loading
+const loadStripLightData = async () => {
+  const { supabase } = await import('@/supabase/client');
+  const { data } = await supabase
+    .from('products')
+    .select('id, title, display_name, price, image, variants, overview, technical_details, warranty, additional_images')
+    .ilike('title', '%strip%')
+    .limit(5);
+  return data || [];
+};
 
 interface StripLightModalProps {
   open: boolean;
@@ -28,118 +39,87 @@ interface StripLightModalProps {
 }
 
 export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: StripLightModalProps) {
-  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [installationSelected, setInstallationSelected] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(product);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
-  const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [connectionType, setConnectionType] = useState('zigbee');
+  const [selectedSize, setSelectedSize] = useState('Standard');
+
+  const { data: stripProducts, isLoading } = useQuery({
+    queryKey: ['strip-products'],
+    queryFn: loadStripLightData,
+    enabled: open
+  });
 
   useEffect(() => {
-    if (open) {
-      loadStripLightProducts();
+    if (open && stripProducts?.length) {
       setQuantity(1);
-      setSelectedProduct(product);
-    }
-  }, [open, product]);
-
-  const loadStripLightProducts = async () => {
-    try {
-      setDynamicLoading(true);
+      setSelectedImage(0);
       
-      const [categories, subcategories] = await Promise.all([
-        executeQuery(() => enhancedProductService.getCategories()),
-        executeQuery(() => enhancedProductService.getSubcategories())
-      ]);
+      const dbProduct = stripProducts[0];
+      setSelectedProduct(dbProduct);
       
-      const lightingCategory = categories.find(cat => 
-        cat.name.toLowerCase().includes('lighting') || cat.name.toLowerCase().includes('light')
-      );
-      
-      if (!lightingCategory) return;
-      
-      const stripLightSubcategory = subcategories.find(sub => 
-        sub.category_id === lightingCategory.id && 
-        sub.name.toLowerCase().includes('strip')
-      );
-      
-      if (!stripLightSubcategory) return;
-      
-      const products = await executeQuery(() => 
-        enhancedProductService.getProductsBySubcategory(stripLightSubcategory.id)
-      );
-      
-      setDynamicProducts(products || []);
-      
-      if (products && products.length > 0) {
-        setSelectedProduct(products[0]);
+      let variants = dbProduct.variants;
+      if (typeof variants === 'string') {
+        try {
+          variants = JSON.parse(variants);
+        } catch (e) {
+          variants = [];
+        }
       }
-      
-    } catch (error) {
-      console.error('Failed to load strip light products:', error);
-    } finally {
-      setDynamicLoading(false);
-    }
-  };
-
-  const currentProductData = selectedProduct || product;
-  
-  const getCurrentPrice = () => {
-    if (!currentProductData) return 0;
-    
-    let variants = currentProductData.variants;
-    if (typeof variants === 'string') {
-      try {
-        variants = JSON.parse(variants);
-      } catch (e) {
-        variants = [];
+      if (variants?.length > 0) {
+        setSelectedVariant(variants[0]);
+        setSelectedSize(variants[0].name);
       }
     }
-    
-    if (variants && variants.length > 0) {
-      const firstVariant = variants[0];
-      return firstVariant.discount_price && firstVariant.discount_price > 0 
-        ? firstVariant.discount_price 
-        : firstVariant.price || 0;
-    }
-    
-    // Fallback to original product price if currentProductData price is invalid
-    const price = currentProductData.price || product.price || 0;
-    return isNaN(price) ? 1500 : price; // Default price if NaN
-  };
+  }, [open, stripProducts]);
+
+  const currentProductData = selectedProduct;
   
-  const currentPrice = getCurrentPrice();
+  const currentPrice = (selectedVariant?.discount_price && selectedVariant.discount_price > 0 ? selectedVariant.discount_price : selectedVariant?.price) || selectedProduct?.price || null;
   const totalPrice = currentPrice * quantity;
   
   let additionalImages = [];
   try {
-    if (currentProductData?.additional_images) {
-      additionalImages = typeof currentProductData.additional_images === 'string' 
-        ? JSON.parse(currentProductData.additional_images)
-        : currentProductData.additional_images;
+    if (selectedProduct?.additional_images) {
+      additionalImages = typeof selectedProduct.additional_images === 'string' 
+        ? JSON.parse(selectedProduct.additional_images)
+        : selectedProduct.additional_images;
     }
   } catch (e) {
     additionalImages = [];
   }
   
   const allImages = [
-    currentProductData?.image,
+    selectedProduct?.image,
     ...(Array.isArray(additionalImages) ? additionalImages : [])
   ].filter(Boolean);
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      await onAddToCart({
-        productId: currentProductData.id || product.id,
+      const basePrice = currentPrice * quantity;
+      const wifiUpcharge = selectedVariant?.wifi_upcharge || 0;
+      const totalPrice = connectionType === 'wifi' ? basePrice + wifiUpcharge : basePrice;
+      
+      const cartPayload = {
+        productId: `${selectedProduct.id}_${Date.now()}`,
+        productName: `${selectedProduct.title || selectedProduct.name}`,
         quantity: quantity,
-        installationCharge: 0,
-        totalPrice: totalPrice
-      });
+        connectionType: connectionType,
+        model: connectionType === 'zigbee' ? 'Zigbee' : 'Wifi',
+        totalPrice: totalPrice,
+        unitPrice: currentPrice
+      };
+      
+      await onAddToCart(cartPayload);
+
       
       if (installationSelected && addToCart) {
         addToCart({
@@ -147,11 +127,13 @@ export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBu
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: '/images/sohub_protect/installation-icon.png',
+          image: selectedProduct?.image,
           color: 'Service',
           quantity: 1
         });
       }
+      
+
       
       setTimeout(() => {
         if (typeof window !== 'undefined') {
@@ -161,7 +143,7 @@ export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBu
       
       toast({
         title: "Added to Bag",
-        description: `${product.name} added to your bag.`,
+        description: `Product added to your bag.`,
       });
       onOpenChange(false);
     } catch (error) {
@@ -189,7 +171,7 @@ export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBu
                   {allImages.length > 0 ? (
                     <img
                       src={allImages[selectedImage]}
-                      alt={currentProductData.name || product.name}
+                      alt={currentProductData?.name || ''}
                       className="w-full h-full object-contain lg:object-cover rounded-lg"
                     />
                   ) : (
@@ -239,7 +221,7 @@ export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBu
                       >
                         <img 
                           src={image} 
-                          alt={`${product.name} ${index + 1}`} 
+                          alt={`Product ${index + 1}`} 
                           className="w-full h-full object-cover"
                         />
                       </button>
@@ -259,22 +241,35 @@ export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBu
             {/* Right: Product Purchase Panel */}
             <div className="p-4 lg:p-8 bg-white lg:overflow-y-auto lg:max-h-[85vh]">
             <div className="mb-6">
-              <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {currentProductData.title || currentProductData.name || product.name}
-              </h1>
+              {!isLoading && selectedProduct ? (
+                <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
+                  {selectedProduct.title || selectedProduct.display_name || selectedProduct.name}
+                </h1>
+              ) : (
+                <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
+              )}
               
-              <div className="mb-4">
-                <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-base text-gray-900">
-                    {totalPrice.toLocaleString()} BDT
-                  </span>
+              {currentPrice && currentPrice > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-3 mb-2">
+                    <span className="text-base text-gray-900">
+                      {(currentPrice * quantity).toLocaleString()} BDT
+                    </span>
+                    {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
+                      <>
+                        <span className="text-xs text-gray-500 line-through">
+                          {selectedVariant.price.toLocaleString()} BDT
+                        </span>
+                        <span className="text-xs text-green-600 font-medium">
+                          Save {(selectedVariant.price - selectedVariant.discount_price).toLocaleString()} BDT
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
               
-              <div className="flex items-center gap-2 text-gray-600 text-sm mb-6">
-                <Truck className="w-4 h-4" />
-                <span>Ships within 3–7 business days | Free shipping</span>
-              </div>
+
             </div>
 
             <div className="mb-4">
@@ -313,46 +308,39 @@ export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBu
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          {(currentProductData?.overview || currentProductData?.description) ? (
+                          {!isLoading && currentProductData?.overview ? (
                             <div 
                               className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
                               dangerouslySetInnerHTML={{ 
-                                __html: currentProductData.overview || currentProductData.description 
+                                __html: currentProductData.overview 
                               }}
                             />
                           ) : (
-                            <p className="text-gray-400 italic">No overview available from admin portal</p>
-                          )}
-                        </div>
-                      )}
-                      {activeTab === 'bestfor' && (
-                        <div className="text-sm text-gray-500">
-                          {currentProductData?.technical_details ? (
-                            <div 
-                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
-                              dangerouslySetInnerHTML={{ 
-                                __html: currentProductData.technical_details 
-                              }}
-                            />
-                          ) : (
-                            <p className="text-gray-400 italic">No technical details available from admin portal</p>
-                          )}
-                        </div>
-                      )}
-                      {activeTab === 'bonuses' && (
-                        <div className="text-sm text-gray-500">
-                          {currentProductData?.warranty ? (
-                            <div className="text-sm text-gray-500">
-                              {currentProductData.warranty.split('\n').filter(w => w.trim()).map((warrantyItem, index) => (
-                                <div key={index} className="flex items-start gap-2 mb-2">
-                                  <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
-                                  <span dangerouslySetInnerHTML={{ __html: warrantyItem.trim() }} />
-                                </div>
-                              ))}
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                             </div>
-                          ) : (
-                            <p className="text-gray-400 italic">No warranty information available from admin portal</p>
                           )}
+                        </div>
+                      )}
+                      {activeTab === 'bestfor' && currentProductData?.technical_details && (
+                        <div className="text-sm text-gray-500">
+                          <div 
+                            className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
+                            dangerouslySetInnerHTML={{ 
+                              __html: currentProductData.technical_details 
+                            }}
+                          />
+                        </div>
+                      )}
+                      {activeTab === 'bonuses' && currentProductData?.warranty && (
+                        <div className="text-sm text-gray-500">
+                          {currentProductData.warranty.split('\n').filter(w => w.trim()).map((warrantyItem, index) => (
+                            <div key={index} className="flex items-start gap-2 mb-2">
+                              <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
+                              <span dangerouslySetInnerHTML={{ __html: warrantyItem.trim() }} />
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -360,6 +348,44 @@ export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBu
                 </AccordionItem>
               </Accordion>
             </div>
+
+            {/* Choose Model Section */}
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-3">Choose Model</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  connectionType === 'zigbee' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
+                }`} onClick={() => setConnectionType('zigbee')} style={connectionType === 'zigbee' ? {backgroundColor: '#e8e8ed'} : {}}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`text-xs flex items-center gap-2 ${
+                      connectionType === 'zigbee' ? 'text-black font-bold' : 'text-gray-900 font-medium'
+                    }`}>
+                      <img src="/images/zigbee.svg" alt="Zigbee" className="w-4 h-4" />
+                      Zigbee
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600">Wifi + Hub required</div>
+                </div>
+                
+                <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  connectionType === 'wifi' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
+                }`} onClick={() => setConnectionType('wifi')} style={connectionType === 'wifi' ? {backgroundColor: '#e8e8ed'} : {}}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className={`text-xs flex items-center gap-2 ${
+                      connectionType === 'wifi' ? 'text-black font-bold' : 'text-gray-900 font-medium'
+                    }`}>
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
+                      </svg>
+                      Wifi
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-600">Only Wifi required</div>
+                </div>
+              </div>
+            </div>
+
+
 
             <div className="mb-4">
               <div className="flex items-center justify-between">
@@ -487,27 +513,7 @@ export function StripLightModal({ open, onOpenChange, product, onAddToCart, onBu
               />
             ) : (
               <>
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">
-                    {selectedProduct?.help_title || 'Need help deciding? We\'ve got you covered'}
-                  </h2>
-                </div>
-                
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Standard Installation (+0 BDT)</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      Basic strip light installation with proper wiring and mounting. Perfect for under-cabinet or accent lighting.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Premium Installation (+2,000 BDT)</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      Complete professional service with electrical safety check, advanced wiring, and controller integration. Includes 1-year installation warranty.
-                    </p>
-                  </div>
-                </div>
+                null
               </>
             )}
           </div>

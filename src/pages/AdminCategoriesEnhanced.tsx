@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import AdminNavbar from '@/components/AdminNavbar';
 import { supabase } from '@/supabase';
 
 
-const AdminCategoriesEnhanced = () => {
+const AdminCategoriesEnhanced = memo(() => {
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,11 +44,11 @@ const AdminCategoriesEnhanced = () => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [categoriesResult, subcategoriesResult] = await Promise.all([
-        supabase.from('product_categories').select('*').eq('is_active', true).order('position'),
-        supabase.from('product_subcategories').select('*').eq('is_active', true).order('position')
+        supabase.from('product_categories').select('id, name, image_url, position').eq('is_active', true).order('name'),
+        supabase.from('product_subcategories').select('id, name, category_id, image_url, position').eq('is_active', true).order('name')
       ]);
       
       setCategories(categoriesResult.data || []);
@@ -58,7 +58,7 @@ const AdminCategoriesEnhanced = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleCreateCategory = async () => {
     if (!categoryForm.name.trim()) {
@@ -145,9 +145,11 @@ const AdminCategoriesEnhanced = () => {
     }
   };
 
-  const getSubcategoriesForCategory = (categoryId) => {
+  const getSubcategoriesForCategory = useCallback((categoryId) => {
     return subcategories.filter(sub => sub.category_id === categoryId);
-  };
+  }, [subcategories]);
+
+  const memoizedCategories = useMemo(() => categories.slice(0, 10), [categories]);
 
   const handleEditCategory = (category) => {
     setEditingCategory(category);
@@ -445,7 +447,7 @@ const AdminCategoriesEnhanced = () => {
 
         {/* Categories Grid */}
         <div className="space-y-8">
-          {categories.map(category => {
+          {memoizedCategories.map(category => {
             const categorySubcategories = getSubcategoriesForCategory(category.id);
             
             return (
@@ -617,6 +619,6 @@ const AdminCategoriesEnhanced = () => {
       </main>
     </div>
   );
-};
+});
 
 export default AdminCategoriesEnhanced;

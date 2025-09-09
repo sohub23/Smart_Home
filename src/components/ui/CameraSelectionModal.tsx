@@ -5,6 +5,25 @@ import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/use-toast';
+import { enhancedProductService } from '@/supabase';
+import { useQuery } from '@tanstack/react-query';
+
+// Preload camera data immediately
+const preloadCameraData = async () => {
+  try {
+    const [categories, products] = await Promise.all([
+      enhancedProductService.getCategories(),
+      enhancedProductService.getProducts()
+    ]);
+    return { categories, products };
+  } catch (error) {
+    console.error('Camera preload failed:', error);
+    return { categories: [], products: [] };
+  }
+};
+
+const cameraDataPromise = preloadCameraData();
 
 // Add custom styles for text truncation
 const styles = `
@@ -15,8 +34,6 @@ const styles = `
     overflow: hidden;
   }
 `;
-import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/supabase/client';
 
 interface CameraSelectionModalProps {
   open: boolean;
@@ -43,62 +60,107 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
   const [accessoryQuantities, setAccessoryQuantities] = useState<{[key: number]: number}>({});
   const [installationSelected, setInstallationSelected] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
+  const [productDetailModal, setProductDetailModal] = useState(false);
+  const [selectedProductDetail, setSelectedProductDetail] = useState(null);
+  const [detailImageIndex, setDetailImageIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const cameraImages = [
-    '/images/sohub_protect/accesories/camera-c11.png'
-  ];
+  // Get all camera images including additional images
+  const getAllCameraImages = () => {
+    const allImages = [];
+    accessories.forEach(camera => {
+      if (camera.image) allImages.push(camera.image);
+      
+      // Add additional images if they exist
+      if (camera.originalProduct?.additional_images) {
+        try {
+          const additional = typeof camera.originalProduct.additional_images === 'string' 
+            ? JSON.parse(camera.originalProduct.additional_images) 
+            : camera.originalProduct.additional_images;
+          if (Array.isArray(additional)) {
+            allImages.push(...additional.filter(Boolean));
+          }
+        } catch (e) {}
+      }
+    });
+    return allImages;
+  };
+  
+  const allCameraImages = getAllCameraImages();
+
+  // Use React Query for instant data access
+  const { data: cameraData } = useQuery({
+    queryKey: ['camera-data'],
+    queryFn: () => cameraDataPromise,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false
+  });
 
   // Reset to default when modal opens
   useEffect(() => {
     if (open) {
       setActiveTab('included');
-      fetchAccessories();
       setSelectedImage(0);
+      if (cameraData) {
+        fetchAccessories();
+      }
     }
-  }, [open]);
+  }, [open, cameraData]);
 
-  const fetchAccessories = async () => {
-    try {
-      console.log('Fetching camera products...');
+  const fetchAccessories = () => {
+    if (!cameraData?.categories || !cameraData?.products) return;
+    
+    const { categories, products } = cameraData;
+    const securityCategory = categories.find(cat => 
+      cat.name?.toLowerCase().includes('security')
+    );
+    
+    if (!securityCategory) {
+      setAccessories([]);
+      return;
+    }
+    
+    // Filter for all camera products
+    const cameraProducts = products.filter(p => {
+      const isSecurityCategory = p.category_id === securityCategory.id;
+      const name = (p.title || p.display_name || '').toLowerCase();
+      const desc = (p.overview || p.product_overview || p.description || '').toLowerCase();
       
-      // Get all products and filter for AI Camera
-      const { data: allProducts, error } = await supabase
-        .from('products')
-        .select('*');
+      const cameraKeywords = ['camera', 'cam', 'surveillance', 'cctv', 'webcam', 'ai camera', 'security camera', 'c11'];
+      const isCamera = cameraKeywords.some(keyword => name.includes(keyword) || desc.includes(keyword));
       
-      if (error) {
-        console.error('Database error:', error);
-        setAccessories([]);
-        return;
+      return isSecurityCategory && isCamera;
+    });
+    
+    const mappedProducts = cameraProducts.map(p => {
+      let productPrice = 0;
+      if (p.variants) {
+        try {
+          let variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
+          if (variants && variants.length > 0) {
+            const firstVariant = variants[0];
+            productPrice = firstVariant.discount_price > 0 ? firstVariant.discount_price : firstVariant.price || 0;
+          }
+        } catch (e) {
+          productPrice = p.price || 0;
+        }
+      }
+      if (!productPrice) {
+        productPrice = p.price || 0;
       }
       
-      console.log('All products from DB:', allProducts);
-      
-      // Filter for AI Camera products specifically
-      const aiCameraProducts = allProducts?.filter(p => 
-        p.title?.toLowerCase().includes('ai camera') ||
-        p.display_name?.toLowerCase().includes('ai camera') ||
-        (p.title?.toLowerCase().includes('camera') && p.title?.toLowerCase().includes('ai'))
-      ) || [];
-      
-      console.log('AI Camera products found:', aiCameraProducts);
-      
-      const mappedProducts = aiCameraProducts.map(p => ({
+      return {
         id: p.id,
-        name: p.display_name || p.title || 'AI Camera',
-        desc: p.product_overview || 'AI-powered security camera',
-        price: p.variants?.[0]?.price || p.base_price || 0,
-        image: p.image || '/images/sohub_protect/accesories/camera-c11.png',
+        name: p.title || p.display_name,
+        desc: (p.overview || p.product_overview || 'Security camera').replace(/<[^>]*>/g, '').trim(),
+        price: productPrice,
+        image: p.image,
         originalProduct: p
-      }));
-      
-      console.log('Final mapped AI Camera products:', mappedProducts);
-      setAccessories(mappedProducts);
-    } catch (error) {
-      console.error('Error fetching camera products:', error);
-      setAccessories([]);
-    }
+      };
+    });
+    
+    setAccessories(mappedProducts);
   };
 
   const accessoryTotal = selectedAccessories.reduce((sum, index) => {
@@ -184,24 +246,24 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
                   <img
-                    src={cameraImages[selectedImage] || '/images/sohub_protect/accesories/camera-c11.png'}
+                    src={allCameraImages[selectedImage]}
                     alt="Security Cameras"
                     className="w-full h-full object-contain rounded-lg"
                   />
                 </div>
                 
                 {/* Mobile Navigation Arrows */}
-                {cameraImages.length > 1 && (
+                {allCameraImages.length > 1 && (
                   <>
                     <button
-                      onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : cameraImages.length - 1)}
+                      onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : allCameraImages.length - 1)}
                       className="lg:hidden absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
                     >
                       <ChevronLeft className="w-4 h-4 text-gray-600" />
                     </button>
                     
                     <button
-                      onClick={() => setSelectedImage(selectedImage < cameraImages.length - 1 ? selectedImage + 1 : 0)}
+                      onClick={() => setSelectedImage(selectedImage < allCameraImages.length - 1 ? selectedImage + 1 : 0)}
                       className="lg:hidden absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
                     >
                       <ChevronRight className="w-4 h-4 text-gray-600" />
@@ -210,41 +272,49 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
                 )}
               </div>
               
-              {/* Desktop Thumbnails */}
-              {cameraImages.length > 1 && (
-                <div className="hidden lg:flex items-center gap-3 justify-center mt-6">
-                  <button
-                    onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : cameraImages.length - 1)}
-                    className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-gray-600" />
-                  </button>
-                  
-                  <div className="flex gap-3">
-                    {cameraImages.map((image, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedImage(index)}
-                        className={cn(
-                          "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200",
-                          selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
-                        )}
-                      >
-                        <img 
-                          src={image} 
-                          alt={`Camera ${index + 1}`} 
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
+              {/* Desktop Thumbnails with Slider */}
+              {allCameraImages.length > 1 && (
+                <div className="hidden lg:flex justify-center mt-6">
+                  <div className="relative">
+                    <div className="flex gap-3 overflow-x-auto scrollbar-hide px-8" id="camera-thumbnails" style={{maxWidth: '400px'}}>
+                      {allCameraImages.map((image, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSelectedImage(index)}
+                          className={cn(
+                            "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 flex-shrink-0",
+                            selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
+                          )}
+                        >
+                          <img 
+                            src={image} 
+                            alt={`Camera ${index + 1}`} 
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('camera-thumbnails');
+                        container?.scrollBy({ left: -100, behavior: 'smooth' });
+                      }}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
+                    >
+                      <ChevronLeft className="w-4 h-4 text-gray-600" />
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('camera-thumbnails');
+                        container?.scrollBy({ left: 100, behavior: 'smooth' });
+                      }}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
+                    >
+                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={() => setSelectedImage(selectedImage < cameraImages.length - 1 ? selectedImage + 1 : 0)}
-                    className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
-                  >
-                    <ChevronRight className="w-4 h-4 text-gray-600" />
-                  </button>
                 </div>
               )}
             </div>
@@ -305,14 +375,21 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
                     {accessories.map((accessory, index) => {
                       const isSelected = (accessoryQuantities[index] || 0) > 0;
                       return (
-                        <div key={index} className={`bg-white rounded-lg border p-3 hover:shadow-md transition-all duration-200 relative flex-shrink-0 w-40 ${
+                        <div key={index} className={`bg-white rounded-lg border p-3 hover:shadow-md transition-all duration-200 relative flex-shrink-0 w-40 cursor-pointer ${
                           isSelected ? 'border-black border-2 bg-gray-50' : 'border-gray-200'
-                        }`}>
+                        }`} onClick={() => {
+                          setSelectedProductDetail(accessory);
+                          setDetailImageIndex(0);
+                          setProductDetailModal(true);
+                        }}>
                           {!isSelected && (
                             <button 
                               className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold transition-colors text-white"
                               style={{backgroundColor: '#9ca3af'}}
-                              onClick={() => toggleAccessory(index)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleAccessory(index);
+                              }}
                             >
                               +
                             </button>
@@ -322,9 +399,6 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
                               src={accessory.image} 
                               alt={accessory.name} 
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = '/images/sohub_protect/accesories/camera-c11.png';
-                              }}
                             />
                           </div>
                           <h4 className="font-bold text-black text-sm mb-1 line-clamp-2">{accessory.name}</h4>
@@ -460,6 +534,112 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
         </div>
       </DialogContent>
       
+      {/* Product Detail Modal */}
+      <Dialog open={productDetailModal} onOpenChange={setProductDetailModal}>
+        <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
+          <button 
+            onClick={() => setProductDetailModal(false)}
+            className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <div className="w-full h-64 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex flex-col">
+            <div className="flex-1 flex items-center justify-center relative">
+              <img
+                src={(() => {
+                  const images = [selectedProductDetail?.image].filter(Boolean);
+                  if (selectedProductDetail?.originalProduct?.additional_images) {
+                    try {
+                      const additional = typeof selectedProductDetail.originalProduct.additional_images === 'string' 
+                        ? JSON.parse(selectedProductDetail.originalProduct.additional_images) 
+                        : selectedProductDetail.originalProduct.additional_images;
+                      if (Array.isArray(additional)) {
+                        images.push(...additional.filter(Boolean));
+                      }
+                    } catch (e) {}
+                  }
+                  return images[detailImageIndex];
+                })()}
+                alt={selectedProductDetail?.name}
+                className="w-48 h-48 object-contain rounded-lg"
+              />
+              
+
+            </div>
+            
+            {(() => {
+              const images = [selectedProductDetail?.image].filter(Boolean);
+              if (selectedProductDetail?.originalProduct?.additional_images) {
+                try {
+                  const additional = typeof selectedProductDetail.originalProduct.additional_images === 'string' 
+                    ? JSON.parse(selectedProductDetail.originalProduct.additional_images) 
+                    : selectedProductDetail.originalProduct.additional_images;
+                  if (Array.isArray(additional)) {
+                    images.push(...additional.filter(Boolean));
+                  }
+                } catch (e) {}
+              }
+              
+              if (images.length > 1) {
+                return (
+                  <div className="relative">
+                    <div className="flex gap-2 justify-center p-4 overflow-x-auto scrollbar-hide" id="camera-detail-thumbnails">
+                      {images.map((image, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setDetailImageIndex(index)}
+                          className={`w-12 h-12 rounded-lg overflow-hidden transition-all duration-200 flex-shrink-0 ${
+                            detailImageIndex === index ? 'ring-2 ring-black' : 'opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <img 
+                            src={image} 
+                            alt={`${selectedProductDetail?.name} ${index + 1}`} 
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('camera-detail-thumbnails');
+                        container?.scrollBy({ left: -100, behavior: 'smooth' });
+                      }}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
+                    >
+                      <ChevronLeft className="w-4 h-4 text-gray-600" />
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('camera-detail-thumbnails');
+                        container?.scrollBy({ left: 100, behavior: 'smooth' });
+                      }}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
+                    >
+                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
+          
+          <div className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">{selectedProductDetail?.name}</h2>
+            <p className="text-lg font-semibold text-gray-900 mb-4">{selectedProductDetail?.price?.toLocaleString()} BDT</p>
+            <div className="text-sm text-gray-600 leading-relaxed">
+              <p>{selectedProductDetail?.desc}</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Help Modal */}
       <Dialog open={helpModalOpen} onOpenChange={setHelpModalOpen}>
         <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
@@ -476,7 +656,7 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
           {/* Product Image */}
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
             <img
-              src={cameraImages[0] || '/images/sohub_protect/accesories/camera-c11.png'}
+              src={accessories[0]?.image}
               alt="Security Cameras"
               className="w-32 h-32 object-cover rounded-lg"
             />

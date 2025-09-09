@@ -7,12 +7,24 @@ import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } fr
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 import { enhancedProductService } from '@/supabase';
+import { useQuery } from '@tanstack/react-query';
 
-// Cache for product data to avoid repeated API calls
-let productCache: any = null;
-let accessoriesCache: any[] = null;
-let cacheTimestamp = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+// Preload data immediately when module loads
+const preloadData = async () => {
+  try {
+    const [products, categories] = await Promise.all([
+      enhancedProductService.getProducts(),
+      enhancedProductService.getCategories()
+    ]);
+    return { products, categories };
+  } catch (error) {
+    console.error('Preload failed:', error);
+    return { products: [], categories: [] };
+  }
+};
+
+// Start preloading immediately
+const dataPromise = preloadData();
 
 interface SmartSecurityBoxModalProps {
   open: boolean;
@@ -55,56 +67,91 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
   const [productDetails, setProductDetails] = useState(product);
   const [dataLoaded, setDataLoaded] = useState(false);
   
+  // Use React Query for instant data access
+  const { data: allData } = useQuery({
+    queryKey: ['security-products'],
+    queryFn: () => dataPromise,
+    staleTime: 10 * 60 * 1000,
+    cacheTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false
+  });
+
   useEffect(() => {
-    if (open) {
-      setDataLoaded(true); // Show UI immediately
+    if (open && allData?.products) {
+      const { products } = allData;
       
-      // Load data in background without blocking UI
-      setTimeout(async () => {
-        try {
-          const now = Date.now();
-          if (productCache && (now - cacheTimestamp) < CACHE_DURATION) {
-            const sp05 = productCache.find(p => 
-              (p.title && p.title.toLowerCase().includes('sp-05')) || 
-              (p.display_name && p.display_name.toLowerCase().includes('sp-05')) ||
-              (p.name && p.name.toLowerCase().includes('sp-05'))
-            );
-            if (sp05) setSp05Product(sp05);
-            
-            const sp01Product = productCache.find(p => 
-              (p.title && p.title.toLowerCase().includes('sp-01')) || 
-              (p.display_name && p.display_name.toLowerCase().includes('sp-01')) ||
-              (p.name && p.name.toLowerCase().includes('sp-01')) ||
-              p.id === product.id
-            );
-            if (sp01Product) setProductDetails(sp01Product);
-            return;
-          }
-          
-          const allProducts = await enhancedProductService.getProducts();
-          productCache = allProducts;
-          cacheTimestamp = now;
-          
-          const sp05 = allProducts?.find(p => 
-            (p.title && p.title.toLowerCase().includes('sp-05')) || 
-            (p.display_name && p.display_name.toLowerCase().includes('sp-05')) ||
-            (p.name && p.name.toLowerCase().includes('sp-05'))
-          );
-          if (sp05) setSp05Product(sp05);
-          
-          const sp01Product = allProducts?.find(p => 
-            (p.title && p.title.toLowerCase().includes('sp-01')) || 
-            (p.display_name && p.display_name.toLowerCase().includes('sp-01')) ||
-            (p.name && p.name.toLowerCase().includes('sp-01')) ||
-            p.id === product.id
-          );
-          if (sp01Product) setProductDetails(sp01Product);
-        } catch (error) {
-          console.error('Error fetching product data:', error);
-        }
-      }, 0);
+      setSelectedModel('SP-01');
+      
+      // Load all text content immediately
+      const sp01Product = products.find(p => 
+        (p.title && p.title.toLowerCase().includes('sp-01')) || 
+        (p.display_name && p.display_name.toLowerCase().includes('sp-01')) ||
+        (p.name && p.name.toLowerCase().includes('sp-01')) ||
+        p.id === product.id
+      );
+      
+      const sp05Product = products.find(p => 
+        (p.title && p.title.toLowerCase().includes('sp-05')) || 
+        (p.display_name && p.display_name.toLowerCase().includes('sp-05')) ||
+        (p.name && p.name.toLowerCase().includes('sp-05'))
+      );
+      
+      if (sp01Product) {
+        // Load text content only first
+        setProductDetails({
+          id: sp01Product.id,
+          title: sp01Product.title,
+          display_name: sp01Product.display_name,
+          name: sp01Product.name,
+          price: sp01Product.price,
+          variants: sp01Product.variants,
+          overview: sp01Product.overview,
+          technical_details: sp01Product.technical_details,
+          warranty: sp01Product.warranty,
+          description: sp01Product.description
+        });
+        setDataLoaded(true);
+        
+        // Load images after text is ready
+        setTimeout(() => {
+          setProductDetails(prev => ({
+            ...prev,
+            image: sp01Product.image,
+            additional_images: sp01Product.additional_images
+          }));
+        }, 100);
+      }
+      
+      if (sp05Product) {
+        // Load SP-05 text only first
+        setSp05Product({
+          id: sp05Product.id,
+          title: sp05Product.title,
+          display_name: sp05Product.display_name,
+          name: sp05Product.name,
+          price: sp05Product.price,
+          variants: sp05Product.variants,
+          overview: sp05Product.overview,
+          technical_details: sp05Product.technical_details,
+          warranty: sp05Product.warranty,
+          description: sp05Product.description
+        });
+        
+        // Load SP-05 images after
+        setTimeout(() => {
+          setSp05Product(prev => ({
+            ...prev,
+            image: sp05Product.image,
+            additional_images: sp05Product.additional_images
+          }));
+        }, 150);
+      }
+      
+      // Load accessories text immediately
+      fetchAccessories();
     }
-  }, [open, product.id]);
+  }, [open, product.id, allData]);
   
   const getProductPrice = (productData) => {
     if (!productData) return 0;
@@ -170,15 +217,21 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
     return images;
   };
   
-  // Static data for instant loading
+  // Database data only
   const modelData = {
     'SP-01': {
-      price: product.price || 15000,
-      images: [product.image, product.image2, product.image3, product.image4, product.image5].filter(Boolean)
+      price: productDetails ? getProductPrice(productDetails) : 0,
+      images: productDetails ? getProductImages(productDetails) : [],
+      name: productDetails?.title || productDetails?.display_name || productDetails?.name || '',
+      subtitle: 'Standard Security Kit',
+      data: productDetails
     },
     'SP-05': {
-      price: 25000,
-      images: [product.image].filter(Boolean)
+      price: sp05Product ? getProductPrice(sp05Product) : 0,
+      images: sp05Product ? getProductImages(sp05Product) : [],
+      name: sp05Product?.title || sp05Product?.display_name || sp05Product?.name || '',
+      subtitle: 'Advanced Security Kit', 
+      data: sp05Product
     }
   };
   
@@ -203,88 +256,45 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
   // Reset to default when modal opens
   useEffect(() => {
     if (open) {
-      setSelectedModel('SP-01');
       setActiveTab('benefits');
       setSelectedImage(0);
-      // Load accessories in background
-      setTimeout(() => fetchAccessories(), 100);
     }
   }, [open]);
 
-  const fetchAccessories = async () => {
-    try {
-      // Check cache first
-      const now = Date.now();
-      if (accessoriesCache && (now - cacheTimestamp) < CACHE_DURATION) {
-        setAccessories(accessoriesCache);
-        return;
-      }
-      
-      // Use cached products if available, otherwise fetch
-      let allProducts = productCache;
-      let categories = null;
-      
-      if (!allProducts) {
-        [categories, allProducts] = await Promise.all([
-          enhancedProductService.getCategories(),
-          enhancedProductService.getProducts()
-        ]);
-        productCache = allProducts;
-        cacheTimestamp = now;
-      } else {
-        categories = await enhancedProductService.getCategories();
-      }
-      
-      // Find Security category
-      const securityCategory = categories.find(cat => 
-        cat.name.toLowerCase().includes('security')
-      );
-      
-      if (!securityCategory) {
-        console.log('Security category not found');
-        return;
-      }
-      
-      // Filter products in Security category excluding SP-01 and SP-05
-      const accessoryProducts = allProducts?.filter(p => {
-        const isSecurityCategory = p.category_id === securityCategory.id;
-        const name = (p.title || p.display_name || p.name || '').toLowerCase();
-        const isNotPanel = !name.includes('sp-01') && !name.includes('sp01') && !name.includes('sp-05') && !name.includes('sp05');
-        
-        return isSecurityCategory && isNotPanel;
-      }) || [];
-      
-      const processedAccessories = accessoryProducts.map(p => {
-        // Get price from variants or product price
-        let productPrice = 0;
-        if (p.variants) {
-          let variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
-          if (variants && variants.length > 0) {
-            const firstVariant = variants[0];
-            productPrice = firstVariant.discount_price && firstVariant.discount_price > 0 
-              ? firstVariant.discount_price 
-              : firstVariant.price || 0;
-          }
-        }
-        if (!productPrice) {
-          productPrice = p.price || p.base_price || 0;
-        }
-        
-        return {
-          id: p.id,
-          name: p.title || p.display_name || p.name,
-          desc: p.product_overview || p.overview || p.description || 'Security accessory',
-          price: productPrice,
-          image: p.image || p.main_image
-        };
-      });
-      
-      accessoriesCache = processedAccessories;
-      setAccessories(processedAccessories);
-    } catch (error) {
-      console.error('Error fetching accessories:', error);
-      setAccessories([]);
-    }
+  const fetchAccessories = () => {
+    if (!allData?.products || !allData?.categories) return;
+    
+    const { products, categories } = allData;
+    const securityCategory = categories.find(cat => cat.name.toLowerCase().includes('security'));
+    if (!securityCategory) return;
+    
+    // Load accessories text first, images later
+    const accessoryProducts = products
+      .filter(p => p.category_id === securityCategory.id && !(p.title || '').toLowerCase().includes('sp-'))
+      .slice(0, 4);
+    
+    // Set text content immediately
+    const textOnlyAccessories = accessoryProducts.map(p => ({
+      id: p.id,
+      name: p.title || p.name,
+      desc: 'Security accessory',
+      price: p.price || 0,
+      image: null // No image initially
+    }));
+    
+    setAccessories(textOnlyAccessories);
+    
+    // Load images after text
+    setTimeout(() => {
+      const accessoriesWithImages = accessoryProducts.map(p => ({
+        id: p.id,
+        name: p.title || p.name,
+        desc: 'Security accessory',
+        price: p.price || 0,
+        image: p.image
+      }));
+      setAccessories(accessoriesWithImages);
+    }, 200);
   };
 
   const allImages = currentImages;
@@ -400,11 +410,21 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
               {/* Main Product Image */}
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
-                  <img
-                    src={currentImages[selectedImage] || product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
+                  {currentImages[selectedImage] || product.image ? (
+                    <img
+                      src={currentImages[selectedImage] || product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full bg-gray-100 rounded-lg flex flex-col items-center justify-center ${(currentImages[selectedImage] || product.image) ? 'hidden' : ''}`}>
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg mb-3 animate-pulse"></div>
+                    <span className="text-gray-400 text-sm">Loading image...</span>
+                  </div>
                 </div>
                 
                 {/* Mobile Navigation Arrows */}
@@ -451,6 +471,9 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                           src={image} 
                           alt={`${product.name} ${index + 1}`} 
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       </button>
                     ))}
@@ -470,12 +493,21 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
             <div className="p-4 lg:p-8 bg-white lg:overflow-y-auto lg:max-h-[85vh]">
             {/* Top Section */}
             <div className="mb-6">
-              <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {selectedModel === 'SP-05' ? 
-                  (sp05Product?.title || sp05Product?.display_name || sp05Product?.name || 'Smart Security Box SP-05') : 
-                  (productDetails?.title || productDetails?.display_name || productDetails?.name || product.name)
-                }
-              </h1>
+              {dataLoaded && modelData[selectedModel].name ? (
+                <>
+                  <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
+                    {modelData[selectedModel].name}
+                  </h1>
+                  <p className="text-sm text-gray-600 mb-3">
+                    {modelData[selectedModel].subtitle}
+                  </p>
+                </>
+              ) : (
+                <div className="mb-6">
+                  <div className="h-6 bg-gray-200 rounded animate-pulse mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-32"></div>
+                </div>
+              )}
               
               {/* Price Section */}
               <div className="mb-4">
@@ -565,17 +597,39 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          <div dangerouslySetInnerHTML={{ __html: (selectedModel === 'SP-05' ? sp05Product : productDetails)?.overview || (selectedModel === 'SP-05' ? sp05Product : productDetails)?.product_overview || (selectedModel === 'SP-05' ? sp05Product : productDetails)?.description || 'Complete smart security solution for your home with advanced monitoring capabilities and real-time alerts.' }} />
+                          {modelData[selectedModel].data ? (
+                            <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.overview || modelData[selectedModel].data.product_overview || modelData[selectedModel].data.description || 'No overview available' }} />
+                          ) : (
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded mb-2 w-3/4"></div>
+                              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                          )}
                         </div>
                       )}
                       {activeTab === 'specs' && (
                         <div className="text-sm text-gray-500">
-                          <div dangerouslySetInnerHTML={{ __html: (selectedModel === 'SP-05' ? sp05Product : productDetails)?.technical_details || (selectedModel === 'SP-05' ? sp05Product : productDetails)?.specifications || 'WiFi connectivity, mobile app control, motion detection, night vision, cloud storage support.' }} />
+                          {modelData[selectedModel].data ? (
+                            <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.technical_details || modelData[selectedModel].data.specifications || 'No technical details available' }} />
+                          ) : (
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded mb-2 w-2/3"></div>
+                            </div>
+                          )}
                         </div>
                       )}
                       {activeTab === 'warranty' && (
                         <div className="text-sm text-gray-500">
-                          <div dangerouslySetInnerHTML={{ __html: (selectedModel === 'SP-05' ? sp05Product : productDetails)?.warranty || '1 year manufacturer warranty included with free technical support.' }} />
+                          {modelData[selectedModel].data ? (
+                            <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.warranty || 'No warranty information available' }} />
+                          ) : (
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -604,6 +658,9 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                         SP-01
                       </div>
                       <div className="text-xs text-gray-600">Standard Security Kit</div>
+                      {!sp05Product && selectedModel !== 'SP-01' && (
+                        <div className="text-xs text-gray-400 italic">Loading...</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -623,7 +680,9 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                       }`}>
                         SP-05
                       </div>
-                      <div className="text-xs text-gray-600">Advanced Security Kit</div>
+                      <div className="text-xs text-gray-600">
+                        {sp05Product ? 'Advanced Security Kit' : 'Loading...'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -661,23 +720,24 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                 <p className="text-xs text-gray-500">(Optional)</p>
               </div>
               
-              <div className="relative">
-                <button 
-                  onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
-                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors border"
-                >
-                  <ChevronLeft className="w-4 h-4 text-gray-600" />
-                </button>
-                <button 
-                  onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors border"
-                >
-                  <ChevronRight className="w-4 h-4 text-gray-600" />
-                </button>
-                
-                <div ref={scrollRef} className="overflow-x-auto scrollbar-hide pl-2 pr-10">
-                  <div className="flex gap-3 pb-2" style={{ width: 'max-content' }}>
-                    {accessories.map((accessory, index) => {
+              {accessories.length > 0 ? (
+                <div className="relative">
+                  <button 
+                    onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors border"
+                  >
+                    <ChevronLeft className="w-4 h-4 text-gray-600" />
+                  </button>
+                  <button 
+                    onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white shadow-lg rounded-full flex items-center justify-center hover:bg-gray-50 transition-colors border"
+                  >
+                    <ChevronRight className="w-4 h-4 text-gray-600" />
+                  </button>
+                  
+                  <div ref={scrollRef} className="overflow-x-auto scrollbar-hide pl-2 pr-10">
+                    <div className="flex gap-3 pb-2" style={{ width: 'max-content' }}>
+                      {accessories.map((accessory, index) => {
                       const isSelected = (accessoryQuantities[index] || 0) > 0;
                       return (
                         <div key={index} className={`bg-white rounded-lg border p-3 hover:shadow-md transition-all duration-200 relative flex-shrink-0 w-40 ${
@@ -693,7 +753,24 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                             </button>
                           )}
                           <div className="aspect-square bg-gray-50 rounded-md mb-2 flex items-center justify-center">
-                            <img src={accessory.image} alt={accessory.name} className="w-20 h-20 object-contain" />
+                            {accessory.image ? (
+                              <img 
+                                src={accessory.image} 
+                                alt={accessory.name} 
+                                className="w-20 h-20 object-contain"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center animate-pulse">
+                                <span className="text-gray-400 text-xs">Loading...</span>
+                              </div>
+                            )}
+                            <div className={`w-20 h-20 bg-gray-200 rounded flex items-center justify-center ${accessory.image ? 'hidden' : ''}`}>
+                              <span className="text-gray-400 text-xs">No image</span>
+                            </div>
                           </div>
                           <h4 className="font-bold text-black text-sm mb-1">{accessory.name}</h4>
                           <p className="text-xs text-gray-500 mb-2 line-clamp-2">{accessory.desc.replace(/<[^>]*>/g, '').substring(0, 50)}...</p>
@@ -735,10 +812,22 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                           )}
                         </div>
                       );
-                    })}
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex gap-3 pb-2">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-gray-100 rounded-lg p-3 w-40 flex-shrink-0 animate-pulse">
+                      <div className="aspect-square bg-gray-200 rounded-md mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-1"></div>
+                      <div className="h-3 bg-gray-200 rounded mb-2 w-3/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  ))}
+                </div>
+              )}
               
               <p className="text-xs text-gray-500 text-center mt-3">
                 Note: Accessories will be compatible with your selected security system

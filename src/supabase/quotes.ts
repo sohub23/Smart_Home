@@ -1,5 +1,5 @@
 import { supabase } from './client';
-import { sanitizeLogInput } from '../utils/sanitize';
+import { sanitizeForLog } from '../utils/sanitize';
 
 export interface QuoteItem {
   product_id: string;
@@ -38,7 +38,7 @@ export const quoteService = {
       .single();
 
     if (error) {
-      console.error('Error creating quote:', sanitizeLogInput(error));
+      console.error('Error creating quote:', sanitizeForLog(error));
       throw error;
     }
 
@@ -52,7 +52,7 @@ export const quoteService = {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching quotes:', sanitizeLogInput(error));
+      console.error('Error fetching quotes:', sanitizeForLog(error));
       throw error;
     }
 
@@ -65,6 +65,12 @@ export const quoteService = {
       throw new Error('Quote ID and status are required');
     }
     
+    // Validate quoteId format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(quoteId)) {
+      throw new Error('Invalid quote ID format');
+    }
+    
     // Validate status against allowed values
     const allowedStatuses = ['pending', 'approved', 'rejected', 'completed'];
     if (!allowedStatuses.includes(status)) {
@@ -73,13 +79,13 @@ export const quoteService = {
     
     const { data, error } = await supabase
       .from('quotes')
-      .update({ status })
+      .update({ status: status })
       .eq('id', quoteId)
       .select()
       .single();
 
     if (error) {
-      console.error('Error updating quote status:', sanitizeLogInput(error));
+      console.error('Error updating quote status:', sanitizeForLog(error));
       throw error;
     }
 

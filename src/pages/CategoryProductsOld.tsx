@@ -13,6 +13,7 @@ import { Plus, Search, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import AdminNavbar from '@/components/AdminNavbar';
 import { useSupabase, productService, storageService, type Product } from '@/supabase';
+import { sanitizeForLog } from '@/utils/sanitize';
 
 const CategoryProducts = () => {
   const { category } = useParams<{ category: string }>();
@@ -57,16 +58,15 @@ const CategoryProducts = () => {
   const loadProducts = async () => {
     try {
       const data = await executeQuery(() => productService.getProducts());
-      console.log('All products:', data);
-      console.log('Category from URL:', category);
+      console.log('All products count:', data?.length || 0);
+      console.log('Category from URL:', sanitizeForLog(category));
       const filteredProducts = (data || []).filter(p => {
-        console.log('Product category:', p.category, 'URL category:', category);
         return p.category === category;
       });
-      console.log('Filtered products:', filteredProducts);
+      console.log('Filtered products count:', filteredProducts.length);
       setProducts(filteredProducts);
     } catch (err) {
-      console.error('Failed to load products:', err);
+      console.error('Failed to load products:', sanitizeForLog(err));
     }
   };
 
@@ -88,7 +88,7 @@ const CategoryProducts = () => {
         try {
           imageUrl = await storageService.uploadProductImage(imageFile);
         } catch (uploadError) {
-          console.error('Image upload failed:', uploadError);
+          console.error('Image upload failed:', sanitizeForLog(uploadError));
           imageUrl = '';
         }
       }
@@ -126,7 +126,7 @@ const CategoryProducts = () => {
       setImagePreview('');
       await loadProducts();
     } catch (err) {
-      console.error('Add product error:', err);
+      console.error('Add product error:', sanitizeForLog(err));
       toast({
         title: "Error",
         description: `Failed to add product: ${err instanceof Error ? err.message : 'Unknown error'}`,
@@ -387,7 +387,7 @@ const CategoryProducts = () => {
                 </h3>
                 <p className="text-gray-500 mb-6 max-w-md mx-auto">
                   {searchTerm 
-                    ? `No products match "${searchTerm}" in your ${category?.toLowerCase()} catalog`
+                    ? `No products match your search in your ${category?.toLowerCase()} catalog`
                     : `Get started by adding your first ${category?.toLowerCase()} product to the catalog`
                   }
                 </p>

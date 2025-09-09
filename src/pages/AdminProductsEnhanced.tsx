@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,19 +12,21 @@ import { Plus, Edit, Trash2, Package, Layers, Palette, DollarSign, Search, Filte
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 import AdminNavbar from '@/components/AdminNavbar';
-import RichTextEditor from '@/components/RichTextEditor';
+const LazyRichTextEditor = lazy(() => import('@/components/LazyRichTextEditor'));
 import { enhancedProductService, supabase } from '@/supabase';
+import { sanitizeString } from '@/utils/sanitize';
+import type { Category, Subcategory, Product } from '@/types/product';
 
-const AdminProductsEnhanced = () => {
-  const [categories, setCategories] = useState([]);
-  const [subcategories, setSubcategories] = useState([]);
-  const [products, setProducts] = useState([]);
+const AdminProductsEnhanced = memo(() => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [productToDelete, setProductToDelete] = useState(null);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [activeTab, setActiveTab] = useState('all-products');
   const [detailsTab, setDetailsTab] = useState('overview');
 
@@ -32,7 +34,7 @@ const AdminProductsEnhanced = () => {
     title: '',
     display_name: '',
     product_overview: '',
-    model: [],
+    model: [] as string[],
     category_id: '',
     subcategory_id: '',
     overview: '',
@@ -47,39 +49,49 @@ const AdminProductsEnhanced = () => {
     image: ''
   });
 
-  const [variants, setVariants] = useState([]);
-  const [colors, setColors] = useState([]);
-  const [additionalImages, setAdditionalImages] = useState([]);
+  const [variants, setVariants] = useState<any[]>([]);
+  const [colors, setColors] = useState<any[]>([]);
+  const [additionalImages, setAdditionalImages] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [loadingProduct, setLoadingProduct] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [productsData, categoriesData, subcategoriesData] = await Promise.all([
-        enhancedProductService.getProducts(),
-        enhancedProductService.getCategories(),
-        enhancedProductService.getSubcategories()
-      ]);
       
-      setProducts(productsData || []);
-      setCategories(categoriesData || []);
-      setSubcategories(subcategoriesData || []);
+      // Load minimal data first
+      const productsData = await supabase
+        .from('products')
+        .select('id, title, category_id')
+        .order('id', { ascending: false })
+        .limit(10);
+      
+      setProducts(productsData.data || []);
+      setLoading(false);
+      
+      // Load everything else after UI renders
+      setTimeout(async () => {
+        const [fullProducts, categories, subcategories] = await Promise.all([
+          supabase.from('products').select('id, title, display_name, category_id, subcategory_id, model, image').order('id', { ascending: false }).limit(50),
+          supabase.from('product_categories').select('id, name').eq('is_active', true),
+          supabase.from('product_subcategories').select('id, name, category_id').eq('is_active', true)
+        ]);
+        
+        setProducts(fullProducts.data || []);
+        setCategories(categories.data || []);
+        setSubcategories(subcategories.data || []);
+      }, 100);
     } catch (error) {
       console.error('Error loading data:', error);
-      toast({ 
-        title: "Error", 
-        description: "Failed to load data",
-        variant: "destructive"
-      });
-    } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setProductForm({
       title: '', display_name: '', product_overview: '', model: [],
       category_id: '', subcategory_id: '', overview: '', technical_details: '',
@@ -90,9 +102,10 @@ const AdminProductsEnhanced = () => {
     setColors([]);
     setAdditionalImages([]);
     setEditingProduct(null);
-  };
+    setLoadingProduct(false);
+  }, []);
 
-  const handleCreateProduct = async () => {
+  const handleCreateProduct = useCallback(async () => {
     if (!productForm.title || !productForm.category_id) {
       toast({ 
         title: "Missing Fields", 
@@ -102,6 +115,7 @@ const AdminProductsEnhanced = () => {
       return;
     }
 
+    setSaving(true);
     try {
       const productData = {
         title: productForm.title,
@@ -129,23 +143,80 @@ const AdminProductsEnhanced = () => {
         status: 'active'
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
-        .insert(productData);
+        .insert(productData)
+        .select('id, title, display_name, category_id, subcategory_id, model, image, engraving_image_url')
+        .single();
 
       if (error) throw error;
       
       toast({ title: "Success", description: "Product created successfully" });
       setIsProductDialogOpen(false);
       resetForm();
-      loadData();
+      
+      // Add new product to local state instead of full reload
+      setProducts(prev => [data, ...prev]);
     } catch (error) {
       console.error('Product creation error:', error);
       toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
-  };
+  }, [productForm, variants, colors, additionalImages, resetForm]);
 
-  const handleUpdateProduct = async () => {
+  const handleEditProduct = useCallback(async (productId) => {
+    setIsProductDialogOpen(true);
+    setEditingProduct({ id: productId });
+    
+    setTimeout(async () => {
+      setLoadingProduct(true);
+      try {
+        const { data: basic } = await supabase
+          .from('products')
+          .select('title, display_name, category_id, subcategory_id, model, image')
+          .eq('id', productId)
+          .single();
+        
+        setProductForm({
+          title: basic.title || '',
+          display_name: basic.display_name || '',
+          category_id: basic.category_id || '',
+          subcategory_id: basic.subcategory_id || '',
+          model: basic.model ? (typeof basic.model === 'string' ? basic.model.split(',') : basic.model) : [],
+          image: basic.image || '',
+          product_overview: '', overview: '', technical_details: '', warranty: '',
+          help_image_url: '', help_text: '', shipping_time: '', shipping_cost: 0,
+          engraving_image_url: '', engraving_price: 0
+        });
+        setLoadingProduct(false);
+        
+        const { data: full } = await supabase.from('products').select('*').eq('id', productId).single();
+        if (full) {
+          setEditingProduct(full);
+          
+          setTimeout(() => {
+            setProductForm(prev => ({ ...prev, overview: full.overview || '', technical_details: full.technical_details || '' }));
+          }, 200);
+          
+          setTimeout(() => {
+            setProductForm(prev => ({ ...prev, warranty: full.warranty || '', help_text: full.help_text || '' }));
+          }, 400);
+          
+          setTimeout(() => {
+            setProductForm(prev => ({ ...prev, shipping_time: full.shipping_time || '', engraving_image_url: full.engraving_image_url || '' }));
+            setVariants(full.variants || []);
+            setColors(full.colors || []);
+            setAdditionalImages(full.additional_images ? JSON.parse(full.additional_images) : []);
+          }, 600);
+        }
+      } catch (error) {
+        setLoadingProduct(false);
+      }
+    }, 50);
+  }, []);
+
+  const handleUpdateProduct = useCallback(async () => {
     if (!productForm.title || !productForm.category_id) {
       toast({ 
         title: "Missing Fields", 
@@ -155,6 +226,7 @@ const AdminProductsEnhanced = () => {
       return;
     }
 
+    setSaving(true);
     try {
       const updateData = {
         title: productForm.title,
@@ -188,12 +260,18 @@ const AdminProductsEnhanced = () => {
       toast({ title: "Success", description: "Product updated successfully" });
       setIsProductDialogOpen(false);
       resetForm();
-      loadData();
+      
+      // Update local state instead of full reload
+      setProducts(prev => prev.map(p => p.id === editingProduct.id ? 
+        { ...p, title: updateData.title, display_name: updateData.display_name, image: updateData.image } : p
+      ));
     } catch (error) {
       console.error('Product update error:', error);
       toast({ title: "Error", description: error?.message || 'Update failed', variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
-  };
+  }, [productForm, variants, colors, additionalImages, editingProduct, resetForm]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
@@ -208,10 +286,7 @@ const AdminProductsEnhanced = () => {
       <div className="min-h-screen bg-gray-50">
         <AdminNavbar />
         <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading products...</p>
-          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
@@ -270,7 +345,7 @@ const AdminProductsEnhanced = () => {
                   filteredProducts.map(product => {
                     const category = categories.find(cat => cat.id === product.category_id);
                     const subcategory = subcategories.find(sub => sub.id === product.subcategory_id);
-                    return `"${product.title}","${category?.name || ''}","${subcategory?.name || ''}","${product.model || ''}","${product.engraving_image_url ? 'Yes' : 'No'}"`;
+                    return `"${sanitizeString(product.title)}","${sanitizeString(category?.name || '')}","${sanitizeString(subcategory?.name || '')}","${sanitizeString(product.model || '')}","${product.engraving_image_url ? 'Yes' : 'No'}"`;
                   }).join("\n");
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");
@@ -309,7 +384,12 @@ const AdminProductsEnhanced = () => {
               <div key={product.id} className="grid grid-cols-12 gap-4 p-4 border-b hover:bg-gray-50 transition-colors w-full">
                 <div className="col-span-1">
                   {product.image ? (
-                    <img src={product.image} alt={product.title} className="w-12 h-12 object-cover rounded" />
+                    <img 
+                      src={product.image} 
+                      alt={product.title} 
+                      className="w-12 h-12 object-cover rounded" 
+                      loading="lazy"
+                    />
                   ) : (
                     <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
                       <Package className="w-6 h-6 text-gray-400" />
@@ -348,31 +428,7 @@ const AdminProductsEnhanced = () => {
                       variant="ghost" 
                       size="sm" 
                       className="h-8 w-8 p-0"
-                      onClick={() => {
-                        setEditingProduct(product);
-                        setProductForm({
-                          title: product.title || '',
-                          display_name: product.display_name || '',
-                          product_overview: product.product_overview || '',
-                          model: product.model ? (typeof product.model === 'string' ? product.model.split(',') : product.model) : [],
-                          category_id: product.category_id || '',
-                          subcategory_id: product.subcategory_id || '',
-                          overview: product.overview || '',
-                          technical_details: product.technical_details || '',
-                          warranty: product.warranty || '',
-                          help_image_url: product.help_image_url || '',
-                          help_text: product.help_text || '',
-                          shipping_time: product.shipping_time || '',
-                          shipping_cost: product.shipping_cost || 0,
-                          engraving_image_url: product.engraving_image_url || '',
-                          engraving_price: product.engraving_price || 0,
-                          image: product.image || ''
-                        });
-                        setVariants(product.variants || []);
-                        setColors(product.colors || []);
-                        setAdditionalImages(product.additional_images ? (typeof product.additional_images === 'string' ? JSON.parse(product.additional_images) : product.additional_images) : []);
-                        setIsProductDialogOpen(true);
-                      }}
+                      onClick={() => handleEditProduct(product.id)}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -485,7 +541,12 @@ const AdminProductsEnhanced = () => {
                                       <div key={product.id} className="flex items-center justify-between p-2 bg-white rounded border">
                                         <div className="flex items-center gap-3">
                                           {product.image ? (
-                                            <img src={product.image} alt={product.title} className="w-8 h-8 object-cover rounded" />
+                                            <img 
+                                              src={product.image} 
+                                              alt={product.title} 
+                                              className="w-8 h-8 object-cover rounded" 
+                                              loading="lazy"
+                                            />
                                           ) : (
                                             <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
                                               <Package className="w-4 h-4 text-gray-400" />
@@ -501,31 +562,7 @@ const AdminProductsEnhanced = () => {
                                             variant="ghost" 
                                             size="sm" 
                                             className="h-7 w-7 p-0"
-                                            onClick={() => {
-                                              setEditingProduct(product);
-                                              setProductForm({
-                                                title: product.title || '',
-                                                display_name: product.display_name || '',
-                                                product_overview: product.product_overview || '',
-                                                model: product.model ? (typeof product.model === 'string' ? product.model.split(',') : product.model) : [],
-                                                category_id: product.category_id || '',
-                                                subcategory_id: product.subcategory_id || '',
-                                                overview: product.overview || '',
-                                                technical_details: product.technical_details || '',
-                                                warranty: product.warranty || '',
-                                                help_image_url: product.help_image_url || '',
-                                                help_text: product.help_text || '',
-                                                shipping_time: product.shipping_time || '',
-                                                shipping_cost: product.shipping_cost || 0,
-                                                engraving_image_url: product.engraving_image_url || '',
-                                                engraving_price: product.engraving_price || 0,
-                                                image: product.image || ''
-                                              });
-                                              setVariants(product.variants || []);
-                                              setColors(product.colors || []);
-                                              setAdditionalImages(product.additional_images ? (typeof product.additional_images === 'string' ? JSON.parse(product.additional_images) : product.additional_images) : []);
-                                              setIsProductDialogOpen(true);
-                                            }}
+                                            onClick={() => handleEditProduct(product.id)}
                                           >
                                             <Edit className="w-3 h-3" />
                                           </Button>
@@ -570,14 +607,22 @@ const AdminProductsEnhanced = () => {
 
         {/* Product Dialog */}
         <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" aria-describedby="product-dialog-description">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold">
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
               </DialogTitle>
+              <div id="product-dialog-description" className="sr-only">
+                {editingProduct ? 'Edit product details and information' : 'Create a new product with details and information'}
+              </div>
             </DialogHeader>
             
-            <div className="space-y-6 py-4">
+            <div className="space-y-6 py-4 relative">
+            {loadingProduct && (
+              <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            )}
               {/* Basic Information */}
               <Card className="p-6">
                 <h3 className="font-semibold mb-4 flex items-center text-lg">
@@ -821,29 +866,35 @@ const AdminProductsEnhanced = () => {
 
                   <TabsContent value="overview" className="space-y-2">
                     <Label className="text-sm font-medium">Overview</Label>
-                    <RichTextEditor
-                      value={productForm.overview}
-                      onChange={(value) => setProductForm({...productForm, overview: value})}
-                      placeholder="Write detailed product description with rich formatting..."
-                    />
+                    <Suspense fallback={<div className="h-48 bg-gray-50 rounded animate-pulse" />}>
+                      <LazyRichTextEditor
+                        value={productForm.overview}
+                        onChange={(value) => setProductForm({...productForm, overview: value})}
+                        placeholder="Write detailed product description with rich formatting..."
+                      />
+                    </Suspense>
                   </TabsContent>
 
                   <TabsContent value="technical-details" className="space-y-2">
                     <Label className="text-sm font-medium">Technical Details</Label>
-                    <RichTextEditor
-                      value={productForm.technical_details}
-                      onChange={(value) => setProductForm({...productForm, technical_details: value})}
-                      placeholder="Write technical specifications with rich formatting..."
-                    />
+                    <Suspense fallback={<div className="h-48 bg-gray-50 rounded animate-pulse" />}>
+                      <LazyRichTextEditor
+                        value={productForm.technical_details}
+                        onChange={(value) => setProductForm({...productForm, technical_details: value})}
+                        placeholder="Write technical specifications with rich formatting..."
+                      />
+                    </Suspense>
                   </TabsContent>
 
                   <TabsContent value="warranty" className="space-y-2">
                     <Label className="text-sm font-medium">Warranty Information</Label>
-                    <RichTextEditor
-                      value={productForm.warranty}
-                      onChange={(value) => setProductForm({...productForm, warranty: value})}
-                      placeholder="Write warranty terms with rich formatting..."
-                    />
+                    <Suspense fallback={<div className="h-48 bg-gray-50 rounded animate-pulse" />}>
+                      <LazyRichTextEditor
+                        value={productForm.warranty}
+                        onChange={(value) => setProductForm({...productForm, warranty: value})}
+                        placeholder="Write warranty terms with rich formatting..."
+                      />
+                    </Suspense>
                   </TabsContent>
                 </Tabs>
               </Card>
@@ -1041,11 +1092,13 @@ const AdminProductsEnhanced = () => {
                   </div>
                   <div>
                     <Label className="text-sm font-medium">Help Text</Label>
-                    <RichTextEditor
-                      value={productForm.help_text}
-                      onChange={(value) => setProductForm({...productForm, help_text: value})}
-                      placeholder="Write helpful information with rich formatting..."
-                    />
+                    <Suspense fallback={<div className="h-48 bg-gray-50 rounded animate-pulse" />}>
+                      <LazyRichTextEditor
+                        value={productForm.help_text}
+                        onChange={(value) => setProductForm({...productForm, help_text: value})}
+                        placeholder="Write helpful information with rich formatting..."
+                      />
+                    </Suspense>
                   </div>
                 </div>
               </Card>
@@ -1123,18 +1176,19 @@ const AdminProductsEnhanced = () => {
                   </div>
                 </div>
               </Card>
-            </div>
-            
-            <div className="flex justify-end space-x-3 pt-6 border-t">
-              <Button variant="outline" onClick={() => setIsProductDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={editingProduct ? handleUpdateProduct : handleCreateProduct}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {editingProduct ? 'Update Product' : 'Create Product'}
-              </Button>
+              
+              <div className="flex justify-end space-x-3 pt-6 border-t">
+                <Button variant="outline" onClick={() => setIsProductDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={editingProduct ? handleUpdateProduct : handleCreateProduct}
+                  className="bg-blue-600 hover:bg-blue-700"
+                  disabled={saving || loadingProduct}
+                >
+                  {saving ? 'Saving...' : (editingProduct ? 'Update Product' : 'Create Product')}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -1202,6 +1256,6 @@ const AdminProductsEnhanced = () => {
       </main>
     </div>
   );
-};
+});
 
 export default AdminProductsEnhanced;

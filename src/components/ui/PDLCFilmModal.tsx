@@ -6,7 +6,28 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Plus, ArrowLeft, Minus, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { useSupabase, enhancedProductService } from '@/supabase';
+import { useQuery } from '@tanstack/react-query';
+
+// Progressive loading - text first
+const loadPDLCTextData = async () => {
+  const { supabase } = await import('@/supabase/client');
+  const { data } = await supabase
+    .from('products')
+    .select('id, title, display_name, price, variants, overview, technical_details, warranty')
+    .ilike('title', '%pdlc%')
+    .limit(5);
+  return data || [];
+};
+
+const loadPDLCImages = async () => {
+  const { supabase } = await import('@/supabase/client');
+  const { data } = await supabase
+    .from('products')
+    .select('id, image, additional_images')
+    .ilike('title', '%pdlc%')
+    .limit(5);
+  return data || [];
+};
 
 interface PDLCFilmModalProps {
   open: boolean;
@@ -34,126 +55,65 @@ interface PDLCFilmModalProps {
 }
 
 export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: PDLCFilmModalProps) {
-  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [dimensions, setDimensions] = useState([{ height: 0, width: 0, quantity: 1 }]);
   const [loading, setLoading] = useState(false);
-  const [showInstallationSetup, setShowInstallationSetup] = useState(false);
-  const [installationNotes, setInstallationNotes] = useState('');
-  const [installationTBD, setInstallationTBD] = useState(false);
   const [installationSelected, setInstallationSelected] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
-  const [selectedProduct, setSelectedProduct] = useState(product);
-  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
-  const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
+  const { data: pdlcProducts, isLoading } = useQuery({
+    queryKey: ['pdlc-text-data'],
+    queryFn: loadPDLCTextData,
+    enabled: open
+  });
+
+  const { data: pdlcImages } = useQuery({
+    queryKey: ['pdlc-images'],
+    queryFn: loadPDLCImages,
+    enabled: open && !!pdlcProducts?.length,
+    staleTime: 10 * 60 * 1000
+  });
 
 
-  // Load dynamic products from admin portal
+
   useEffect(() => {
-    if (open) {
-      loadPDLCFilmProducts();
-      setSelectedProduct(product);
-    }
-  }, [open, product]);
-
-  // Reset image selection when product changes
-  useEffect(() => {
-    setSelectedImage(0);
-  }, [selectedProduct]);
-
-  const loadPDLCFilmProducts = async () => {
-    try {
-      setDynamicLoading(true);
+    if (open && pdlcProducts?.length) {
+      setSelectedImage(0);
       
-      // Get categories and subcategories
-      const [categories, subcategories] = await Promise.all([
-        executeQuery(() => enhancedProductService.getCategories()),
-        executeQuery(() => enhancedProductService.getSubcategories())
-      ]);
+      const textData = pdlcProducts[0];
+      const imageData = pdlcImages?.find(img => img.id === textData.id);
       
-      // Find PDLC Film category (Privacy category)
-      const pdlcCategory = categories.find(cat => 
-        cat.name.toLowerCase().includes('privacy') || 
-        cat.name.toLowerCase().includes('pdlc') || 
-        cat.name.toLowerCase().includes('film')
-      );
+      // Combine text and image data
+      const combinedProduct = {
+        ...textData,
+        image: imageData?.image,
+        additional_images: imageData?.additional_images
+      };
       
-      if (!pdlcCategory) {
-        console.log('PDLC Film category not found');
-        return;
-      }
+      setSelectedProduct(combinedProduct);
       
-      // Find PDLC Film subcategory or get products directly from category
-      const pdlcSubcategory = subcategories.find(sub => 
-        sub.category_id === pdlcCategory.id && 
-        (sub.name.toLowerCase().includes('pdlc') || 
-         sub.name.toLowerCase().includes('film') ||
-         sub.name.toLowerCase().includes('privacy'))
-      );
-      
-      let products = [];
-      if (pdlcSubcategory) {
-        // Get products from subcategory
-        products = await executeQuery(() => 
-          enhancedProductService.getProductsBySubcategory(pdlcSubcategory.id)
-        );
-      } else {
-        // Get products directly from category
-        products = await executeQuery(() => 
-          enhancedProductService.getProductsByCategory(pdlcCategory.id)
-        );
-      }
-      
-      setDynamicProducts(products || []);
-      
-      console.log('PDLC products found:', products);
-      
-      // Set first product as selected if available
-      if (products && products.length > 0) {
-        console.log('Setting selected PDLC product to:', products[0]);
-        console.log('Product overview:', products[0].overview);
-        console.log('Product description:', products[0].description);
-        console.log('Product technical_details:', products[0].technical_details);
-        console.log('Product warranty:', products[0].warranty);
-        setSelectedProduct(products[0]);
-        setSelectedImage(0);
-        // Parse variants if they're stored as JSON string
-        let variants = products[0].variants;
-        if (typeof variants === 'string') {
-          try {
-            variants = JSON.parse(variants);
-          } catch (e) {
-            variants = [];
-          }
+      let variants = textData.variants;
+      if (typeof variants === 'string') {
+        try {
+          variants = JSON.parse(variants);
+        } catch (e) {
+          variants = [];
         }
-        // Set first variant as selected if available
-        if (variants && variants.length > 0) {
-          setSelectedVariant(variants[0]);
-        }
-      } else {
-        console.log('No PDLC products found, using original product:', product);
-        setSelectedProduct(product);
       }
-      
-    } catch (error) {
-      console.error('Failed to load PDLC film products:', error);
-    } finally {
-      setDynamicLoading(false);
+      if (variants?.length > 0) {
+        setSelectedVariant(variants[0]);
+      }
     }
-  };
+  }, [open, pdlcProducts, pdlcImages]);
 
   const currentProductData = selectedProduct || product;
   const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
   const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
   
-  // Debug logging
-  console.log('PDLC Modal - selectedProduct:', selectedProduct);
-  console.log('PDLC Modal - currentProductData:', currentProductData);
-  console.log('PDLC Modal - features:', features);
-  console.log('PDLC Modal - specifications:', specifications);
+
   
   // Parse additional images from database
   let additionalImages = [];
@@ -282,15 +242,15 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                       alt={selectedProduct?.title || selectedProduct?.display_name || product.name}
                       className="w-full h-full object-cover rounded-lg"
                       onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/images/smart_switch/3 gang mechanical.webp';
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
                       }}
                     />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-500">No image available</span>
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`w-full h-full bg-gray-100 rounded-lg flex flex-col items-center justify-center ${allImages.length > 0 ? 'hidden' : ''}`}>
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg mb-3 animate-pulse"></div>
+                    <span className="text-gray-400 text-sm">Loading image...</span>
+                  </div>
                 </div>
                 
                 {/* Mobile Navigation Arrows */}
@@ -362,35 +322,37 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
             <div className="p-4 lg:p-8 bg-white lg:overflow-y-auto lg:max-h-[85vh]">
             {/* Top Section */}
             <div className="mb-6">
-              <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                {selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || currentProductData.title || currentProductData.display_name || currentProductData.name}
-              </h1>
+              {!isLoading && selectedProduct ? (
+                <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
+                  {selectedProduct.title || selectedProduct.display_name || selectedProduct.name}
+                </h1>
+              ) : (
+                <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
+              )}
               
               {/* Price Section */}
-              <div className="mb-4">
-                <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-base text-gray-900">
-                    {currentPrice.toLocaleString()} BDT
-                  </span>
-                  <span className="text-xs text-gray-500">per sq ft</span>
-                  {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
-                    <>
-                      <span className="text-xs text-gray-500 line-through">
-                        {selectedVariant.price.toLocaleString()} BDT
-                      </span>
-                      <span className="text-xs text-green-600 font-medium">
-                        Save {(selectedVariant.price - selectedVariant.discount_price).toLocaleString()} BDT
-                      </span>
-                    </>
-                  )}
+              {currentPrice && currentPrice > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-baseline gap-3 mb-2">
+                    <span className="text-base text-gray-900">
+                      {currentPrice.toLocaleString()} BDT
+                    </span>
+                    <span className="text-xs text-gray-500">per sq ft</span>
+                    {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
+                      <>
+                        <span className="text-xs text-gray-500 line-through">
+                          {selectedVariant.price.toLocaleString()} BDT
+                        </span>
+                        <span className="text-xs text-green-600 font-medium">
+                          Save {(selectedVariant.price - selectedVariant.discount_price).toLocaleString()} BDT
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
               
-              {/* Shipping Info */}
-              <div className="flex items-center gap-2 text-gray-600 text-sm mb-6">
-                <Truck className="w-4 h-4" />
-                <span>Ships within 3–7 business days | Free shipping</span>
-              </div>
+
             </div>
 
             {/* Details Accordion */}
@@ -430,24 +392,18 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          {(selectedProduct?.overview || selectedProduct?.description) ? (
+                          {!isLoading && selectedProduct?.overview ? (
                             <div 
                               className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
                               dangerouslySetInnerHTML={{ 
-                                __html: selectedProduct.overview || selectedProduct.description 
+                                __html: selectedProduct.overview 
                               }}
                             />
-                          ) : features.length > 0 ? (
-                            <ul className="space-y-2">
-                              {features.map((feature, index) => (
-                                <li key={index} className="flex items-start gap-2">
-                                  <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
-                                  {feature}
-                                </li>
-                              ))}
-                            </ul>
                           ) : (
-                            <p className="text-gray-400 italic">No overview available from admin portal</p>
+                            <div className="animate-pulse">
+                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                            </div>
                           )}
                         </div>
                       )}
@@ -470,7 +426,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-gray-400 italic">No technical details available from admin portal</p>
+                            <p className="text-gray-500">Loading technical details...</p>
                           )}
                         </div>
                       )}
@@ -495,7 +451,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                               ))}
                             </div>
                           ) : (
-                            <p className="text-gray-400 italic">No warranty information available from admin portal</p>
+                            <p className="text-gray-500">Loading warranty information...</p>
                           )}
                         </div>
                       )}
@@ -735,40 +691,20 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
           </div>
           
           <div className="p-6">
-            {/* Dynamic Help Content */}
             {selectedProduct?.help_text ? (
               <div 
                 className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: selectedProduct.help_text }}
               />
             ) : (
-              <>
-                {/* Headline */}
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">
-                    {selectedProduct?.help_title || 'Need help deciding? We\'ve got you covered'}
-                  </h2>
-                </div>
-                
-                {/* Options */}
-                <div className="space-y-6">
-                  {/* Option 1 */}
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Standard Installation (+0 BDT)</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      Basic PDLC film installation with transformer setup. Perfect for small glass panels or single room applications. Includes basic wiring and testing.
-                    </p>
-                  </div>
-                  
-                  {/* Option 2 */}
-                  <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Premium Installation (+5,000 BDT)</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      Complete professional service with electrical safety check, advanced wiring, and smart home integration. Includes 1-year installation warranty and priority support.
-                    </p>
-                  </div>
-                </div>
-              </>
+              <div className="text-center">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">
+                  Need help deciding?
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Contact our team for personalized assistance.
+                </p>
+              </div>
             )}
           </div>
         </DialogContent>

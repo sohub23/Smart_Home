@@ -156,7 +156,9 @@ const CategoryProducts = () => {
     });
     
     // Reset input to allow selecting same files again
-    e.target.value = '';
+    if (e.target) {
+      e.target.value = '';
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {

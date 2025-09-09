@@ -1,6 +1,7 @@
 // Professional Product Management API Functions
 
 import { supabase } from './supabase';
+import { validateId, sanitizeSearchTerm } from '../utils/sanitize';
 import type {
   Product,
   ProductCategory,
@@ -68,10 +69,13 @@ export const categoryAPI = {
   // Update category
   async update(id: string, categoryData: Partial<CategoryFormData>): Promise<ApiResponse<ProductCategory>> {
     try {
+      const validId = validateId(id)
+      if (!validId) throw new Error('Invalid category ID')
+      
       const { data, error } = await supabase
         .from('product_categories')
         .update({ ...categoryData, updated_at: new Date().toISOString() })
-        .eq('id', id)
+        .eq('id', validId)
         .select()
         .single();
 
@@ -85,10 +89,13 @@ export const categoryAPI = {
   // Delete category
   async delete(id: string): Promise<ApiResponse<boolean>> {
     try {
+      const validId = validateId(id)
+      if (!validId) throw new Error('Invalid category ID')
+      
       const { error } = await supabase
         .from('product_categories')
         .update({ is_active: false })
-        .eq('id', id);
+        .eq('id', validId);
 
       if (error) throw error;
       return { data: true };
@@ -100,8 +107,11 @@ export const categoryAPI = {
   // Reorder categories
   async reorder(categoryId: string, newPosition: number): Promise<ApiResponse<boolean>> {
     try {
+      const validCategoryId = validateId(categoryId)
+      if (!validCategoryId) throw new Error('Invalid category ID')
+      
       const { error } = await supabase.rpc('swap_category_positions', {
-        category_id: categoryId,
+        category_id: validCategoryId,
         new_position: newPosition
       });
 

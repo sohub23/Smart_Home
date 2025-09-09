@@ -8,6 +8,23 @@ import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 import { productService } from '@/supabase/products';
 import { enhancedProductService } from '@/supabase';
+import { useQuery } from '@tanstack/react-query';
+
+// Preload sensor data immediately
+const preloadSensorData = async () => {
+  try {
+    const [categories, products] = await Promise.all([
+      enhancedProductService.getCategories(),
+      enhancedProductService.getProducts()
+    ]);
+    return { categories, products };
+  } catch (error) {
+    console.error('Sensor preload failed:', error);
+    return { categories: [], products: [] };
+  }
+};
+
+const sensorDataPromise = preloadSensorData();
 
 interface SensorsSelectionModalProps {
   open: boolean;
@@ -32,75 +49,84 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
   const [detailImageIndex, setDetailImageIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const sensorImages = [
-    '/images/sohub_protect/accesories/Motion_pr200.png',
-    '/images/sohub_protect/accesories/door_Sensor_DS200.png',
-    '/images/sohub_protect/accesories/GB010-Vibration-Sensor-2.png'
-  ];
+  // Only database sensor images
+  const sensorImages = accessories.map(sensor => sensor.image).filter(Boolean);
+
+  // Use React Query for instant data access
+  const { data: sensorData } = useQuery({
+    queryKey: ['sensor-data'],
+    queryFn: () => sensorDataPromise,
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false
+  });
 
   // Reset to default when modal opens
   useEffect(() => {
     if (open) {
       setActiveTab('overview');
-      fetchAccessories();
       setSelectedImage(0);
-    }
-  }, [open]);
-
-  const fetchAccessories = async () => {
-    try {
-      const categories = await enhancedProductService.getCategories();
-      const securityCategory = categories.find(cat => 
-        cat.name?.toLowerCase().includes('security')
-      );
-      
-      if (!securityCategory) {
-        setAccessories([]);
-        return;
+      if (sensorData) {
+        fetchAccessories();
       }
+    }
+  }, [open, sensorData]);
+
+  const fetchAccessories = () => {
+    if (!sensorData?.categories || !sensorData?.products) return;
+    
+    const { categories, products } = sensorData;
+    const securityCategory = categories.find(cat => 
+      cat.name?.toLowerCase().includes('security')
+    );
+    
+    if (!securityCategory) {
+      setAccessories([]);
+      return;
+    }
+    
+    const filteredProducts = products.filter(p => {
+      const isSecurityCategory = p.category_id === securityCategory.id;
+      const name = (p.title || p.display_name || '').toLowerCase();
+      const desc = (p.overview || p.product_overview || p.description || '').toLowerCase();
       
-      const accessoryProducts = await enhancedProductService.getProductsByCategory(securityCategory.id);
-      const filteredProducts = accessoryProducts?.filter(p => {
-        const name = (p.title || p.display_name || '').toLowerCase();
-        return !name.includes('camera') && !name.includes('sp-01') && !name.includes('sp05');
-      }) || [];
+      // Include all sensor-related products
+      const sensorKeywords = ['sensor', 'detector', 'motion', 'door', 'vibration', 'gas', 'smoke', 'fire', 'alarm', 'siren', 'sos', 'band', 'doorbell', 'button', 'shutter', 'extender', 'pr200', 'ds200', 'gb010', 'gs020', 'wsr101', 'b020', 'b100', 'ex010', 'ss010'];
+      const isSensor = sensorKeywords.some(keyword => name.includes(keyword) || desc.includes(keyword));
       
-      const formattedAccessories = filteredProducts.map(p => {
-        let productPrice = 0;
-        if (p.variants && p.variants.length > 0) {
-          const firstVariant = p.variants[0];
-          productPrice = firstVariant.discount_price > 0 ? firstVariant.discount_price : firstVariant.price || 0;
-        }
-        if (!productPrice) {
+      // Exclude cameras and main panels
+      const isNotExcluded = !name.includes('camera') && !name.includes('sp-01') && !name.includes('sp-05') && !name.includes('sp01') && !name.includes('sp05');
+      
+      return isSecurityCategory && isSensor && isNotExcluded;
+    });
+    
+    const formattedAccessories = filteredProducts.map(p => {
+      let productPrice = 0;
+      if (p.variants) {
+        try {
+          let variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
+          if (variants && variants.length > 0) {
+            const firstVariant = variants[0];
+            productPrice = firstVariant.discount_price > 0 ? firstVariant.discount_price : firstVariant.price || 0;
+          }
+        } catch (e) {
           productPrice = p.price || 0;
         }
-        
-        // Fallback prices
-        if (!productPrice) {
-          const fallbackPrices = {
-            'motion sensor': 2500, 'door sensor': 1800, 'vibration sensor': 2200,
-            'wireless siren': 3500, 'gas detector': 4500, 'fire alarm': 3800,
-            'sos band': 2800, 'doorbell button': 2000, 'shutter sensor': 2300, 'signal extender': 3200
-          };
-          const productName = (p.title || p.display_name || '').toLowerCase();
-          productPrice = Object.keys(fallbackPrices).find(key => productName.includes(key)) 
-            ? fallbackPrices[Object.keys(fallbackPrices).find(key => productName.includes(key))] : 2500;
-        }
-        
-        return {
-          id: p.id,
-          name: p.title || p.display_name,
-          desc: (p.overview || p.product_overview || 'Security sensor').replace(/<[^>]*>/g, '').trim(),
-          price: productPrice,
-          image: p.image || '/images/sohub_protect/accesories/Motion_pr200.png'
-        };
-      });
+      }
+      if (!productPrice) {
+        productPrice = p.price || 0;
+      }
       
-      setAccessories(formattedAccessories);
-    } catch (error) {
-      console.error('Error fetching accessories:', error);
-      setAccessories([]);
-    }
+      return {
+        id: p.id,
+        name: p.title || p.display_name,
+        desc: (p.overview || p.product_overview || 'Security sensor').replace(/<[^>]*>/g, '').trim(),
+        price: productPrice,
+        image: p.image
+      };
+    });
+    
+    setAccessories(formattedAccessories);
   };
 
   const accessoryTotal = selectedAccessories.reduce((sum, index) => {
@@ -186,24 +212,24 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
                   <img
-                    src={sensorImages[selectedImage] || '/images/sohub_protect/accesories/Motion_pr200.png'}
-                    alt="Security Sensors"
+                    src={accessories[selectedImage]?.image || sensorImages[selectedImage]}
+                    alt={accessories[selectedImage]?.name || "Security Sensors"}
                     className="w-full h-full object-contain rounded-lg"
                   />
                 </div>
                 
                 {/* Mobile Navigation Arrows */}
-                {sensorImages.length > 1 && (
+                {accessories.length > 1 && (
                   <>
                     <button
-                      onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : sensorImages.length - 1)}
+                      onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : accessories.length - 1)}
                       className="lg:hidden absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
                     >
                       <ChevronLeft className="w-4 h-4 text-gray-600" />
                     </button>
                     
                     <button
-                      onClick={() => setSelectedImage(selectedImage < sensorImages.length - 1 ? selectedImage + 1 : 0)}
+                      onClick={() => setSelectedImage(selectedImage < accessories.length - 1 ? selectedImage + 1 : 0)}
                       className="lg:hidden absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
                     >
                       <ChevronRight className="w-4 h-4 text-gray-600" />
@@ -212,41 +238,49 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
                 )}
               </div>
               
-              {/* Desktop Thumbnails */}
-              {sensorImages.length > 1 && (
-                <div className="hidden lg:flex items-center gap-3 justify-center mt-6">
-                  <button
-                    onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : sensorImages.length - 1)}
-                    className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
-                  >
-                    <ChevronLeft className="w-4 h-4 text-gray-600" />
-                  </button>
-                  
-                  <div className="flex gap-3">
-                    {sensorImages.map((image, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedImage(index)}
-                        className={cn(
-                          "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200",
-                          selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
-                        )}
-                      >
-                        <img 
-                          src={image} 
-                          alt={`Sensor ${index + 1}`} 
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
+              {/* Desktop Thumbnails with Slider */}
+              {accessories.length > 1 && (
+                <div className="hidden lg:flex justify-center mt-6">
+                  <div className="relative">
+                    <div className="flex gap-3 overflow-x-auto scrollbar-hide px-8" id="main-thumbnails" style={{maxWidth: '400px'}}>
+                      {accessories.map((item, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setSelectedImage(index)}
+                          className={cn(
+                            "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 flex-shrink-0",
+                            selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
+                          )}
+                        >
+                          <img 
+                            src={item.image} 
+                            alt={item.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('main-thumbnails');
+                        container?.scrollBy({ left: -100, behavior: 'smooth' });
+                      }}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
+                    >
+                      <ChevronLeft className="w-4 h-4 text-gray-600" />
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        const container = document.getElementById('main-thumbnails');
+                        container?.scrollBy({ left: 100, behavior: 'smooth' });
+                      }}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
+                    >
+                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                    </button>
                   </div>
-                  
-                  <button
-                    onClick={() => setSelectedImage(selectedImage < sensorImages.length - 1 ? selectedImage + 1 : 0)}
-                    className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
-                  >
-                    <ChevronRight className="w-4 h-4 text-gray-600" />
-                  </button>
                 </div>
               )}
             </div>

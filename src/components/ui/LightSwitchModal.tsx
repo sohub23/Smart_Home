@@ -9,6 +9,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useSupabase, enhancedProductService } from '@/supabase';
 import { EngravingTrigger } from '@/components/ui/EngravingTrigger';
 import { EngravingModal } from '@/components/ui/EngravingModal';
+import { sanitizeForLog } from '@/utils/sanitize';
 
 interface LightSwitchModalProps {
   open: boolean;
@@ -77,72 +78,24 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   }, [selectedVariant]);
 
   const loadLightSwitchProducts = async () => {
+    setDynamicLoading(false); // Show UI immediately
+    
     try {
-      setDynamicLoading(true);
+      const { supabase } = await import('@/supabase/client');
       
-      // Get categories and subcategories
-      const [categories, subcategories] = await Promise.all([
-        executeQuery(() => enhancedProductService.getCategories()),
-        executeQuery(() => enhancedProductService.getSubcategories())
-      ]);
+      const { data } = await supabase
+        .from('products')
+        .select('id, title, display_name, price, image, variants')
+        .ilike('title', '%gang%')
+        .limit(10);
       
-      // Find Switch category
-      const switchCategory = categories.find(cat => 
-        cat.name.toLowerCase().includes('switch')
-      );
-      
-      if (!switchCategory) {
-        console.log('Switch category not found');
-        return;
+      if (data?.length) {
+        setDynamicProducts(data);
+        const oneGang = data.find(p => p.title?.includes('1 gang'));
+        setSelectedProduct(oneGang || data[0]);
       }
-      
-      // Find Light Switch subcategory
-      const lightSwitchSubcategory = subcategories.find(sub => 
-        sub.category_id === switchCategory.id && 
-        (sub.name.toLowerCase().includes('light') || sub.name.toLowerCase().includes('mechanical'))
-      );
-      
-      if (!lightSwitchSubcategory) {
-        console.log('Light Switch subcategory not found');
-        return;
-      }
-      
-      // Get all products from Light Switch subcategory
-      const products = await executeQuery(() => 
-        enhancedProductService.getProductsBySubcategory(lightSwitchSubcategory.id)
-      );
-      
-      setDynamicProducts(products || []);
-      console.log('All loaded products:', products?.map(p => ({
-        name: p.title || p.name,
-        price: p.price,
-        base_price: p.base_price,
-        unit_price: p.unit_price,
-        allPriceFields: Object.keys(p).filter(key => key.toLowerCase().includes('price'))
-      })));
-      
-      // Find 1 gang product as default
-      const oneGangProduct = products?.find(p => 
-        p.title?.toLowerCase().includes('1 gang') || 
-        p.display_name?.toLowerCase().includes('1 gang') ||
-        p.name?.toLowerCase().includes('1 gang')
-      );
-      
-      if (oneGangProduct) {
-        console.log('Setting selected product to 1 gang:', oneGangProduct);
-        setSelectedProduct(oneGangProduct);
-      } else if (products && products.length > 0) {
-        console.log('Setting selected product to first available:', products[0]);
-        setSelectedProduct(products[0]);
-      } else {
-        console.log('No products found, using original product:', product);
-        setSelectedProduct(product);
-      }
-      
     } catch (error) {
-      console.error('Failed to load light switch products:', error);
-    } finally {
-      setDynamicLoading(false);
+      console.error('Load error:', error);
     }
   };
 
@@ -178,10 +131,9 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const currentPrice = getCurrentPrice();
   
   console.log('Price calculation:', {
-    selectedProduct: selectedProduct?.title || selectedProduct?.name,
-    variants: selectedProduct?.variants,
-    calculatedPrice: currentPrice,
-    productPrice: selectedProduct?.price
+    hasSelectedProduct: !!selectedProduct,
+    hasVariants: !!(selectedProduct?.variants),
+    calculatedPrice: currentPrice
   });
   
   const gangImages = [
@@ -205,7 +157,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
         : selectedProduct.additional_images;
     }
   } catch (e) {
-    console.log('Failed to parse additional images:', e);
+    console.log('Failed to parse additional images:', sanitizeForLog(e));
     additionalImages = [];
   }
   
@@ -271,7 +223,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       });
       onOpenChange(false);
     } catch (error) {
-      console.error('Add to cart failed:', JSON.stringify(error, null, 2));
+      console.error('Add to cart failed:', sanitizeForLog(error));
       toast({
         title: "Error",
         description: "Failed to add item to bag. Please try again.",
@@ -596,8 +548,8 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                   }
                   
                   console.log(`Gang ${gangNumber}:`, {
-                    product: gangProduct?.title || gangProduct?.name,
-                    variants: gangProduct?.variants,
+                    hasProduct: !!gangProduct,
+                    hasVariants: !!(gangProduct?.variants),
                     finalPrice: gangPrice
                   });
                   

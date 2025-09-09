@@ -18,15 +18,40 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
   }, [value]);
 
   const execCommand = (command: string, value?: string) => {
-    document.execCommand(command, false, value);
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+    if (!editorRef.current) return;
+    
+    // Sanitize commands to prevent code injection
+    const allowedCommands = ['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList', 'justifyLeft', 'justifyCenter', 'justifyRight', 'fontSize'];
+    if (!allowedCommands.includes(command)) return;
+    
+    // Sanitize fontSize values
+    if (command === 'fontSize' && value) {
+      const allowedSizes = ['1', '3', '4', '6'];
+      if (!allowedSizes.includes(value)) return;
+    }
+    
+    try {
+      document.execCommand(command, false, value);
+      // Sanitize the output HTML to prevent XSS
+      const sanitizedHTML = editorRef.current.innerHTML
+        .replace(/<script[^>]*>.*?<\/script>/gi, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '');
+      editorRef.current.innerHTML = sanitizedHTML;
+      onChange(sanitizedHTML);
+    } catch (error) {
+      console.error('Command execution failed:', error);
     }
   };
 
   const handleInput = () => {
     if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
+      // Sanitize input to prevent XSS
+      const sanitizedHTML = editorRef.current.innerHTML
+        .replace(/<script[^>]*>.*?<\/script>/gi, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '');
+      onChange(sanitizedHTML);
     }
   };
 
@@ -139,13 +164,15 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
         suppressContentEditableWarning={true}
       />
       
-      <style jsx>{`
-        [contenteditable]:empty:before {
-          content: attr(data-placeholder);
-          color: #9ca3af;
-          pointer-events: none;
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          [contenteditable]:empty:before {
+            content: attr(data-placeholder);
+            color: #9ca3af;
+            pointer-events: none;
+          }
+        `
+      }} />
     </div>
   );
 };

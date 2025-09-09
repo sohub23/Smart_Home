@@ -1,5 +1,6 @@
 import { supabase } from './index';
 import type { Category, Subcategory, Product, ProductVariant, ProductColor, CreateProductData } from '@/types/product';
+import { validateId, sanitizeForLog } from '../utils/sanitize';
 
 export const enhancedProductService = {
   // Categories
@@ -27,10 +28,13 @@ export const enhancedProductService = {
   },
 
   async updateCategory(id: string, updates: Partial<Category>) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid category ID')
+    
     const { data, error } = await supabase
       .from('product_categories')
       .update(updates)
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single();
     
@@ -42,15 +46,13 @@ export const enhancedProductService = {
   async getSubcategories(categoryId?: string): Promise<Subcategory[]> {
     let query = supabase
       .from('product_subcategories')
-      .select(`
-        *,
-        category:product_categories(*)
-      `)
+      .select('id, name, slug, category_id, position')
       .eq('is_active', true)
       .order('position');
 
-    if (categoryId) {
-      query = query.eq('category_id', categoryId);
+    const validCategoryId = validateId(categoryId)
+    if (validCategoryId) {
+      query = query.eq('category_id', validCategoryId);
     }
 
     const { data, error } = await query;
@@ -74,13 +76,11 @@ export const enhancedProductService = {
   async getProducts(): Promise<Product[]> {
     const { data, error } = await supabase
       .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    console.log('Raw query result:', { data, error, dataLength: data?.length });
+      .select('id, title, display_name, category_id, subcategory_id, model, image, engraving_image_url, overview, technical_details, warranty, help_text, product_overview, help_image_url, shipping_time, shipping_cost, engraving_price, additional_images, variants, colors')
+      .order('id', { ascending: false });
     
     if (error) {
-      console.error('Products query error:', error);
+      console.error('Products query error:', sanitizeForLog(error));
       return [];
     }
     
@@ -88,6 +88,9 @@ export const enhancedProductService = {
   },
 
   async getProductsByCategory(categoryId: string): Promise<Product[]> {
+    const validCategoryId = validateId(categoryId)
+    if (!validCategoryId) throw new Error('Invalid category ID')
+    
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -96,7 +99,7 @@ export const enhancedProductService = {
         variants:product_variants(*),
         colors:product_colors(*)
       `)
-      .eq('category_id', categoryId)
+      .eq('category_id', validCategoryId)
       .eq('is_active', true)
       .order('position');
     
@@ -105,10 +108,13 @@ export const enhancedProductService = {
   },
 
   async getProductsBySubcategory(subcategoryId: string): Promise<Product[]> {
+    const validSubcategoryId = validateId(subcategoryId)
+    if (!validSubcategoryId) throw new Error('Invalid subcategory ID')
+    
     const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('subcategory_id', subcategoryId)
+      .eq('subcategory_id', validSubcategoryId)
       .eq('is_active', true)
       .order('position');
     
@@ -182,6 +188,9 @@ export const enhancedProductService = {
   },
 
   async getProduct(id: string): Promise<Product> {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid product ID')
+    
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -191,7 +200,7 @@ export const enhancedProductService = {
         variants:product_variants(*),
         colors:product_colors(*)
       `)
-      .eq('id', id)
+      .eq('id', validId)
       .single();
     
     if (error) throw error;
@@ -199,10 +208,13 @@ export const enhancedProductService = {
   },
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid product ID')
+    
     const { data, error } = await supabase
       .from('products')
       .update(updates)
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single();
     
@@ -212,9 +224,12 @@ export const enhancedProductService = {
 
   // Product Variants
   async addVariant(productId: string, variant: Omit<ProductVariant, 'id' | 'product_id' | 'created_at' | 'updated_at'>) {
+    const validProductId = validateId(productId)
+    if (!validProductId) throw new Error('Invalid product ID')
+    
     const { data, error } = await supabase
       .from('product_variants')
-      .insert({ ...variant, product_id: productId })
+      .insert({ ...variant, product_id: validProductId })
       .select()
       .single();
     
@@ -223,10 +238,13 @@ export const enhancedProductService = {
   },
 
   async updateVariant(id: string, updates: Partial<ProductVariant>) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid variant ID')
+    
     const { data, error } = await supabase
       .from('product_variants')
       .update(updates)
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single();
     
@@ -235,19 +253,25 @@ export const enhancedProductService = {
   },
 
   async deleteVariant(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid variant ID')
+    
     const { error } = await supabase
       .from('product_variants')
       .delete()
-      .eq('id', id);
+      .eq('id', validId);
     
     if (error) throw error;
   },
 
   // Product Colors
   async addColor(productId: string, color: Omit<ProductColor, 'id' | 'product_id' | 'created_at'>) {
+    const validProductId = validateId(productId)
+    if (!validProductId) throw new Error('Invalid product ID')
+    
     const { data, error } = await supabase
       .from('product_colors')
-      .insert({ ...color, product_id: productId })
+      .insert({ ...color, product_id: validProductId })
       .select()
       .single();
     
@@ -256,10 +280,13 @@ export const enhancedProductService = {
   },
 
   async updateColor(id: string, updates: Partial<ProductColor>) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid color ID')
+    
     const { data, error } = await supabase
       .from('product_colors')
       .update(updates)
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single();
     
@@ -268,10 +295,13 @@ export const enhancedProductService = {
   },
 
   async deleteColor(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid color ID')
+    
     const { error } = await supabase
       .from('product_colors')
       .delete()
-      .eq('id', id);
+      .eq('id', validId);
     
     if (error) throw error;
   },

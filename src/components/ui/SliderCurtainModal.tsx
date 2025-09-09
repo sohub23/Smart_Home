@@ -55,9 +55,13 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   // Load dynamic products from admin portal
   useEffect(() => {
     if (open) {
-      loadSliderCurtainProducts();
+      // Show modal immediately with existing product data
       setConnectionType('zigbee');
       setSelectedProduct(product.subcategoryProducts?.[0] || product);
+      setDynamicLoading(false);
+      
+      // Load enhanced data progressively
+      loadSliderCurtainProducts();
     }
   }, [open, product]);
 
@@ -75,75 +79,68 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
 
   const loadSliderCurtainProducts = async () => {
     try {
-      setDynamicLoading(true);
-      
-      // Get categories and subcategories
-      const [categories, subcategories] = await Promise.all([
-        executeQuery(() => enhancedProductService.getCategories()),
-        executeQuery(() => enhancedProductService.getSubcategories())
-      ]);
-      
-      // Find Curtains category
-      const curtainsCategory = categories.find(cat => 
-        cat.name.toLowerCase().includes('curtain')
-      );
-      
-      if (!curtainsCategory) {
-        console.log('Curtains category not found');
-        return;
-      }
-      
-      // Find Slider Curtain subcategory
-      const sliderSubcategory = subcategories.find(sub => 
-        sub.category_id === curtainsCategory.id && 
-        sub.name.toLowerCase().includes('slider')
-      );
-      
-      if (!sliderSubcategory) {
-        console.log('Slider Curtain subcategory not found');
-        return;
-      }
-      
-      // Get products from Slider Curtain subcategory
-      const products = await executeQuery(() => 
-        enhancedProductService.getProductsBySubcategory(sliderSubcategory.id)
-      );
-      
-      setDynamicProducts(products || []);
-      
-      // Set first product as selected if available
-      if (products && products.length > 0) {
-        console.log('Setting selected product to:', products[0]);
-        setSelectedProduct(products[0]);
-        setSelectedImage(0);
-        // Parse variants if they're stored as JSON string
-        let variants = products[0].variants;
-        console.log('Raw variants from product:', variants);
-        if (typeof variants === 'string') {
-          try {
-            variants = JSON.parse(variants);
-            console.log('Parsed variants:', variants);
-          } catch (e) {
-            console.log('Failed to parse variants:', e);
-            variants = [];
+      // Stage 1: Load text content first (name, price, description)
+      setTimeout(async () => {
+        const { supabase } = await import('@/supabase/client');
+        
+        const { data } = await supabase
+          .from('products')
+          .select('id, title, display_name, price, overview, technical_details, variants')
+          .ilike('title', '%slider%')
+          .limit(10);
+        
+        if (data?.length) {
+          setDynamicProducts(data);
+          setSelectedProduct(prev => ({ ...prev, ...data[0] }));
+          
+          // Parse variants immediately for pricing
+          let variants = data[0].variants;
+          if (typeof variants === 'string') {
+            try {
+              variants = JSON.parse(variants);
+            } catch (e) {
+              variants = [];
+            }
+          }
+          if (variants?.length > 0) {
+            setSelectedVariant(variants[0]);
           }
         }
-        // Set first variant as selected if available
-        if (variants && variants.length > 0) {
-          console.log('Setting selected variant to:', variants[0]);
-          setSelectedVariant(variants[0]);
-        } else {
-          console.log('No variants found, using product price:', products[0].price);
+      }, 50);
+      
+      // Stage 2: Load images
+      setTimeout(async () => {
+        const { supabase } = await import('@/supabase/client');
+        
+        const { data } = await supabase
+          .from('products')
+          .select('image, additional_images')
+          .ilike('title', '%slider%')
+          .limit(10);
+        
+        if (data?.length) {
+          setSelectedProduct(prev => ({ ...prev, ...data[0] }));
+          setSelectedImage(0);
         }
-      } else {
-        console.log('No products found, using original product:', product);
-        setSelectedProduct(product);
-      }
+      }, 200);
+      
+      // Stage 3: Load remaining data
+      setTimeout(async () => {
+        const { supabase } = await import('@/supabase/client');
+        
+        const { data } = await supabase
+          .from('products')
+          .select('warranty, help_text, help_image_url')
+          .ilike('title', '%slider%')
+          .limit(10);
+        
+        if (data?.length) {
+          setSelectedProduct(prev => ({ ...prev, ...data[0] }));
+        }
+      }, 400);
       
     } catch (error) {
-      console.error('Failed to load slider curtain products:', error);
-    } finally {
-      setDynamicLoading(false);
+      console.error('Load error:', error);
     }
   };
   const [showInstallationSetup, setShowInstallationSetup] = useState(false);
@@ -259,12 +256,16 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       src={allImages[selectedImage]}
                       alt={selectedProduct?.title || selectedProduct?.display_name || product.name}
                       className="w-full h-full object-cover rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-500">No image available</span>
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`w-full h-full bg-gray-100 rounded-lg flex flex-col items-center justify-center ${allImages.length > 0 ? 'hidden' : ''}`}>
+                    <div className="w-12 h-12 bg-gray-200 rounded-lg mb-3 animate-pulse"></div>
+                    <span className="text-gray-400 text-sm">Loading image...</span>
+                  </div>
                 </div>
                 
                 {/* Mobile Navigation Arrows */}
@@ -313,7 +314,9 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                           src={image} 
                           alt={`${product.name} ${index + 1}`} 
                           className="w-full h-full object-cover"
-
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       </button>
                     ))}

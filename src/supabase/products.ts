@@ -1,5 +1,6 @@
 import { supabase } from './client'
 import { Product, ProductVariant, ProductColor, ProductImage } from './types'
+import { validateId } from '../utils/sanitize'
 
 export const productService = {
   async getProducts(categoryId?: string, subcategoryId?: string) {
@@ -14,8 +15,11 @@ export const productService = {
       `)
       .order('position')
     
-    if (categoryId) query = query.eq('category_id', categoryId)
-    if (subcategoryId) query = query.eq('subcategory_id', subcategoryId)
+    const validCategoryId = validateId(categoryId)
+    const validSubcategoryId = validateId(subcategoryId)
+    
+    if (validCategoryId) query = query.eq('category_id', validCategoryId)
+    if (validSubcategoryId) query = query.eq('subcategory_id', validSubcategoryId)
     
     const { data, error } = await query
     if (error) throw error
@@ -23,6 +27,9 @@ export const productService = {
   },
 
   async getProduct(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid product ID')
+    
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -33,7 +40,7 @@ export const productService = {
         product_colors(*),
         product_images(*)
       `)
-      .eq('id', id)
+      .eq('id', validId)
       .single()
     
     if (error) throw error
@@ -52,10 +59,13 @@ export const productService = {
   },
 
   async updateProduct(id: string, productData: Partial<Product>) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid product ID')
+    
     const { data, error } = await supabase
       .from('products')
       .update({ ...productData, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single()
     
@@ -64,10 +74,13 @@ export const productService = {
   },
 
   async deleteProduct(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid product ID')
+    
     const { error } = await supabase
       .from('products')
       .delete()
-      .eq('id', id)
+      .eq('id', validId)
     
     if (error) throw error
     return true
@@ -75,10 +88,13 @@ export const productService = {
 
   // Variants
   async getVariants(productId: string) {
+    const validProductId = validateId(productId)
+    if (!validProductId) throw new Error('Invalid product ID')
+    
     const { data, error } = await supabase
       .from('product_variants')
       .select('*')
-      .eq('product_id', productId)
+      .eq('product_id', validProductId)
       .eq('is_active', true)
       .order('position')
     
@@ -98,10 +114,13 @@ export const productService = {
   },
 
   async updateVariant(id: string, variantData: Partial<ProductVariant>) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid variant ID')
+    
     const { data, error } = await supabase
       .from('product_variants')
       .update({ ...variantData, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single()
     
@@ -110,10 +129,13 @@ export const productService = {
   },
 
   async deleteVariant(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid variant ID')
+    
     const { error } = await supabase
       .from('product_variants')
       .delete()
-      .eq('id', id)
+      .eq('id', validId)
     
     if (error) throw error
     return true
@@ -121,10 +143,13 @@ export const productService = {
 
   // Colors
   async getColors(productId: string) {
+    const validProductId = validateId(productId)
+    if (!validProductId) throw new Error('Invalid product ID')
+    
     const { data, error } = await supabase
       .from('product_colors')
       .select('*')
-      .eq('product_id', productId)
+      .eq('product_id', validProductId)
       .eq('is_active', true)
       .order('position')
     
@@ -144,10 +169,13 @@ export const productService = {
   },
 
   async updateColor(id: string, colorData: Partial<ProductColor>) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid color ID')
+    
     const { data, error } = await supabase
       .from('product_colors')
       .update({ ...colorData, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single()
     
@@ -156,10 +184,13 @@ export const productService = {
   },
 
   async deleteColor(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid color ID')
+    
     const { error } = await supabase
       .from('product_colors')
       .delete()
-      .eq('id', id)
+      .eq('id', validId)
     
     if (error) throw error
     return true
@@ -172,9 +203,13 @@ export const productService = {
       .select('*')
       .order('position')
     
-    if (productId) query = query.eq('product_id', productId)
-    if (variantId) query = query.eq('variant_id', variantId)
-    if (colorId) query = query.eq('color_id', colorId)
+    const validProductId = validateId(productId)
+    const validVariantId = validateId(variantId)
+    const validColorId = validateId(colorId)
+    
+    if (validProductId) query = query.eq('product_id', validProductId)
+    if (validVariantId) query = query.eq('variant_id', validVariantId)
+    if (validColorId) query = query.eq('color_id', validColorId)
     
     const { data, error } = await query
     if (error) throw error
@@ -193,10 +228,13 @@ export const productService = {
   },
 
   async deleteImage(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid image ID')
+    
     const { error } = await supabase
       .from('product_images')
       .delete()
-      .eq('id', id)
+      .eq('id', validId)
     
     if (error) throw error
     return true

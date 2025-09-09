@@ -1,5 +1,6 @@
 import { supabase } from './client'
 import { ProductCategory, ProductSubcategory } from './types'
+import { validateId } from '../utils/sanitize'
 
 export const categoryService = {
   async getCategories() {
@@ -25,10 +26,13 @@ export const categoryService = {
   },
 
   async updateCategory(id: string, categoryData: Partial<ProductCategory>) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid category ID')
+    
     const { data, error } = await supabase
       .from('product_categories')
       .update({ ...categoryData, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single()
     
@@ -37,10 +41,13 @@ export const categoryService = {
   },
 
   async deleteCategory(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid category ID')
+    
     const { error } = await supabase
       .from('product_categories')
       .delete()
-      .eq('id', id)
+      .eq('id', validId)
     
     if (error) throw error
     return true
@@ -53,8 +60,9 @@ export const categoryService = {
       .eq('is_active', true)
       .order('position')
     
-    if (categoryId) {
-      query = query.eq('category_id', categoryId)
+    const validCategoryId = validateId(categoryId)
+    if (validCategoryId) {
+      query = query.eq('category_id', validCategoryId)
     }
     
     const { data, error } = await query
@@ -74,10 +82,13 @@ export const categoryService = {
   },
 
   async updateSubcategory(id: string, subcategoryData: Partial<ProductSubcategory>) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid subcategory ID')
+    
     const { data, error } = await supabase
       .from('product_subcategories')
       .update({ ...subcategoryData, updated_at: new Date().toISOString() })
-      .eq('id', id)
+      .eq('id', validId)
       .select()
       .single()
     
@@ -86,10 +97,13 @@ export const categoryService = {
   },
 
   async deleteSubcategory(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid subcategory ID')
+    
     const { error } = await supabase
       .from('product_subcategories')
       .delete()
-      .eq('id', id)
+      .eq('id', validId)
     
     if (error) throw error
     return true
@@ -119,10 +133,13 @@ export const categoryService = {
   },
 
   async deleteCategoryImage(id: string) {
+    const validId = validateId(id)
+    if (!validId) throw new Error('Invalid image ID')
+    
     const { error } = await supabase
       .from('category_images')
       .delete()
-      .eq('id', id)
+      .eq('id', validId)
     
     if (error) throw error
     return true
