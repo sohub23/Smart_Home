@@ -75,7 +75,7 @@ export function FanSwitchModal({ open, onOpenChange, product, onAddToCart, onBuy
       
       const { data } = await supabase
         .from('products')
-        .select('id, title, display_name, price, image, variants, overview, technical_details, warranty')
+        .select('id, title, display_name, price, image, image2, image3, image4, image5, additional_images, variants, overview, technical_details, warranty')
         .ilike('title', '%fan%')
         .limit(10);
       
@@ -114,23 +114,30 @@ export function FanSwitchModal({ open, onOpenChange, product, onAddToCart, onBuy
   const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
   const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
   
-  // Parse additional images from database
-  let additionalImages = [];
-  try {
-    if (currentProductData?.additional_images) {
-      additionalImages = typeof currentProductData.additional_images === 'string' 
-        ? JSON.parse(currentProductData.additional_images)
-        : currentProductData.additional_images;
+  // Get all available images from current product (similar to other modals)
+  const getProductImages = (productData) => {
+    if (!productData) return [];
+    
+    const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5].filter(Boolean);
+    
+    // Add additional images if they exist
+    if (productData.additional_images) {
+      try {
+        const additionalImages = typeof productData.additional_images === 'string' 
+          ? JSON.parse(productData.additional_images) 
+          : productData.additional_images;
+        if (Array.isArray(additionalImages)) {
+          images.push(...additionalImages.filter(Boolean));
+        }
+      } catch (e) {
+        console.log('Failed to parse additional images:', e);
+      }
     }
-  } catch (e) {
-    console.log('Failed to parse additional images:', e);
-    additionalImages = [];
-  }
+    
+    return images;
+  };
   
-  const allImages = [
-    currentProductData?.image,
-    ...(Array.isArray(additionalImages) ? additionalImages : [])
-  ].filter(Boolean);
+  const allImages = getProductImages(currentProductData);
 
   const getCurrentPrice = () => {
     if (!currentProductData) return 0;

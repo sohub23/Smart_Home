@@ -77,6 +77,11 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
     }
   }, [selectedVariant]);
 
+  // Reset image index when product changes
+  useEffect(() => {
+    setSelectedImage(0);
+  }, [selectedProduct]);
+
   const loadLightSwitchProducts = async () => {
     setDynamicLoading(false); // Show UI immediately
     
@@ -85,7 +90,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       
       const { data } = await supabase
         .from('products')
-        .select('id, title, display_name, price, image, variants')
+        .select('id, title, display_name, price, image, image2, image3, image4, image5, additional_images, variants')
         .ilike('title', '%gang%')
         .limit(10);
       
@@ -148,23 +153,40 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
     return selectedProduct?.image || selectedProduct?.image2 || selectedProduct?.image3 || selectedProduct?.image4 || selectedProduct?.image5;
   };
   
-  // Parse additional images from database
-  let additionalImages = [];
-  try {
-    if (selectedProduct?.additional_images) {
-      additionalImages = typeof selectedProduct.additional_images === 'string' 
-        ? JSON.parse(selectedProduct.additional_images)
-        : selectedProduct.additional_images;
-    }
-  } catch (e) {
-    console.log('Failed to parse additional images:', sanitizeForLog(e));
-    additionalImages = [];
-  }
+
   
-  const allImages = [
-    selectedProduct?.image,
-    ...(Array.isArray(additionalImages) ? additionalImages : [])
-  ].filter(Boolean);
+  // Get all available images from selected product (similar to SmartSecurityBoxModal)
+  const getProductImages = (productData) => {
+    if (!productData) return [];
+    
+    const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5].filter(Boolean);
+    
+    // Add additional images if they exist
+    if (productData.additional_images) {
+      try {
+        const additionalImages = typeof productData.additional_images === 'string' 
+          ? JSON.parse(productData.additional_images) 
+          : productData.additional_images;
+        if (Array.isArray(additionalImages)) {
+          images.push(...additionalImages.filter(Boolean));
+        }
+      } catch (e) {
+        console.log('Failed to parse additional images:', e);
+      }
+    }
+    
+    return images;
+  };
+  
+  const allImages = getProductImages(selectedProduct);
+  
+  console.log('Image debug:', {
+    selectedProductId: selectedProduct?.id,
+    hasAdditionalImages: !!selectedProduct?.additional_images,
+    additionalImagesRaw: selectedProduct?.additional_images,
+    totalImages: allImages.length,
+    allImages: allImages
+  });
 
   const engravingPrice = engravingText && (selectedProduct?.engraving_price || currentProductData.engraving_price) ? (selectedProduct?.engraving_price || currentProductData.engraving_price) * quantity : 0;
   const totalPrice = (currentPrice * quantity) + engravingPrice;
@@ -568,7 +590,6 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                         if (isAvailable && gangProduct) {
                           setSelectedGang(gang);
                           setSelectedProduct(gangProduct);
-                          setSelectedImage(0);
                         }
                       }}
                     >

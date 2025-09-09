@@ -134,7 +134,8 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
     const qty = accessoryQuantities[index] || 1;
     return sum + (Number(accessory?.price) || 0) * qty;
   }, 0);
-  const totalPrice = accessoryTotal;
+  const installationPrice = installationSelected ? 0 : 0; // TBD price
+  const totalPrice = accessoryTotal + installationPrice;
 
   const toggleAccessory = (index: number) => {
     const currentQty = accessoryQuantities[index] || 0;
@@ -148,10 +149,10 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
   };
 
   const handleAddToCart = async () => {
-    if (selectedAccessories.length === 0) {
+    if (selectedAccessories.length === 0 && !installationSelected) {
       toast({
-        title: "No Sensors Selected",
-        description: "Please select at least one sensor to add to cart.",
+        title: "No Items Selected",
+        description: "Please select at least one sensor or installation service.",
         variant: "destructive"
       });
       return;
@@ -176,6 +177,19 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
         }
       });
       
+      // Add installation service if selected
+      if (installationSelected && addToCart) {
+        addToCart({
+          id: `installation_${Date.now()}`,
+          name: 'Professional Installation Service',
+          price: 0, // TBD price
+          category: 'Installation Service',
+          image: '/images/services/services.png',
+          color: 'Service',
+          quantity: 1
+        });
+      }
+      
       // Force cart update
       setTimeout(() => {
         if (typeof window !== 'undefined') {
@@ -183,15 +197,16 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
         }
       }, 100);
       
+      const itemCount = selectedAccessories.length + (installationSelected ? 1 : 0);
       toast({
         title: "Added to Bag",
-        description: `${selectedAccessories.length} sensor(s) added to your bag.`,
+        description: `${itemCount} item(s) added to your bag.`,
       });
       onOpenChange(false);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to add sensors to bag. Please try again.",
+        description: "Failed to add items to bag. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -297,11 +312,11 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-base text-gray-900">
-                    {totalPrice > 0 ? `${totalPrice.toLocaleString()} BDT` : 'Select sensors'}
+                    {totalPrice > 0 || installationSelected ? `${totalPrice.toLocaleString()} BDT` : 'Select items'}
                   </span>
-                  {totalPrice > 0 && (
+                  {(totalPrice > 0 || installationSelected) && (
                     <span className="text-sm text-green-600 font-semibold">
-                      {selectedAccessories.length} sensor(s) selected
+                      {selectedAccessories.length + (installationSelected ? 1 : 0)} item(s) selected
                     </span>
                   )}
                 </div>
@@ -456,7 +471,7 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
           <div className="fixed bottom-0 left-0 right-0 lg:right-0 lg:left-auto lg:w-[600px] bg-white border-t lg:border-l border-gray-200 p-3 lg:p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
-              disabled={loading || selectedAccessories.length === 0}
+              disabled={loading || (selectedAccessories.length === 0 && !installationSelected)}
               className="w-full h-10 lg:h-12 text-sm lg:text-base font-bold text-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] uppercase tracking-wide"
               style={{ backgroundColor: '#7e8898' }}
             >
@@ -469,7 +484,7 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
                   </svg>
                   Adding to bag...
                 </span>
-              ) : selectedAccessories.length === 0 ? 'Add to bag' : (
+              ) : (selectedAccessories.length === 0 && !installationSelected) ? 'Add to bag' : (
                 <span className="flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
