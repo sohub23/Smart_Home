@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
 import { BuyNowModal } from "@/components/ui/BuyNowModal";
-import { SliderCurtainModal } from "@/components/ui/SliderCurtainModal";
-import { RollerCurtainModal } from "@/components/ui/RollerCurtainModal";
+import { SliderCurtainModal } from "@/components/ui/SliderCurtainModal_new";
+import { RollerCurtainModal } from "@/components/ui/RollerCurtainModal_new";
 import { PDLCFilmModal } from "@/components/ui/PDLCFilmModal";
 import { SohubProtectModal } from "@/components/ui/SohubProtectModal";
 import { SmartSecurityBoxModal } from "@/components/ui/SmartSecurityBoxModal";
@@ -36,6 +36,7 @@ import { SaveEmailModal } from "@/components/ui/SaveEmailModal";
 import { Mail, Printer } from "lucide-react";
 import { sanitizeForLog, sanitizeString } from "@/utils/sanitize";
 import { useMemo, useCallback } from "react";
+import { emailService } from "@/supabase/email";
 
 interface Product {
     id: string;
@@ -321,6 +322,17 @@ function InteractiveCheckout({
             console.log('Submitting order with customer:', sanitizeForLog(validatedOrderData.customer_name));
             const createdOrder = await orderService.createOrder(validatedOrderData);
             console.log('Order created with ID:', sanitizeForLog(createdOrder?.id || 'unknown'));
+            
+            // Send email notifications
+            try {
+                await emailService.sendOrderConfirmation({
+                    ...validatedOrderData,
+                    order_number: createdOrder.order_number
+                });
+                console.log('Order confirmation emails sent');
+            } catch (emailError) {
+                console.error('Failed to send confirmation emails:', emailError);
+            }
             
             if (!createdOrder) {
                 throw new Error('Order creation failed - no data returned');
@@ -619,26 +631,29 @@ function InteractiveCheckout({
 
 
 
-    // Auto-select category based on scroll position (desktop/iPhone only)
+    // Auto-select category based on scroll position
     useEffect(() => {
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        if (isAndroid) return;
-        
         const handleScroll = () => {
             if (isManualSelection) return;
             
             const container = document.querySelector('.products-scroll-container');
             if (!container) return;
             
-            const scrollTop = container.scrollTop + 200;
+            const scrollTop = container.scrollTop + 100;
+            let foundCategory = null;
             
-            for (const group of allProductsByCategory) {
+            // Find the category that's currently in view
+            for (let i = allProductsByCategory.length - 1; i >= 0; i--) {
+                const group = allProductsByCategory[i];
                 const element = document.getElementById(`category-${group.category.replace(/\s+/g, '-')}`);
                 if (element && scrollTop >= element.offsetTop) {
-                    if (activeCategory !== group.category) {
-                        setActiveCategory(group.category);
-                    }
+                    foundCategory = group.category;
+                    break;
                 }
+            }
+            
+            if (foundCategory && activeCategory !== foundCategory) {
+                setActiveCategory(foundCategory);
             }
         };
 
@@ -847,12 +862,9 @@ function InteractiveCheckout({
                             {/* Section Title - Always Show */}
                             <div className="mb-3 lg:mb-6 px-0 lg:px-4">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-lg lg:text-2xl font-bold text-gray-900 border-b-2 border-green-500 pb-1 lg:pb-2 inline-block">
+                                    <h2 className="font-bold text-gray-900 border-b-2 border-green-500 pb-1 lg:pb-2 inline-block" style={{ fontSize: '20px' }}>
                                         {categoryGroup.category}
                                     </h2>
-                                    <p className="text-xs lg:text-sm text-gray-600 italic">
-                                        {categoryGroup.products.length} products available
-                                    </p>
                                 </div>
                             </div>
 

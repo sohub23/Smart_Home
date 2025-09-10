@@ -47,7 +47,7 @@ const ProblemSolutionSection = () => {
                 className="group relative"
               >
                 {/* Card */}
-                <div className="relative bg-white rounded-2xl p-8 md:p-10 border border-gray-100 hover:border-gray-200 transition-all duration-500 hover:shadow-xl hover:shadow-gray-100/50">
+                <div className="relative bg-white rounded-2xl p-8 md:p-10 border border-gray-100 hover:border-gray-200 transition-all duration-500 hover:shadow-xl hover:shadow-gray-100/50 h-64 md:h-72">
                   {/* Background Gradient */}
                   <div className="absolute inset-0 rounded-2xl bg-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   
@@ -74,12 +74,7 @@ const ProblemSolutionSection = () => {
           })}
         </div>
 
-        {/* Bottom Section */}
-        <div className="text-center mt-16 md:mt-20 px-4">
-          <div className="inline-flex items-center justify-center px-8 md:px-10 py-4 bg-black text-white rounded-full text-base md:text-lg font-medium hover:bg-gray-800 transition-colors duration-300 cursor-pointer">
-            Experience #BuiltForComfort Today
-          </div>
-        </div>
+
       </div>
     </section>
   );

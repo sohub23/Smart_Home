@@ -97,40 +97,40 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-8">
             <button 
               onClick={() => handleNavigation('specs')}
-              className={`transition-colors font-medium hover:text-gray-900 ${
-                activeSection === 'specs' ? 'text-black font-bold' : 'text-gray-600'
+              className={`transition-colors hover:text-black text-black ${
+                activeSection === 'specs' ? 'font-bold' : 'font-medium'
               }`}
             >
               Specs
             </button>
             <button 
               onClick={() => handleNavigation('sohub-protect')}
-              className={`transition-colors font-medium hover:text-gray-900 ${
-                activeSection === 'sohub-protect' ? 'text-black font-bold' : 'text-gray-600'
+              className={`transition-colors hover:text-black text-black ${
+                activeSection === 'sohub-protect' ? 'font-bold' : 'font-medium'
               }`}
             >
               Sohub Protect
             </button>
             <button 
               onClick={() => handleNavigation('gallery')}
-              className={`transition-colors font-medium hover:text-gray-900 ${
-                activeSection === 'gallery' ? 'text-black font-bold' : 'text-gray-600'
+              className={`transition-colors hover:text-black text-black ${
+                activeSection === 'gallery' ? 'font-bold' : 'font-medium'
               }`}
             >
               Gallery
             </button>
             <button 
               onClick={() => handleNavigation('faq')}
-              className={`transition-colors font-medium hover:text-gray-900 ${
-                activeSection === 'faq' ? 'text-black font-bold' : 'text-gray-600'
+              className={`transition-colors hover:text-black text-black ${
+                activeSection === 'faq' ? 'font-bold' : 'font-medium'
               }`}
             >
               FAQ
             </button>
             <button 
               onClick={() => navigate('/built-for-comfort')}
-              className={`transition-colors font-medium hover:text-gray-900 ${
-                location.pathname === '/built-for-comfort' ? 'text-black font-bold' : 'text-gray-600'
+              className={`transition-colors hover:text-black text-black ${
+                location.pathname === '/built-for-comfort' ? 'font-bold' : 'font-medium'
               }`}
             >
               #BuiltForComfort
@@ -170,25 +170,25 @@ const Navigation = () => {
             <div className="px-4 py-4 space-y-4">
               <button 
                 onClick={() => handleNavigation('specs')}
-                className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 font-medium"
+                className="block w-full text-left py-2 text-black hover:text-black font-medium"
               >
                 Specs
               </button>
               <button 
                 onClick={() => handleNavigation('sohub-protect')}
-                className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 font-medium"
+                className="block w-full text-left py-2 text-black hover:text-black font-medium"
               >
                 Sohub Protect
               </button>
               <button 
                 onClick={() => handleNavigation('gallery')}
-                className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 font-medium"
+                className="block w-full text-left py-2 text-black hover:text-black font-medium"
               >
                 Gallery
               </button>
               <button 
                 onClick={() => handleNavigation('faq')}
-                className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 font-medium"
+                className="block w-full text-left py-2 text-black hover:text-black font-medium"
               >
                 FAQ
               </button>
@@ -197,7 +197,7 @@ const Navigation = () => {
                   setIsMobileMenuOpen(false);
                   navigate('/built-for-comfort');
                 }}
-                className="block w-full text-left py-2 text-gray-600 hover:text-gray-900 font-medium"
+                className="block w-full text-left py-2 text-black hover:text-black font-medium"
               >
                 #BuiltForComfort
               </button>

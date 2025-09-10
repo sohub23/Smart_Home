@@ -344,15 +344,20 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-base text-gray-900">
-                    {currentPrice.toLocaleString()} BDT
+                    {totalQuantity > 1 ? `${totalWithInstallation.toLocaleString()} BDT` : `${currentPrice.toLocaleString()} BDT`}
                   </span>
+                  {totalQuantity > 1 && (
+                    <span className="text-xs text-gray-500">
+                      ({currentPrice.toLocaleString()} BDT × {totalQuantity})
+                    </span>
+                  )}
                   {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
                     <>
                       <span className="text-xs text-gray-500 line-through">
-                        {selectedVariant.price.toLocaleString()} BDT
+                        {(selectedVariant.price * totalQuantity).toLocaleString()} BDT
                       </span>
                       <span className="text-xs text-green-600 font-medium">
-                        Save {(selectedVariant.price - selectedVariant.discount_price).toLocaleString()} BDT
+                        Save {((selectedVariant.price - selectedVariant.discount_price) * totalQuantity).toLocaleString()} BDT
                       </span>
                     </>
                   )}

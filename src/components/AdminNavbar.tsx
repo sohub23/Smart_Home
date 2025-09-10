@@ -102,9 +102,12 @@ const AdminNavbar = () => {
                     <UserCog className="w-4 h-4 mr-3 text-[#0a1d3a]" />
                     <span className="text-sm font-medium">Profile Settings</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer px-4 py-2">
+                  <DropdownMenuItem 
+                    className="cursor-pointer px-4 py-2"
+                    onClick={() => navigate('/admin/email-settings')}
+                  >
                     <Settings className="w-4 h-4 mr-3 text-gray-600" />
-                    <span className="text-sm font-medium">System Settings</span>
+                    <span className="text-sm font-medium">Email Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer px-4 py-2">
                     <Key className="w-4 h-4 mr-3 text-orange-600" />

@@ -1,4 +1,5 @@
 import { Component as ImageAutoSlider } from '@/components/ui/image-auto-slider';
+import everyDetailBanner from '@/assets/every_detail.png';
 
 const AutoGallerySection = () => {
   return (
@@ -9,9 +10,16 @@ const AutoGallerySection = () => {
           <h2 className="text-headline text-primary mb-4">
             Every Detail Matters
           </h2>
-          <p className="text-body-large text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-body-large text-muted-foreground max-w-2xl mx-auto mb-6">
             Explore our complete smart home solutions - from automated curtains and PDLC film technology to comprehensive SOHUB Protect security systems.
           </p>
+          <div className="w-full">
+            <img
+              src={everyDetailBanner}
+              alt="Every Detail Matters Banner"
+              className="w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
         </div>
 
         {/* Auto Slider */}

@@ -27,6 +27,9 @@ import AdminCategoriesSimple from "./pages/AdminCategoriesSimple";
 import TestEnhanced from "./pages/TestEnhanced";
 import AdminConnectionTest from "./pages/AdminConnectionTest";
 import CategoryProducts from "./pages/CategoryProducts";
+import AdminEmailSettings from "./pages/AdminEmailSettings";
+import SetupEmailTables from "./pages/SetupEmailTables";
+import TestEmail from "./pages/TestEmail";
 import SetupDatabase from "./pages/SetupDatabase";
 import SetupStorage from "./pages/SetupStorage";
 import UpdateProductSchema from "./pages/UpdateProductSchema";
@@ -65,6 +68,9 @@ const App = () => (
           <Route path="/admin/products-test" element={<ProtectedRoute><AdminProductsTest /></ProtectedRoute>} />
           <Route path="/admin/categories-enhanced" element={<ProtectedRoute><AdminCategoriesEnhanced /></ProtectedRoute>} />
           <Route path="/admin/connection-test" element={<ProtectedRoute><AdminConnectionTest /></ProtectedRoute>} />
+          <Route path="/admin/email-settings" element={<ProtectedRoute><AdminEmailSettings /></ProtectedRoute>} />
+          <Route path="/setup-email-tables" element={<SetupEmailTables />} />
+          <Route path="/test-email" element={<TestEmail />} />
           <Route path="/setup-database" element={<SetupDatabase />} />
           <Route path="/setup-storage" element={<SetupStorage />} />
           <Route path="/update-schema" element={<UpdateProductSchema />} />
