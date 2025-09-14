@@ -68,12 +68,12 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       title: '1 Gang Light Switch',
       display_name: '1 Gang Mechanical Switch',
       price: 3500,
-      image: 'src/assets/light_switch/mechanical_switch/mechanical1.jpg',
-      image2: 'src/assets/light_switch/mechanical_switch/mechanical2.jpg',
-      image3: 'src/assets/light_switch/mechanical_switch/mechanical3.jpg',
-      image4: 'src/assets/light_switch/mechanical_switch/mechanical4.jpg',
-      image5: 'src/assets/light_switch/mechanical_switch/mechanical5.jpg',
-      image6: 'src/assets/light_switch/mechanical_switch/mechanical6.jpg',
+      image: 'src/assets/light_switch/light_1.jpg',
+      image2: 'src/assets/light_switch/light2.jpg',
+      image3: 'src/assets/light_switch/light3.jpg',
+      image4: 'src/assets/light_switch/light4.jpg',
+      image5: 'src/assets/light_switch/light5.jpg',
+      image6: 'src/assets/light_switch/light6.jpg',
       variants: JSON.stringify([{ price: 3500, discount_price: 0 }]),
       help_text: 'Perfect for single light control',
       engraving_available: true,
@@ -84,12 +84,12 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       title: '2 Gang Light Switch',
       display_name: '2 Gang Mechanical Switch',
       price: 3800,
-      image: 'src/assets/light_switch/mechanical_switch/mechanical1.jpg',
-      image2: 'src/assets/light_switch/mechanical_switch/mechanical2.jpg',
-      image3: 'src/assets/light_switch/mechanical_switch/mechanical3.jpg',
-      image4: 'src/assets/light_switch/mechanical_switch/mechanical4.jpg',
-      image5: 'src/assets/light_switch/mechanical_switch/mechanical5.jpg',
-      image6: 'src/assets/light_switch/mechanical_switch/mechanical6.jpg',
+      image: 'src/assets/light_switch/light_1.jpg',
+      image2: 'src/assets/light_switch/light2.jpg',
+      image3: 'src/assets/light_switch/light3.jpg',
+      image4: 'src/assets/light_switch/light4.jpg',
+      image5: 'src/assets/light_switch/light5.jpg',
+      image6: 'src/assets/light_switch/light6.jpg',
       variants: JSON.stringify([{ price: 3800, discount_price: 0 }]),
       help_text: 'Control two lights independently',
       engraving_available: true,
@@ -100,12 +100,12 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       title: '3 Gang Light Switch',
       display_name: '3 Gang Mechanical Switch',
       price: 4000,
-      image: 'src/assets/light_switch/mechanical_switch/mechanical1.jpg',
-      image2: 'src/assets/light_switch/mechanical_switch/mechanical2.jpg',
-      image3: 'src/assets/light_switch/mechanical_switch/mechanical3.jpg',
-      image4: 'src/assets/light_switch/mechanical_switch/mechanical4.jpg',
-      image5: 'src/assets/light_switch/mechanical_switch/mechanical5.jpg',
-      image6: 'src/assets/light_switch/mechanical_switch/mechanical6.jpg',
+      image: 'src/assets/light_switch/light_1.jpg',
+      image2: 'src/assets/light_switch/light2.jpg',
+      image3: 'src/assets/light_switch/light3.jpg',
+      image4: 'src/assets/light_switch/light4.jpg',
+      image5: 'src/assets/light_switch/light5.jpg',
+      image6: 'src/assets/light_switch/light6.jpg',
       variants: JSON.stringify([{ price: 4000, discount_price: 0 }]),
       help_text: 'Control three lights independently',
       engraving_available: true,
@@ -166,8 +166,8 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
     
     const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5, productData.image6].filter(Boolean);
     
-    // Add mechanical switch video as first item
-    images.unshift('src/assets/light_switch/mechanical_switch/video.mp4');
+    // Add light switch video as first item (fallback)
+    images.unshift('src/assets/light_switch/video.mp4');
     
     // Add additional images if they exist
     if (productData.additional_images) {
@@ -592,14 +592,14 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                         }}
                       >
                         <img 
-                          src={`src/assets/light_switch/mechanical_switch/${gangNumber === '1' ? '1gang' : gangNumber + ' gang'}.png`}
+                          src={`src/assets/light_switch/${gangNumber}gang.png`}
                           alt={`${gangNumber} Gang Switch`}
                           className="w-full h-full object-cover"
                         />
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedGangImage(`src/assets/light_switch/mechanical_switch/${gangNumber === '1' ? '1gang' : gangNumber + ' gang'}.png`);
+                            setSelectedGangImage(`src/assets/light_switch/${gangNumber}gang.png`);
                             setSelectedGangTitle(`Variations: ${gangNumber} Gang`);
                             setImageModalOpen(true);
                           }}
