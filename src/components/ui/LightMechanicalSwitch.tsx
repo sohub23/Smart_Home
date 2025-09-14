@@ -73,7 +73,6 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       image3: 'src/assets/light_switch/light3.jpg',
       image4: 'src/assets/light_switch/light4.jpg',
       image5: 'src/assets/light_switch/light5.jpg',
-      image6: 'src/assets/light_switch/light6.jpg',
       variants: JSON.stringify([{ price: 3500, discount_price: 0 }]),
       help_text: 'Perfect for single light control',
       engraving_available: true,
@@ -89,7 +88,6 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       image3: 'src/assets/light_switch/light3.jpg',
       image4: 'src/assets/light_switch/light4.jpg',
       image5: 'src/assets/light_switch/light5.jpg',
-      image6: 'src/assets/light_switch/light6.jpg',
       variants: JSON.stringify([{ price: 3800, discount_price: 0 }]),
       help_text: 'Control two lights independently',
       engraving_available: true,
@@ -105,7 +103,6 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       image3: 'src/assets/light_switch/light3.jpg',
       image4: 'src/assets/light_switch/light4.jpg',
       image5: 'src/assets/light_switch/light5.jpg',
-      image6: 'src/assets/light_switch/light6.jpg',
       variants: JSON.stringify([{ price: 4000, discount_price: 0 }]),
       help_text: 'Control three lights independently',
       engraving_available: true,
@@ -164,7 +161,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const getProductImages = (productData) => {
     if (!productData) return [];
     
-    const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5, productData.image6].filter(Boolean);
+    const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5].filter(Boolean);
     
     // Add light switch video as first item (fallback)
     images.unshift('src/assets/light_switch/video.mp4');
