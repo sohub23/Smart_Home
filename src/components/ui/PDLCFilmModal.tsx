@@ -128,6 +128,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
   }
   
   const allImages = [
+    'https://www.youtube.com/watch?v=iSN4hiNOeR8',
     selectedProduct?.image || currentProductData.image,
     ...(Array.isArray(additionalImages) ? additionalImages : [])
   ].filter(Boolean);
@@ -236,7 +237,17 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
               {/* Main Product Image */}
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square p-2">
-                  {allImages.length > 0 ? (
+                  {allImages[selectedImage]?.includes('youtube.com') ? (
+                    <div className="w-full h-full relative rounded-lg overflow-hidden bg-black">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${allImages[selectedImage].split('v=')[1]?.split('&')[0]}?autoplay=1&mute=1`}
+                        className="w-full h-full"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : allImages.length > 0 ? (
                     <img
                       src={allImages[selectedImage]}
                       alt={selectedProduct?.title || selectedProduct?.display_name || product.name}
@@ -291,19 +302,35 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                         key={index}
                         onClick={() => setSelectedImage(index)}
                         className={cn(
-                          "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200",
+                          "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 relative",
                           selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
                         )}
                       >
-                        <img 
-                          src={image} 
-                          alt={`${selectedProduct?.title || selectedProduct?.name || product.name} ${index + 1}`} 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/images/smart_switch/3 gang mechanical.webp';
-                          }}
-                        />
+                        {image?.includes('youtube.com') ? (
+                          <div className="w-full h-full bg-black flex items-center justify-center relative">
+                            <iframe
+                              src={`https://www.youtube.com/embed/${image.split('v=')[1]?.split('&')[0]}?autoplay=1&mute=1`}
+                              className="w-full h-full scale-150"
+                              frameBorder="0"
+                              style={{ pointerEvents: 'none' }}
+                            />
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        ) : (
+                          <img 
+                            src={image} 
+                            alt={`${selectedProduct?.title || selectedProduct?.name || product.name} ${index + 1}`} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/images/smart_switch/3 gang mechanical.webp';
+                            }}
+                          />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -323,7 +350,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
             {/* Top Section */}
             <div className="mb-6">
               {!isLoading && selectedProduct ? (
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
+                <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
                   {selectedProduct.title || selectedProduct.display_name || selectedProduct.name}
                 </h1>
               ) : (
@@ -332,12 +359,12 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
               
               {/* Price Section */}
               {currentPrice && currentPrice > 0 && (
-                <div className="mb-4">
-                  <div className="flex items-baseline gap-3 mb-2">
-                    <span className="text-base text-gray-900">
+                <div className="mb-5">
+                  <div className="flex items-baseline gap-4 mb-3">
+                    <span className="text-lg lg:text-xl font-bold text-black">
                       {currentPrice.toLocaleString()} BDT
                     </span>
-                    <span className="text-xs text-gray-500">per sq ft</span>
+                    <span className="text-base text-gray-600 font-medium">per sq ft</span>
                     {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
                       <>
                         <span className="text-xs text-gray-500 line-through">
@@ -352,6 +379,17 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                 </div>
               )}
               
+              {/* Important Notes */}
+              <div className="text-xs text-gray-700 font-medium space-y-1 mb-6">
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-400 font-bold">*</span>
+                  <span className="font-bold">Requires transformer based on film size</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-400 font-bold">*</span>
+                  <span className="font-bold">1-year warranty on transformer only</span>
+                </div>
+              </div>
 
             </div>
 
@@ -359,30 +397,30 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
             <div className="mb-4">
               <Accordion type="single" collapsible className="w-full border-t border-b border-gray-200">
                 <AccordionItem value="details" className="border-none">
-                  <AccordionTrigger className="text-left text-sm font-semibold no-underline hover:no-underline py-3">Product description</AccordionTrigger>
+                  <AccordionTrigger className="text-left text-lg font-bold text-gray-900 no-underline hover:no-underline py-2">Product Description</AccordionTrigger>
                   <AccordionContent className="pb-2">
                     <div className="border-b border-gray-200">
                       <div className="flex space-x-8">
                         <button 
                           onClick={() => setActiveTab('benefits')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'benefits' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'benefits' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Overview
                         </button>
                         <button 
                           onClick={() => setActiveTab('bestfor')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'bestfor' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'bestfor' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Technical Details
                         </button>
                         <button 
                           onClick={() => setActiveTab('bonuses')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'bonuses' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'bonuses' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Warranty
@@ -463,7 +501,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
 
             {/* Glass Panel Configuration */}
             <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Glass Panel Configuration</h3>
+              <h3 className="text-base font-bold text-gray-900 mb-3">Glass Panel Configuration</h3>
               <div className="space-y-4">
                 {dimensions.map((dim, index) => (
                   <div key={index} className="p-4 border border-gray-200 rounded-xl bg-gray-50">
@@ -516,9 +554,9 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                               newDimensions[index].quantity = Math.max(1, newDimensions[index].quantity - 1);
                               setDimensions(newDimensions);
                             }}
-                            className="w-7 h-7 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                            className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                           >
-                            <Minus className="w-3 h-3" />
+                            <Minus className="w-2.5 h-2.5" />
                           </button>
                           <span className="text-sm font-semibold text-gray-900 min-w-[1.5rem] text-center">
                             {dim.quantity || 1}
@@ -529,9 +567,9 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                               newDimensions[index].quantity = Math.min(10, (newDimensions[index].quantity || 1) + 1);
                               setDimensions(newDimensions);
                             }}
-                            className="w-7 h-7 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                            className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                           >
-                            <Plus className="w-3 h-3" />
+                            <Plus className="w-2.5 h-2.5" />
                           </button>
                         </div>
                       </div>
@@ -580,7 +618,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
 
             {/* Installation and setup */}
             <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Installation and setup</h3>
+              <h3 className="text-base font-bold text-gray-900 mb-4">Installation and setup</h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <input 
@@ -660,52 +698,86 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
       
       {/* Help Modal */}
       <Dialog open={helpModalOpen} onOpenChange={setHelpModalOpen}>
-        <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
-          {/* Close Button */}
-          <button 
-            onClick={() => setHelpModalOpen(false)}
-            className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
-          >
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          
-          {/* Product Image */}
-          <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
-            {(selectedProduct?.help_image_url || allImages[0]) ? (
-              <img
-                src={selectedProduct?.help_image_url || allImages[0]}
-                alt={selectedProduct?.name || product.name}
-                className="w-32 h-32 object-cover rounded-lg"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/images/smart_switch/3 gang mechanical.webp';
-                }}
-              />
-            ) : (
-              <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-500 text-sm">No image</span>
+        <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0 overflow-hidden">
+          {/* Header */}
+          <div style={{ backgroundColor: '#7e8898' }} className="px-6 py-4 relative">
+            <button 
+              onClick={() => setHelpModalOpen(false)}
+              className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 flex items-center justify-center transition-all duration-200"
+            >
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
-            )}
+              <div>
+                <h2 className="text-lg font-bold text-white">Need Help Deciding?</h2>
+                <p className="text-white/80 text-xs">PDLC Film Guide</p>
+              </div>
+            </div>
           </div>
           
-          <div className="p-6">
-            {selectedProduct?.help_text ? (
-              <div 
-                className="prose prose-sm max-w-none text-sm text-gray-600 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: selectedProduct.help_text }}
-              />
-            ) : (
-              <div className="text-center">
-                <h2 className="text-xl font-bold text-gray-900 mb-2">
-                  Need help deciding?
-                </h2>
-                <p className="text-sm text-gray-600">
-                  Contact our team for personalized assistance.
-                </p>
+          <div className="p-5">
+            <p className="text-gray-600 mb-4 text-sm leading-relaxed">
+              PDLC (Polymer Dispersed Liquid Crystal) film transforms regular glass into smart glass:
+            </p>
+            
+            <div className="space-y-3">
+              <div className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#7e8898' }}>
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Privacy Control</h3>
+                  <p className="text-xs text-gray-600">Switch between transparent and opaque instantly</p>
+                </div>
               </div>
-            )}
+              
+              <div className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#7e8898' }}>
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Transformer Required</h3>
+                  <p className="text-xs text-gray-600">Size depends on total film area</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#7e8898' }}>
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Custom Sizing</h3>
+                  <p className="text-xs text-gray-600">Measured in square feet for precise fit</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#7e8898' }}>
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Professional Installation</h3>
+                  <p className="text-xs text-gray-600">Expert setup for optimal performance</p>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

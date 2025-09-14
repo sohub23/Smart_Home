@@ -57,52 +57,68 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const [gangImageIndex, setGangImageIndex] = useState(0);
   const [selectedColor, setSelectedColor] = useState('white');
   const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
-  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
-  const [dynamicLoading, setDynamicLoading] = useState(true);
+  // Static light switch products data
+  const staticProducts = [
+    {
+      id: '1-gang',
+      title: '1 Gang Light Switch',
+      display_name: '1 Gang Mechanical Switch',
+      price: 299,
+      image: '/images/smart_switch/one gang.webp',
+      image2: '/images/smart_switch/1 gang mechanical.webp',
+      variants: JSON.stringify([{ price: 299, discount_price: 0 }]),
+      help_text: 'Perfect for single light control',
+      help_image_url: '/images/smart_switch/one gang.webp'
+    },
+    {
+      id: '2-gang',
+      title: '2 Gang Light Switch',
+      display_name: '2 Gang Mechanical Switch',
+      price: 399,
+      image: '/images/smart_switch/two gang.webp',
+      image2: '/images/smart_switch/2 gang mechanical.webp',
+      variants: JSON.stringify([{ price: 399, discount_price: 0 }]),
+      help_text: 'Control two lights independently',
+      help_image_url: '/images/smart_switch/two gang.webp'
+    },
+    {
+      id: '3-gang',
+      title: '3 Gang Light Switch',
+      display_name: '3 Gang Mechanical Switch',
+      price: 499,
+      image: '/images/smart_switch/3 gang mechanical.webp',
+      image2: '/images/smart_switch/three gang.webp',
+      variants: JSON.stringify([{ price: 499, discount_price: 0 }]),
+      help_text: 'Control three lights independently',
+      help_image_url: '/images/smart_switch/3 gang mechanical.webp'
+    },
+    {
+      id: '4-gang',
+      title: '4 Gang Light Switch',
+      display_name: '4 Gang Mechanical Switch',
+      price: 599,
+      image: '/images/smart_switch/four gang.webp',
+      image2: '/images/smart_switch/4 gang mechanical.webp',
+      variants: JSON.stringify([{ price: 599, discount_price: 0 }]),
+      help_text: 'Control four lights independently',
+      help_image_url: '/images/smart_switch/four gang.webp'
+    }
+  ];
+
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
-  // Load dynamic products from admin portal
+  // Initialize with static data
   useEffect(() => {
     if (open) {
-      loadLightSwitchProducts();
       setQuantity(1);
-      setSelectedProduct(product.subcategoryProducts?.[0] || product);
+      setSelectedProduct(staticProducts[0]); // Default to 1 gang
     }
-  }, [open, product]);
-
-  // Reset quantity when variant changes
-  useEffect(() => {
-    if (selectedVariant) {
-      setQuantity(1);
-    }
-  }, [selectedVariant]);
+  }, [open]);
 
   // Reset image index when product changes
   useEffect(() => {
     setSelectedImage(0);
   }, [selectedProduct]);
-
-  const loadLightSwitchProducts = async () => {
-    setDynamicLoading(false); // Show UI immediately
-    
-    try {
-      const { supabase } = await import('@/supabase/client');
-      
-      const { data } = await supabase
-        .from('products')
-        .select('id, title, display_name, price, image, image2, image3, image4, image5, additional_images, variants, help_text, help_image_url')
-        .ilike('title', '%gang%')
-        .limit(10);
-      
-      if (data?.length) {
-        setDynamicProducts(data);
-        const oneGang = data.find(p => p.title?.includes('1 gang'));
-        setSelectedProduct(oneGang || data[0]);
-      }
-    } catch (error) {
-      console.error('Load error:', error);
-    }
-  };
 
   const currentProductData = product;
   const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
@@ -110,27 +126,8 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
   // Get current price from selected product variants or product price
   const getCurrentPrice = () => {
-    if (!selectedProduct) return 0;
-    
-    // Check if variants exist and parse them
-    let variants = selectedProduct.variants;
-    if (typeof variants === 'string') {
-      try {
-        variants = JSON.parse(variants);
-      } catch (e) {
-        variants = [];
-      }
-    }
-    
-    // Get price from first variant or fallback to product price
-    if (variants && variants.length > 0) {
-      const firstVariant = variants[0];
-      return firstVariant.discount_price && firstVariant.discount_price > 0 
-        ? firstVariant.discount_price 
-        : firstVariant.price || 0;
-    }
-    
-    return selectedProduct.price || 0;
+    if (!selectedProduct) return 299; // Default price
+    return selectedProduct.price || 299;
   };
   
   const currentPrice = getCurrentPrice();

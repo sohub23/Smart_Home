@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { RainbowButton } from '@/components/ui/rainbow-button';
 import navbarLogo from '@/assets/navbar_imgaes.png';
 
 const Navigation = () => {
@@ -75,7 +76,7 @@ const Navigation = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-lg transition-all duration-300">
       <div className="container-width">
-        <div className="flex items-center justify-between h-16 px-4 md:px-6">
+        <div className="flex items-center justify-between h-12 px-4 md:px-6">
           {/* Logo */}
           <div 
             className="flex items-center cursor-pointer group"
@@ -97,7 +98,7 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-8">
             <button 
               onClick={() => handleNavigation('specs')}
-              className={`transition-colors hover:text-black text-black ${
+              className={`text-sm transition-colors hover:text-black text-black ${
                 activeSection === 'specs' ? 'font-bold' : 'font-medium'
               }`}
             >
@@ -105,7 +106,7 @@ const Navigation = () => {
             </button>
             <button 
               onClick={() => handleNavigation('sohub-protect')}
-              className={`transition-colors hover:text-black text-black ${
+              className={`text-sm transition-colors hover:text-black text-black ${
                 activeSection === 'sohub-protect' ? 'font-bold' : 'font-medium'
               }`}
             >
@@ -113,7 +114,7 @@ const Navigation = () => {
             </button>
             <button 
               onClick={() => handleNavigation('gallery')}
-              className={`transition-colors hover:text-black text-black ${
+              className={`text-sm transition-colors hover:text-black text-black ${
                 activeSection === 'gallery' ? 'font-bold' : 'font-medium'
               }`}
             >
@@ -121,7 +122,7 @@ const Navigation = () => {
             </button>
             <button 
               onClick={() => handleNavigation('faq')}
-              className={`transition-colors hover:text-black text-black ${
+              className={`text-sm transition-colors hover:text-black text-black ${
                 activeSection === 'faq' ? 'font-bold' : 'font-medium'
               }`}
             >
@@ -129,7 +130,7 @@ const Navigation = () => {
             </button>
             <button 
               onClick={() => navigate('/built-for-comfort')}
-              className={`transition-colors hover:text-black text-black ${
+              className={`text-sm transition-colors hover:text-black text-black ${
                 location.pathname === '/built-for-comfort' ? 'font-bold' : 'font-medium'
               }`}
             >
@@ -138,21 +139,21 @@ const Navigation = () => {
           </div>
 
           {/* CTA Button - Desktop */}
-          <Button 
+          <RainbowButton 
             onClick={() => handleNavigation('order')}
-            className="hidden md:block px-6 py-2 rounded-lg font-semibold bg-[#0A1D3A] text-white hover:bg-[#0C2347] transition-all"
+            className="hidden md:block px-2 py-1 text-xs h-8 rounded-md font-semibold"
           >
             Build / Buy Now
-          </Button>
+          </RainbowButton>
 
           {/* Mobile Actions */}
           <div className="md:hidden flex items-center gap-3">
-            <Button 
+            <RainbowButton 
               onClick={() => handleNavigation('order')}
-              className="px-2 text-xs rounded-md font-semibold bg-[#0A1D3A] text-white hover:bg-[#0C2347] transition-all h-6"
+              className="px-2 text-xs rounded-md font-semibold h-6"
             >
               Build / Buy
-            </Button>
+            </RainbowButton>
             <button 
               className="p-2 text-gray-900 ml-1"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

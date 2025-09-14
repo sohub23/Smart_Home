@@ -2,20 +2,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Bell, RefreshCw, User, Settings, LogOut, Shield, Key, HelpCircle, UserCog, Menu, X } from 'lucide-react';
+import { User, Settings, LogOut, Shield, Key, HelpCircle, UserCog, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import navbarLogo from '@/assets/navbar_imgaes.png';
+import NotificationPanel from './NotificationPanel';
 
 const AdminNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 1000);
-  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -30,7 +25,7 @@ const AdminNavbar = () => {
   ];
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50 shadow-sm">
+    <header className="bg-white border-b border-gray-200 px-6 py-2 sticky top-0 z-50 shadow-sm">
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center space-x-8">
           <div className="flex items-center space-x-3">
@@ -52,7 +47,6 @@ const AdminNavbar = () => {
                 onClick={() => navigate(item.path)}
               >
                 {item.label}
-
               </Button>
             ))}
           </nav>
@@ -66,22 +60,14 @@ const AdminNavbar = () => {
           </button>
         </div>
         <div className="flex items-center space-x-2 md:space-x-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex items-center space-x-2 border-gray-200 hover:bg-gray-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-[#0a1d3a]' : 'text-gray-600'}`} />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
           <div className="hidden md:flex items-center space-x-2">
-            <Button variant="ghost" size="sm" className="relative hover:bg-gray-100 rounded-full p-2">
-              <Bell className="w-5 h-5 text-gray-600" />
-              <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
-            </Button>
-            <Button variant="ghost" size="sm" className="hover:bg-gray-100 rounded-full p-2">
+            <NotificationPanel />
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="hover:bg-gray-100 rounded-full p-2"
+              onClick={() => navigate('/admin/email-settings')}
+            >
               <Settings className="w-5 h-5 text-gray-600" />
             </Button>
             <DropdownMenu>

@@ -225,14 +225,14 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
   const modelData = {
     'SP-01': {
       price: productDetails ? getProductPrice(productDetails) : 0,
-      images: productDetails ? getProductImages(productDetails) : [],
+      images: productDetails ? ['https://www.youtube.com/watch?v=XKjPvhZcSWA', ...getProductImages(productDetails)] : ['https://www.youtube.com/watch?v=XKjPvhZcSWA'],
       name: productDetails?.title || productDetails?.display_name || productDetails?.name || '',
       subtitle: 'Standard Security Kit',
       data: productDetails
     },
     'SP-05': {
       price: sp05Product ? getProductPrice(sp05Product) : 0,
-      images: sp05Product ? getProductImages(sp05Product) : [],
+      images: sp05Product ? ['https://www.youtube.com/watch?v=LfZux0FtgvA', ...getProductImages(sp05Product)] : ['https://www.youtube.com/watch?v=LfZux0FtgvA'],
       name: sp05Product?.title || sp05Product?.display_name || sp05Product?.name || '',
       subtitle: 'Advanced Security Kit', 
       data: sp05Product
@@ -243,12 +243,12 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
   if (productDetails && productDetails !== product) {
     modelData['SP-01'].price = getProductPrice(productDetails) || modelData['SP-01'].price;
     const realImages = getProductImages(productDetails);
-    if (realImages.length > 0) modelData['SP-01'].images = realImages;
+    if (realImages.length > 0) modelData['SP-01'].images = ['https://www.youtube.com/watch?v=XKjPvhZcSWA', ...realImages];
   }
   if (sp05Product) {
     modelData['SP-05'].price = getProductPrice(sp05Product) || modelData['SP-05'].price;
     const realImages = getProductImages(sp05Product);
-    if (realImages.length > 0) modelData['SP-05'].images = realImages;
+    if (realImages.length > 0) modelData['SP-05'].images = ['https://www.youtube.com/watch?v=LfZux0FtgvA', ...realImages];
   }
   
   const currentModel = modelData[selectedModel];
@@ -414,7 +414,17 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
               {/* Main Product Image */}
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
-                  {currentImages[selectedImage] || product.image ? (
+                  {currentImages[selectedImage]?.includes('youtube.com') ? (
+                    <div className="w-full h-full relative rounded-lg overflow-hidden bg-black">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${currentImages[selectedImage].split('v=')[1]?.split('&')[0]}?autoplay=1&mute=1`}
+                        className="w-full h-full"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : currentImages[selectedImage] || product.image ? (
                     <img
                       src={currentImages[selectedImage] || product.image}
                       alt={product.name}
@@ -467,18 +477,34 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                         key={index}
                         onClick={() => setSelectedImage(index)}
                         className={cn(
-                          "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200",
+                          "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 relative",
                           selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
                         )}
                       >
-                        <img 
-                          src={image} 
-                          alt={`${product.name} ${index + 1}`} 
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
+                        {image?.includes('youtube.com') ? (
+                          <div className="w-full h-full bg-black flex items-center justify-center relative">
+                            <iframe
+                              src={`https://www.youtube.com/embed/${image.split('v=')[1]?.split('&')[0]}?autoplay=1&mute=1`}
+                              className="w-full h-full scale-150"
+                              frameBorder="0"
+                              style={{ pointerEvents: 'none' }}
+                            />
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                        ) : (
+                          <img 
+                            src={image} 
+                            alt={`${product.name} ${index + 1}`} 
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        )}
                       </button>
                     ))}
                   </div>

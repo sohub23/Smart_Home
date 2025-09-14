@@ -171,9 +171,11 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       const basePrice = currentPrice * quantity;
       const totalPrice = connectionType === 'wifi' ? basePrice + 2000 : basePrice;
       
+      const variationText = ` - ${selectedSize} (${selectedCapacity})`;
+      
       const cartPayload = {
         productId: `${selectedProduct.id}_${Date.now()}`,
-        productName: `${selectedProduct.name || product.name} (${connectionType.toUpperCase()})`,
+        productName: `${selectedProduct.name || product.name}${variationText}`,
         quantity: quantity,
         trackSize: selectedSize,
         connectionType: connectionType,
@@ -182,7 +184,20 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
         unitPrice: currentPrice
       };
       
-      await onAddToCart(cartPayload);
+      // Add main product to cart instantly
+      if (addToCart) {
+        addToCart({
+          id: `${product.id}_${selectedSize}_${selectedCapacity}_${Date.now()}`,
+          name: `${product.name}${variationText}`,
+          price: currentPrice,
+          category: 'Smart Curtain',
+          image: allImages[1] || product.image,
+          color: `Size: ${selectedSize}, Type: ${selectedCapacity}`,
+          model: selectedSize,
+          capacity: selectedCapacity,
+          quantity: quantity
+        });
+      }
       
       // Add installation service if selected
       if (installationSelected && addToCart) {
@@ -300,6 +315,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       <button
                         key={index}
                         onClick={() => setSelectedImage(index)}
+                        onMouseEnter={() => setSelectedImage(index)}
                         className={cn(
                           "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 relative",
                           selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
@@ -594,24 +610,22 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                       newQuantities[0] = Math.max(1, newQuantities[0] - 1);
                       setTrackQuantities(newQuantities);
                     }}
-                    className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
-                    <Minus className="w-3 h-3" />
+                    <Minus className="w-2.5 h-2.5" />
                   </button>
-                  <div className="w-12 h-8 flex items-center justify-center">
-                    <span className="text-lg font-bold text-gray-900">
-                      {trackQuantities[0] || 1}
-                    </span>
-                  </div>
+                  <span className="text-sm font-semibold text-gray-900 min-w-[2rem] text-center">
+                    {trackQuantities[0] || 1}
+                  </span>
                   <button
                     onClick={() => {
                       const newQuantities = [...trackQuantities];
                       newQuantities[0] = Math.min(10, (newQuantities[0] || 1) + 1);
                       setTrackQuantities(newQuantities);
                     }}
-                    className="w-8 h-8 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
-                    <Plus className="w-3 h-3" />
+                    <Plus className="w-2.5 h-2.5" />
                   </button>
                 </div>
               </div>

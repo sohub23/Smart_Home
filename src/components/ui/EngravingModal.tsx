@@ -34,42 +34,11 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
 
   useEffect(() => {
     if (open) {
-      loadEngravingImages();
-    }
-  }, [open]);
-
-  const loadEngravingImages = async () => {
-    try {
-      setLoading(true);
-      console.log('Loading engraving images from database...');
-      
-      const { data, error } = await supabase
-        .from('product_images')
-        .select('image_url')
-        .eq('image_type', 'engraving')
-        .order('position');
-      
-      console.log('Database query result:', { data, error });
-      
-      const imageUrls = data?.map(img => img.image_url) || [];
-      console.log('Extracted image URLs:', imageUrls);
-      
-      const allImages = [];
-      if (engravingImage) {
-        console.log('Adding product engraving image:', engravingImage);
-        allImages.push(engravingImage);
-      }
-      allImages.push(...imageUrls);
-      
-      console.log('Final engraving images array:', allImages);
-      setEngravingImages(allImages.length > 0 ? allImages : [productImage].filter(Boolean));
-    } catch (error) {
-      console.error('Error loading engraving images:', error);
+      // Use static engraving image instead of database call
       setEngravingImages([engravingImage || productImage].filter(Boolean));
-    } finally {
       setLoading(false);
     }
-  };
+  }, [open, engravingImage, productImage]);
 
   const currentEngravingImage = engravingImages[selectedEngravingImage] || engravingImage || productImage;
 

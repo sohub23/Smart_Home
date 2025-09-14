@@ -17,7 +17,7 @@ const Index = () => {
       <Navigation />
       <main className="space-y-0">
         <HeroSlider />
-        <div className="space-y-16 md:space-y-20 lg:space-y-24">
+        <div className="-space-y-16">
           <NarrativeSection />
           <ProblemSolutionSection />
           <SpecificationsSection />

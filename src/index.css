@@ -80,6 +80,13 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Rainbow button colors */
+    --color-1: 0 100% 63%;
+    --color-2: 270 100% 63%;
+    --color-3: 210 100% 63%;
+    --color-4: 195 100% 63%;
+    --color-5: 90 100% 63%;
   }
 
   .dark {
@@ -213,19 +220,19 @@
   
   /* Section spacing - Consistent professional gaps */
   .section-padding {
-    @apply py-16 md:py-20 lg:py-24 px-4 md:px-6 lg:px-8;
+    @apply py-8 md:py-12 lg:py-16 px-4 md:px-6 lg:px-8;
   }
   
   .section-padding-small {
-    @apply py-12 md:py-16 lg:py-20 px-4 md:px-6 lg:px-8;
+    @apply py-6 md:py-8 lg:py-12 px-4 md:px-6 lg:px-8;
   }
   
   .section-gap {
-    @apply mb-8 md:mb-12 lg:mb-16;
+    @apply mb-4 md:mb-6 lg:mb-8;
   }
   
   .content-gap {
-    @apply mb-6 md:mb-8 lg:mb-10;
+    @apply mb-3 md:mb-4 lg:mb-6;
   }
   
   .container-width {

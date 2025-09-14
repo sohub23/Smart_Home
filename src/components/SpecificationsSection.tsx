@@ -115,7 +115,7 @@ const SpecificationsSection = () => {
   const currentContent = tabContent[activeTab];
 
   return (
-    <section id="specs" className="section-padding bg-surface">
+    <section id="specs" className="section-padding bg-surface" style={{paddingBottom: '8rem'}}>
       <div className="container-width px-4 md:px-6">
         {/* Header */}
         <div className="text-center section-gap">
@@ -128,7 +128,7 @@ const SpecificationsSection = () => {
             <div className="bg-background rounded-[var(--radius-button)] p-1.5 border border-border shadow-subtle">
               <button
                 onClick={() => setActiveTab('sliding')}
-                className={`px-6 md:px-8 py-3 md:py-4 rounded-[var(--radius-button)] font-medium transition-all duration-300 text-base md:text-lg ${
+                className={`px-4 md:px-5 py-2 md:py-2.5 rounded-[var(--radius-button)] font-medium transition-all duration-300 text-sm md:text-base ${
                   activeTab === 'sliding'
                     ? 'bg-primary text-primary-foreground shadow-soft'
                     : 'text-muted-foreground hover:text-foreground'
@@ -138,7 +138,7 @@ const SpecificationsSection = () => {
               </button>
               <button
                 onClick={() => setActiveTab('roller')}
-                className={`px-6 md:px-8 py-3 md:py-4 rounded-[var(--radius-button)] font-medium transition-all duration-300 text-base md:text-lg ${
+                className={`px-4 md:px-5 py-2 md:py-2.5 rounded-[var(--radius-button)] font-medium transition-all duration-300 text-sm md:text-base ${
                   activeTab === 'roller'
                     ? 'bg-primary text-primary-foreground shadow-soft'
                     : 'text-muted-foreground hover:text-foreground'
@@ -151,11 +151,11 @@ const SpecificationsSection = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="grid lg:grid-cols-2 gap-12 md:gap-16 lg:gap-20 items-start">
+        <div className="grid lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-start pb-8">
           {/* Left: Content & Specs */}
-          <div className="space-y-8 md:space-y-10">
+          <div className="space-y-4 md:space-y-6">
             {/* Tab Introduction */}
-            <div className="space-y-6 md:space-y-8 fade-in">
+            <div className="space-y-3 md:space-y-4 fade-in">
               <h3 className="text-title text-primary">
                 {currentContent.subtitle}
               </h3>
@@ -175,14 +175,14 @@ const SpecificationsSection = () => {
             </div>
 
             {/* Specifications Tables */}
-            <div className="space-y-6 md:space-y-8">
+            <div className="space-y-3 md:space-y-4">
               {sharedSpecGroups.map((group, groupIndex) => {
                 const IconComponent = group.icon;
                 return (
-                  <div key={groupIndex} className="card-minimal p-6 md:p-8">
-                    <div className="flex items-center space-x-4 mb-6">
-                      <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
-                        <IconComponent className="w-6 h-6 text-accent-soft" />
+                  <div key={groupIndex} className="card-minimal p-3 md:p-4">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
+                        <IconComponent className="w-4 h-4 text-accent-soft" />
                       </div>
                       <h4 className="text-lg md:text-xl font-semibold text-primary">{group.title}</h4>
                     </div>
@@ -236,16 +236,11 @@ const SpecificationsSection = () => {
               </Button>
             </div>
 
-            {/* Built for Comfort Badge */}
-            <div className="pt-6 border-t border-border">
-              <Badge variant="outline" className="border-accent/20 text-accent-soft text-base px-4 py-2">
-                #BuiltForComfort
-              </Badge>
-            </div>
+
           </div>
 
           {/* Right: Images */}
-          <div className="space-y-6 md:space-y-8 order-first lg:order-last">
+          <div className="space-y-3 md:space-y-4 order-first lg:order-last">
             {currentContent.images.map((image, index) => (
               <div key={index} className="w-full overflow-hidden shadow-medium rounded-xl">
                 <img

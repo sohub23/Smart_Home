@@ -221,7 +221,7 @@ const CategoryProducts = () => {
       
       toast({
         title: "Product Added",
-        description: `${formData.name} has been added successfully.`,
+        description: `${formData.name.replace(/[<>&"']/g, '')} has been added successfully.`,
       });
       
       setIsAddDialogOpen(false);
@@ -237,7 +237,7 @@ const CategoryProducts = () => {
       console.error('Add product error:', err);
       toast({
         title: "Error",
-        description: `Failed to add product: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        description: `Failed to add product: ${err instanceof Error ? err.message.replace(/[<>&"']/g, '') : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -346,7 +346,7 @@ const CategoryProducts = () => {
       
       toast({
         title: "Product Updated",
-        description: `${formData.name} has been updated successfully.`,
+        description: `${formData.name.replace(/[<>&"']/g, '')} has been updated successfully.`,
       });
       
       setIsEditDialogOpen(false);
@@ -543,7 +543,7 @@ const CategoryProducts = () => {
                 <img 
                   src="/images/sohub_protect/accesories/H502-Alarm panel.png" 
                   alt="Panel Kit"
-                  className="w-16 h-16 object-contain mb-2"
+                  className="w-16 h-16 object-contain mb-3"
                 />
                 <h3 className="text-sm font-bold text-gray-900 text-center">Panel Kit</h3>
               </div>
@@ -558,7 +558,7 @@ const CategoryProducts = () => {
                 <img 
                   src="/images/sohub_protect/accesories/Motion_pr200.png" 
                   alt="Sensors"
-                  className="w-16 h-16 object-contain mb-2"
+                  className="w-16 h-16 object-contain mb-3"
                 />
                 <h3 className="text-sm font-bold text-gray-900 text-center">Sensors</h3>
               </div>
@@ -573,7 +573,7 @@ const CategoryProducts = () => {
                 <img 
                   src="/images/sohub_protect/accesories/camera-c11.png" 
                   alt="Camera"
-                  className="w-16 h-16 object-contain mb-2"
+                  className="w-16 h-16 object-contain mb-3"
                 />
                 <h3 className="text-sm font-bold text-gray-900 text-center">Camera</h3>
               </div>
@@ -596,7 +596,7 @@ const CategoryProducts = () => {
                 <img 
                   src="/images/smart_switch/4 gang touch light.webp" 
                   alt="Light Switch"
-                  className="w-16 h-16 object-contain mb-2"
+                  className="w-16 h-16 object-contain mb-3"
                 />
                 <h3 className="text-sm font-bold text-gray-900 text-center">Light Switch</h3>
               </div>
@@ -627,7 +627,7 @@ const CategoryProducts = () => {
                 <img 
                   src="/images/smart_switch/fan touch switch.webp" 
                   alt="Fan Switch"
-                  className="w-16 h-16 object-contain mb-2"
+                  className="w-16 h-16 object-contain mb-3"
                 />
                 <h3 className="text-sm font-bold text-gray-900 text-center">Fan Switch</h3>
               </div>
@@ -658,7 +658,7 @@ const CategoryProducts = () => {
                 <img 
                   src="/images/smart_switch/one gang.webp" 
                   alt="Boiler Switch"
-                  className="w-16 h-16 object-contain mb-2"
+                  className="w-16 h-16 object-contain mb-3"
                 />
                 <h3 className="text-sm font-bold text-gray-900 text-center">Boiler Switch</h3>
               </div>
@@ -1329,7 +1329,7 @@ const CategoryProducts = () => {
                   // Save to database logic here with imageUrl
                   toast({
                     title: "Category Updated",
-                    description: `${categoryFormData.name} has been updated successfully.`,
+                    description: `${categoryFormData.name.replace(/[<>&"']/g, '')} has been updated successfully.`,
                   });
                   setIsCategoryEditOpen(false);
                   setCategoryImageFile(null);

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CreditCard, Truck } from 'lucide-react';
+import { triggerOrderNotification } from '@/utils/notificationTrigger';
 
 interface CartItem {
   id: string;
@@ -47,12 +48,28 @@ export function CheckoutModal({ open, onOpenChange, cart, totalPrice, onConfirmO
     setLoading(true);
     
     try {
-      await onConfirmOrder({
+      const orderData = {
         customer: formData,
         items: cart,
         total: totalPrice,
         paymentMethod
+      };
+      
+      await onConfirmOrder(orderData);
+      
+      // Trigger notification for new order
+      triggerOrderNotification({
+        id: `ORD-${Date.now()}`,
+        order_number: `ORD-${Date.now()}`,
+        customer_name: formData.name,
+        customer_email: formData.email,
+        customer_phone: formData.phone,
+        customer_address: formData.address,
+        total_amount: totalPrice,
+        payment_method: paymentMethod,
+        items: cart
       });
+      
       onOpenChange(false);
       setFormData({ name: '', email: '', phone: '', address: '' });
     } catch (error) {

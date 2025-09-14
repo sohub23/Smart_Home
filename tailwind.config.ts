@@ -24,6 +24,11 @@ export default {
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
+				"color-1": "hsl(var(--color-1))",
+				"color-2": "hsl(var(--color-2))",
+				"color-3": "hsl(var(--color-3))",
+				"color-4": "hsl(var(--color-4))",
+				"color-5": "hsl(var(--color-5))",
 				surface: {
 					DEFAULT: 'hsl(var(--surface))',
 					soft: 'hsl(var(--surface-soft))'
@@ -64,6 +69,10 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
+				rainbow: {
+					"0%": { "background-position": "0%" },
+					"100%": { "background-position": "200%" },
+				},
 				'accordion-down': {
 					from: {
 						height: '0'
@@ -120,6 +129,7 @@ export default {
 				}
 			},
 			animation: {
+				rainbow: "rainbow var(--speed, 2s) infinite linear",
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'ken-burns': 'ken-burns 20s ease-in-out infinite alternate',

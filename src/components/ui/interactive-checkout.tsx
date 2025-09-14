@@ -16,7 +16,8 @@ import { SecurityPanelModal } from "@/components/ui/SecurityPanelModal";
 import { SensorsSelectionModal } from "@/components/ui/SensorsSelectionModal";
 import { CameraSelectionModal } from "@/components/ui/CameraSelectionModal";
 import { SmartSwitchModal } from "@/components/ui/SmartSwitchModal";
-import { LightSwitchModal } from "@/components/ui/LightSwitchModal";
+import { LightSwitchModal } from "@/components/ui/LightSwitchModal_new";
+import { LightSwitchModal as LightMechanicalSwitchModal } from "@/components/ui/LightMechanicalSwitch";
 import { FanSwitchModal } from "@/components/ui/FanSwitchModal";
 import { BoilerSwitchModal } from "@/components/ui/BoilerSwitchModal";
 import { productData } from "@/lib/productData";
@@ -37,6 +38,7 @@ import { Mail, Printer } from "lucide-react";
 import { sanitizeForLog, sanitizeString } from "@/utils/sanitize";
 import { useMemo, useCallback } from "react";
 import { emailService } from "@/supabase/email";
+import { initiateSSLCommerzPayment } from "@/services/sslcommerz";
 
 interface Product {
     id: string;
@@ -220,6 +222,7 @@ function InteractiveCheckout({
     const [cameraSelectionModalOpen, setCameraSelectionModalOpen] = useState(false);
     const [smartSwitchModalOpen, setSmartSwitchModalOpen] = useState(false);
     const [lightSwitchModalOpen, setLightSwitchModalOpen] = useState(false);
+    const [lightMechanicalSwitchModalOpen, setLightMechanicalSwitchModalOpen] = useState(false);
     const [fanSwitchModalOpen, setFanSwitchModalOpen] = useState(false);
     const [boilerSwitchModalOpen, setBoilerSwitchModalOpen] = useState(false);
     const [spotLightModalOpen, setSpotLightModalOpen] = useState(false);
@@ -322,6 +325,27 @@ function InteractiveCheckout({
             console.log('Submitting order with customer:', sanitizeForLog(validatedOrderData.customer_name));
             const createdOrder = await orderService.createOrder(validatedOrderData);
             console.log('Order created with ID:', sanitizeForLog(createdOrder?.id || 'unknown'));
+            
+            // Handle SSL Commerce payment for online orders
+            if (paymentMethod === 'online' && totalPrice > 0) {
+                const paymentResult = await initiateSSLCommerzPayment({
+                    total_amount: validatedOrderData.total_amount,
+                    customer_name: validatedOrderData.customer_name,
+                    customer_email: validatedOrderData.customer_email,
+                    customer_phone: validatedOrderData.customer_phone,
+                    customer_address: validatedOrderData.customer_address,
+                    order_id: createdOrder.id,
+                    order_number: createdOrder.order_number
+                });
+                
+                if (paymentResult.status === 'SUCCESS') {
+                    // Redirect to SSL Commerce payment page
+                    window.location.href = paymentResult.GatewayPageURL;
+                    return;
+                } else {
+                    throw new Error(paymentResult.failedreason || 'Payment initiation failed');
+                }
+            }
             
             // Send email notifications
             try {
@@ -858,9 +882,9 @@ function InteractiveCheckout({
                             : allProductsByCategory;
                         
                         return categoriesToShow.map((categoryGroup, index) => (
-                            <div key={categoryGroup.category} id={`category-${categoryGroup.category.replace(/\s+/g, '-')}`} className="mb-8">
+                            <div key={categoryGroup.category} id={`category-${categoryGroup.category.replace(/\s+/g, '-')}`} className="mb-4">
                             {/* Section Title - Always Show */}
-                            <div className="mb-3 lg:mb-6 px-0 lg:px-4">
+                            <div className="mb-2 lg:mb-3 px-0 lg:px-4">
                                 <div className="flex items-center justify-between">
                                     <h2 className="font-bold text-gray-900 border-b-2 border-green-500 pb-1 lg:pb-2 inline-block" style={{ fontSize: '20px' }}>
                                         {categoryGroup.category}
@@ -870,13 +894,13 @@ function InteractiveCheckout({
 
                             {/* Product Grid or No Products Message */}
                             {categoryGroup.products.length > 0 ? (
-                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 px-0 lg:px-4 relative z-0">
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 px-0 lg:px-4 relative z-0">
                                     {categoryGroup.products.map((product) => (
                         <motion.div
                             key={product.id}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="bg-white rounded-none lg:rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 p-2 lg:p-1.5 relative cursor-pointer border-0 lg:border border-gray-200 hover:border-green-300 group aspect-square flex flex-col hover:scale-[1.02]"
+                            className="bg-white rounded-none lg:rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 p-1 lg:p-1 relative cursor-pointer border-0 lg:border border-gray-200 hover:border-green-300 group aspect-square flex flex-col hover:scale-[1.02]"
                 
                             onWheel={(e) => {
                                 const container = document.querySelector('.products-scroll-container');
@@ -994,11 +1018,11 @@ function InteractiveCheckout({
                                 setSelectedProduct(categoryToIdMap[categoryGroup.category] || '3');
                                 
                                 // Debug logging
-                                console.log('Product clicked:', product.name, 'Category:', categoryGroup.category);
+                                console.log('Product clicked:', (product.name || '').replace(/[\r\n]/g, ''), 'Category:', (categoryGroup.category || '').replace(/[\r\n]/g, ''));
                                 
                                 // Open appropriate modal based on category and product
                                 const modalType = getModalType(categoryGroup.category, product.name);
-                                console.log('Modal type determined:', modalType);
+                                console.log('Modal type determined:', (modalType || '').replace(/[\r\n]/g, ''));
                                 
                                 switch (modalType) {
                                     case 'slider': 
@@ -1034,7 +1058,12 @@ function InteractiveCheckout({
                                     case 'smartSwitch': setSmartSwitchModalOpen(true); break;
                                     case 'lightSwitch': 
                                         console.log('Opening light switch modal');
-                                        setLightSwitchModalOpen(true); 
+                                        // Check if it's mechanical switch
+                                        if (product.name.toLowerCase().includes('mechanical')) {
+                                            setLightMechanicalSwitchModalOpen(true);
+                                        } else {
+                                            setLightSwitchModalOpen(true);
+                                        }
                                         break;
                                     case 'fanSwitch': setFanSwitchModalOpen(true); break;
                                     case 'boilerSwitch': setBoilerSwitchModalOpen(true); break;
@@ -1053,7 +1082,12 @@ function InteractiveCheckout({
                                     case 'switch':
                                     case 'switches':
                                         console.log('Opening default switch modal (light switch)');
-                                        setLightSwitchModalOpen(true);
+                                        // Check if it's mechanical switch
+                                        if (product.name.toLowerCase().includes('mechanical')) {
+                                            setLightMechanicalSwitchModalOpen(true);
+                                        } else {
+                                            setLightSwitchModalOpen(true);
+                                        }
                                         break;
                                     default: 
                                         // Check if it's PDLC Film by category or name
@@ -1077,7 +1111,7 @@ function InteractiveCheckout({
                             )}
                             
                             {/* Product Image */}
-                            <div className="flex-1 flex items-center justify-center bg-white rounded-sm overflow-hidden transition-all duration-300 p-1 lg:p-0.5 mb-1 lg:mb-1">
+                            <div className="flex-1 flex items-center justify-center bg-white rounded-sm overflow-hidden transition-all duration-300 p-0.5 lg:p-0.5 mb-0.5 lg:mb-0.5">
                                 <img
                                     src={product.imageUrl}
                                     alt={product.name}
@@ -1090,7 +1124,7 @@ function InteractiveCheckout({
                             </div>
                             
                             {/* Product Info */}
-                            <div className="space-y-0 mt-auto">
+                            <div className="space-y-0 mt-auto text-center">
                                 <h3 className="font-medium text-gray-900 text-xs lg:text-sm leading-tight truncate font-apple">
                                     {product.name}
                                 </h3>
@@ -1260,7 +1294,7 @@ function InteractiveCheckout({
                                                     />
                                                     <Label htmlFor="online" className="flex items-center gap-2 cursor-pointer text-sm flex-1">
                                                         <CreditCard className="w-4 h-4" />
-                                                        Online Payment
+                                                        SSL Commerce (Cards/Mobile Banking)
                                                     </Label>
                                                 </div>
                                             </div>
@@ -2004,6 +2038,60 @@ function InteractiveCheckout({
                     }}
                     onBuyNow={async (payload) => {
                         // Handle buy now for Light Switch products
+                    }}
+                />
+            )}
+            
+            {/* Light Mechanical Switch Modal */}
+            {selectedVariant && (
+                <LightMechanicalSwitchModal
+                    open={lightMechanicalSwitchModalOpen}
+                    onOpenChange={(open) => {
+                        setLightMechanicalSwitchModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return productData ? {
+                            ...productData,
+                            engraving_available: productData.engraving_available || true,
+                            engraving_price: productData.engraving_price || 200,
+                            engraving_image: productData.engraving_image || '',
+                            engraving_text_color: productData.engraving_text_color || '#000000'
+                        } : {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Switch',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: '',
+                            image: selectedVariant.imageUrl,
+                            stock: 0,
+                            engraving_available: true,
+                            engraving_price: 200,
+                            engraving_image: '',
+                            engraving_text_color: '#000000'
+                        };
+                    })()} 
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: payload.productName || `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'Switch',
+                                image: selectedVariant.imageUrl,
+                                color: 'Switch',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Light Mechanical Switch products
                     }}
                 />
             )}

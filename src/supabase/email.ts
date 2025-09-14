@@ -239,5 +239,18 @@ export const emailService = {
         <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.price?.toLocaleString()} BDT</td>
       </tr>`
     ).join('');
+  },
+
+  // Send Test Email
+  async sendTestEmail(to: string, template: EmailTemplate, testData: any): Promise<boolean> {
+    try {
+      const htmlContent = this.replaceTemplateVariables(template.html_content, testData);
+      const subject = this.replaceTemplateVariables(template.subject, testData);
+      
+      return await this.sendEmail(to, subject, htmlContent);
+    } catch (error) {
+      console.error('Error sending test email:', error);
+      return false;
+    }
   }
 };

@@ -16,9 +16,27 @@ export const sanitizeString = (input: string | null | undefined): string => {
 
 export const sanitizeForLog = (input: any): string => {
   if (typeof input === 'string') {
-    return input.replace(/[\r\n\t]/g, ' ').substring(0, 100);
+    return input.replace(/[\r\n\t]/g, ' ').replace(/[<>"'&]/g, (match) => {
+      const escapeMap: { [key: string]: string } = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '&': '&amp;'
+      };
+      return escapeMap[match];
+    }).substring(0, 100);
   }
-  return String(input).replace(/[\r\n\t]/g, ' ').substring(0, 100);
+  return String(input).replace(/[\r\n\t]/g, ' ').replace(/[<>"'&]/g, (match) => {
+    const escapeMap: { [key: string]: string } = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '&': '&amp;'
+    };
+    return escapeMap[match];
+  }).substring(0, 100);
 };
 
 export const validateId = (id: string | null | undefined): string | null => {
@@ -35,6 +53,15 @@ export const validateNumber = (num: any): number | null => {
 
 export const sanitizeSearchTerm = (term: string | null | undefined): string => {
   if (!term) return '';
-  // Remove special characters that could be used for injection
-  return term.replace(/[^\w\s\-_.]/g, '').trim().substring(0, 100);
+  // Remove special characters that could be used for injection and escape HTML entities
+  return term.replace(/[^\w\s\-_.]/g, '').replace(/[<>"'&]/g, (match) => {
+    const escapeMap: { [key: string]: string } = {
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#x27;',
+      '&': '&amp;'
+    };
+    return escapeMap[match];
+  }).trim().substring(0, 100);
 };

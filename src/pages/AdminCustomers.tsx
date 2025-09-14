@@ -28,7 +28,9 @@ const AdminCustomers = () => {
 
   const loadCustomers = async () => {
     try {
+      console.log('👥 Loading customers data...');
       const orders = await executeQuery(() => orderService.getOrders());
+      console.log('📊 Orders loaded for customers:', orders?.length || 0);
       
       // Group orders by customer email to create customer records
       const customerMap = new Map();
@@ -42,7 +44,7 @@ const AdminCustomers = () => {
           existing.updated_at = order.created_at > existing.updated_at ? order.created_at : existing.updated_at;
         } else {
           customerMap.set(email, {
-            id: `CUST-${Math.random().toString(36).substr(2, 9)}`,
+            id: `CUST-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             name: order.customer_name,
             email: order.customer_email,
             phone: order.customer_phone,
@@ -56,6 +58,7 @@ const AdminCustomers = () => {
       });
       
       const customersData = Array.from(customerMap.values());
+      console.log('👥 Customers processed:', customersData.length, customersData);
       setCustomers(customersData);
     } catch (err) {
       console.error('Failed to load customers:', JSON.stringify(err, null, 2));
@@ -115,24 +118,36 @@ const AdminCustomers = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-100">
       <AdminNavbar />
-      <main className="p-6 max-w-7xl mx-auto space-y-6">
+      <main className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Customer Management</h1>
-            <p className="text-gray-600 mt-1">Manage and analyze your customer base</p>
-          </div>
-          <div className="flex space-x-3">
-            <Button variant="outline" className="flex items-center space-x-2">
-              <Download className="w-4 h-4" />
-              <span>Export</span>
-            </Button>
-            <Button variant="outline" className="flex items-center space-x-2">
-              <Filter className="w-4 h-4" />
-              <span>Filter</span>
-            </Button>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200/50 p-6 md:p-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-2">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-indigo-900 bg-clip-text text-transparent">
+                Customer Management
+              </h1>
+              <p className="text-gray-600 text-lg">Manage and analyze your customer relationships</p>
+              <div className="flex items-center space-x-4 text-sm">
+                <span className="flex items-center space-x-2 text-blue-600 font-medium">
+                  <Users className="w-4 h-4" />
+                  <span>{customers.length} Total Customers</span>
+                </span>
+                <span className="text-gray-400">•</span>
+                <span className="text-gray-500">Updated {new Date().toLocaleTimeString()}</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={loadCustomers} className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg">
+                <Download className="w-4 h-4 mr-2" />
+                Refresh Data
+              </Button>
+              <Button variant="outline" className="border-gray-300 hover:bg-gray-50">
+                <Filter className="w-4 h-4 mr-2" />
+                Filter
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -140,18 +155,31 @@ const AdminCustomers = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
+            const gradients = [
+              'from-blue-500 to-cyan-500',
+              'from-green-500 to-emerald-500', 
+              'from-purple-500 to-pink-500',
+              'from-orange-500 to-red-500'
+            ];
             return (
-              <Card key={index} className="relative overflow-hidden border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                      <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                      <p className="text-sm text-green-600 font-medium mt-1">{stat.change} from last month</p>
+              <Card key={index} className="relative overflow-hidden border-0 shadow-xl bg-white hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                <div className={`absolute inset-0 bg-gradient-to-br ${gradients[index]} opacity-5`} />
+                <CardContent className="relative p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-xl bg-gradient-to-br ${gradients[index]} shadow-lg`}>
+                      <Icon className="w-6 h-6 text-white" />
                     </div>
-                    <div className={`p-3 rounded-full bg-gray-50 ${stat.color}`}>
-                      <Icon className="w-6 h-6" />
+                    <div className="text-right">
+                      <div className="flex items-center text-green-600 text-sm font-semibold">
+                        <TrendingUp className="w-4 h-4 mr-1" />
+                        {stat.change}
+                      </div>
                     </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-600 mb-1">{stat.title}</p>
+                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-xs text-gray-500 mt-1">from last month</p>
                   </div>
                 </CardContent>
               </Card>
@@ -160,18 +188,22 @@ const AdminCustomers = () => {
         </div>
 
         {/* Search and Filters */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+        <Card className="border-0 shadow-xl bg-white">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Input
-                  placeholder="Search customers by name, email, or ID..."
+                  placeholder="Search customers by name, email, or phone..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="pl-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl text-lg"
                 />
               </div>
+              <Button variant="outline" className="h-12 px-6 rounded-xl border-gray-200 hover:bg-gray-50">
+                <Filter className="w-5 h-5 mr-2" />
+                Advanced Filter
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -187,9 +219,15 @@ const AdminCustomers = () => {
         </Card>
 
         {/* Customers Table */}
-        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg font-semibold text-gray-900">Customer Directory</CardTitle>
+        <Card className="border-0 shadow-xl bg-white overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-200 pb-6">
+            <CardTitle className="text-xl font-bold text-gray-900 flex items-center">
+              <Users className="w-6 h-6 mr-3 text-blue-600" />
+              Customer Directory
+              <Badge className="ml-3 bg-blue-100 text-blue-800 px-3 py-1">
+                {filteredCustomers.length} customers
+              </Badge>
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Table>
@@ -209,8 +247,8 @@ const AdminCustomers = () => {
                   <TableRow key={customer.id} className="border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <TableCell>
                       <div className="flex items-center space-x-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
+                        <Avatar className="h-12 w-12 ring-2 ring-white shadow-lg">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold text-lg">
                             {customer.name.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
@@ -241,9 +279,9 @@ const AdminCustomers = () => {
                     <TableCell>
                       <Badge className={`${
                         getCustomerStatus(customer) === 'VIP' 
-                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0' 
-                          : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0'
-                      }`}>
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 shadow-lg' 
+                          : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-lg'
+                      } px-3 py-1`}>
                         {getCustomerStatus(customer) === 'VIP' && <Star className="w-3 h-3 mr-1" />}
                         {getCustomerStatus(customer)}
                       </Badge>
@@ -255,7 +293,7 @@ const AdminCustomers = () => {
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="hover:bg-blue-50 hover:text-blue-600"
+                              className="hover:bg-blue-50 hover:text-blue-600 rounded-lg p-2"
                               onClick={() => {
                                 setSelectedCustomer(customer);
                                 loadCustomerOrders(customer.email);

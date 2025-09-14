@@ -24,6 +24,11 @@ const AdminEmailSettings = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [loading, setSMTPLoading] = useState(false);
   const [templateLoading, setTemplateLoading] = useState(false);
+  const [testEmail, setTestEmail] = useState('');
+  const [testTemplate, setTestTemplate] = useState('');
+  const [testLoading, setTestLoading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewContent, setPreviewContent] = useState('');
 
   useEffect(() => {
     loadSMTPConfig();
@@ -95,31 +100,65 @@ const AdminEmailSettings = () => {
     }
   };
 
-  const handleTemplateDelete = async (templateName: string) => {
-    if (!confirm(`Are you sure you want to delete the template "${templateName}"?`)) {
-      return;
-    }
-    
+  const handleTestEmail = async () => {
+    setTestLoading(true);
     try {
-      const deleted = await emailService.deleteEmailTemplate(templateName);
-      if (deleted) {
+      const template = defaultTemplates.find(t => t.name === testTemplate);
+      if (!template) throw new Error('Template not found');
+      
+      const testData = {
+        customer_name: 'Test Customer',
+        order_number: 'TEST-001',
+        total_amount: '1000',
+        customer_email: testEmail,
+        customer_phone: '+8801234567890',
+        customer_address: 'Test Address, Dhaka',
+        payment_method: 'Cash on Delivery',
+        order_items: '<tr><td style="padding: 8px; border: 1px solid #ddd;">Test Product</td><td style="padding: 8px; border: 1px solid #ddd;">1</td><td style="padding: 8px; border: 1px solid #ddd;">1000 BDT</td></tr>',
+        order_date: new Date().toLocaleDateString()
+      };
+      
+      const sent = await emailService.sendTestEmail(testEmail, template, testData);
+      if (sent) {
         toast({
-          title: "Template Deleted",
-          description: "Email template has been deleted successfully."
+          title: "Test Email Sent",
+          description: `Test email sent successfully to ${testEmail}`
         });
-        loadTemplates();
-        setSelectedTemplate(null);
       } else {
-        throw new Error('Failed to delete template');
+        throw new Error('Failed to send test email');
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to delete email template.",
+        description: `Failed to send test email: ${error.message}`,
         variant: "destructive"
       });
+    } finally {
+      setTestLoading(false);
     }
   };
+
+  const handlePreview = () => {
+    if (!selectedTemplate) return;
+    
+    const testData = {
+      customer_name: 'John Doe',
+      order_number: 'ORD-12345',
+      total_amount: '2500',
+      customer_email: 'john@example.com',
+      customer_phone: '+8801234567890',
+      customer_address: '123 Main Street, Dhaka, Bangladesh',
+      payment_method: 'Cash on Delivery',
+      order_items: '<tr><td style="padding: 8px; border: 1px solid #ddd;">Smart LED Bulb</td><td style="padding: 8px; border: 1px solid #ddd;">2</td><td style="padding: 8px; border: 1px solid #ddd;">1200 BDT</td></tr><tr><td style="padding: 8px; border: 1px solid #ddd;">Smart Switch</td><td style="padding: 8px; border: 1px solid #ddd;">1</td><td style="padding: 8px; border: 1px solid #ddd;">1300 BDT</td></tr>',
+      order_date: new Date().toLocaleDateString()
+    };
+    
+    const preview = emailService.replaceTemplateVariables(selectedTemplate.html_content || '', testData);
+    setPreviewContent(preview);
+    setShowPreview(true);
+  };
+
+
 
   const defaultTemplates = [
     {
@@ -188,6 +227,7 @@ const AdminEmailSettings = () => {
           <TabsList>
             <TabsTrigger value="smtp">SMTP Configuration</TabsTrigger>
             <TabsTrigger value="templates">Email Templates</TabsTrigger>
+            <TabsTrigger value="test">Test Email</TabsTrigger>
           </TabsList>
 
           <TabsContent value="smtp">
@@ -280,10 +320,10 @@ const AdminEmailSettings = () => {
                     {defaultTemplates.map((template) => {
                       const existing = templates.find(t => t.name === template.name);
                       return (
-                        <div key={template.name} className="flex gap-2">
+                        <div key={template.name}>
                           <Button
                             variant={selectedTemplate?.name === template.name ? "default" : "outline"}
-                            className="flex-1 justify-start"
+                            className="w-full justify-start"
                             onClick={() => {
                               setSelectedTemplate(existing || {
                                 ...template,
@@ -293,17 +333,8 @@ const AdminEmailSettings = () => {
                               });
                             }}
                           >
-                            {template.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            {template.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).replace(/[<>&"']/g, '')}
                           </Button>
-                          {existing && (
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleTemplateDelete(template.name)}
-                            >
-                              Delete
-                            </Button>
-                          )}
                         </div>
                       );
                     })}
@@ -312,13 +343,13 @@ const AdminEmailSettings = () => {
 
               {selectedTemplate && (
                 <div className="lg:col-span-2 bg-white rounded-lg border p-6">
-                  <h3 className="text-lg font-semibold mb-4">Edit Template: {selectedTemplate.name}</h3>
+                  <h3 className="text-lg font-semibold mb-4">Edit Template: {String(selectedTemplate.name || '').replace(/[<>&"']/g, '')}</h3>
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="subject">Subject</Label>
                       <Input
                         id="subject"
-                        value={selectedTemplate.subject}
+                        value={selectedTemplate.subject || ''}
                         onChange={(e) => setSelectedTemplate(prev => prev ? { ...prev, subject: e.target.value } : null)}
                       />
                     </div>
@@ -328,7 +359,7 @@ const AdminEmailSettings = () => {
                       <Textarea
                         id="html_content"
                         rows={15}
-                        value={selectedTemplate.html_content}
+                        value={selectedTemplate.html_content || ''}
                         onChange={(e) => setSelectedTemplate(prev => prev ? { ...prev, html_content: e.target.value } : null)}
                       />
                     </div>
@@ -338,15 +369,85 @@ const AdminEmailSettings = () => {
                       <p>customer_name, order_number, total_amount, customer_email, customer_phone, customer_address, payment_method, order_items, order_date</p>
                     </div>
                     
-                    <Button onClick={handleTemplateSave} disabled={templateLoading}>
-                      {templateLoading ? 'Saving...' : 'Save Template'}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button onClick={handleTemplateSave} disabled={templateLoading}>
+                        {templateLoading ? 'Saving...' : 'Save Template'}
+                      </Button>
+                      <Button variant="outline" onClick={handlePreview}>
+                        Preview
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="test">
+            <div className="bg-white rounded-lg border p-6">
+              <h3 className="text-lg font-semibold mb-4">Send Test Email</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="test-email">Test Email Address</Label>
+                  <Input
+                    id="test-email"
+                    type="email"
+                    value={testEmail}
+                    onChange={(e) => setTestEmail(e.target.value)}
+                    placeholder="Enter email address to send test"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="test-template">Select Template</Label>
+                  <select
+                    id="test-template"
+                    value={testTemplate}
+                    onChange={(e) => setTestTemplate(e.target.value)}
+                    className="w-full p-2 border rounded-md"
+                  >
+                    <option value="">Select a template</option>
+                    {defaultTemplates.map((template) => (
+                      <option key={template.name} value={template.name}>
+                        {template.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <Button 
+                  onClick={handleTestEmail} 
+                  disabled={testLoading || !testEmail || !testTemplate}
+                >
+                  {testLoading ? 'Sending...' : 'Send Test Email'}
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
+        
+        {/* Preview Modal */}
+        {showPreview && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+              <div className="flex justify-between items-center p-4 border-b">
+                <h3 className="text-lg font-semibold">Email Preview</h3>
+                <Button variant="outline" onClick={() => setShowPreview(false)}>
+                  ✕
+                </Button>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                <div className="bg-white border rounded-lg p-4 min-h-[400px]">
+                  <iframe
+                    srcDoc={previewContent}
+                    className="w-full h-[500px] border-0"
+                    title="Email Preview"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

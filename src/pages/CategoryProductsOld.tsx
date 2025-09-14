@@ -67,6 +67,11 @@ const CategoryProducts = () => {
       setProducts(filteredProducts);
     } catch (err) {
       console.error('Failed to load products:', sanitizeForLog(err));
+      toast({
+        title: "Error",
+        description: `Failed to load products: ${err instanceof Error ? err.message.replace(/[<>&"']/g, '') : 'Unknown error'}`,
+        variant: "destructive"
+      });
     }
   };
 
@@ -113,7 +118,7 @@ const CategoryProducts = () => {
       
       toast({
         title: "Product Added",
-        description: `${formData.name} has been added successfully.`,
+        description: `${formData.name.replace(/[<>&"']/g, '')} has been added successfully.`,
       });
       
       setIsAddDialogOpen(false);
@@ -129,7 +134,7 @@ const CategoryProducts = () => {
       console.error('Add product error:', sanitizeForLog(err));
       toast({
         title: "Error",
-        description: `Failed to add product: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        description: `Failed to add product: ${err instanceof Error ? err.message.replace(/[<>&"']/g, '') : 'Unknown error'}`,
         variant: "destructive"
       });
     }
@@ -183,7 +188,7 @@ const CategoryProducts = () => {
       
       toast({
         title: "Product Updated",
-        description: `${formData.name} has been updated successfully.`,
+        description: `${formData.name.replace(/[<>&"']/g, '')} has been updated successfully.`,
       });
       
       setIsEditDialogOpen(false);
@@ -252,7 +257,7 @@ const CategoryProducts = () => {
                 <h1 className="text-3xl font-bold text-gray-900 mb-1">
                   {category} Products
                 </h1>
-                <p className="text-gray-500">Manage your {category?.toLowerCase()} product catalog</p>
+                <p className="text-gray-500">Manage your {category ? String(category).toLowerCase().replace(/[^a-z0-9\s]/g, '').slice(0, 50) : ''} product catalog</p>
               </div>
             </div>
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

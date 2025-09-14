@@ -202,7 +202,7 @@ const Footer = () => {
       <div className="border-t border-gray-300">
         <div className="container-width px-4 md:px-6 py-3 md:py-4">
           <div className="flex flex-col md:flex-row justify-between items-center text-xs md:text-sm text-gray-600 space-y-2 md:space-y-0">
-            <p className="text-center md:text-left">© 2025 Curtain Luxe. All rights reserved.</p>
+            <p className="text-center md:text-left">© 2025 smart home. All rights reserved.</p>
             <a 
               href="https://sohub.com.bd" 
               target="_blank" 

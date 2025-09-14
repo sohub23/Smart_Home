@@ -126,10 +126,10 @@ const InteractiveDemoSection = () => {
         }
       `}</style>
       <section className="section-padding bg-background">
-      <div className="container-width">
+      <div className="container-width" style={{paddingBottom: '4rem'}}>
         {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-headline text-primary mb-4">
+        <div className="text-center mb-6">
+          <h2 className="lg:text-[2.7rem] xl:text-[3.24rem] font-semibold leading-tight tracking-tight apple-gradient-text mb-6 text-[3.24rem]" style={{lineHeight: 1.09}}>
             See It in Action — Control With Your Phone
           </h2>
           <p className="text-body-large text-muted-foreground max-w-2xl mx-auto">
@@ -138,7 +138,7 @@ const InteractiveDemoSection = () => {
         </div>
 
         {/* Mobile-First Layout */}
-        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-16 items-center max-h-screen lg:max-h-none">
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-8 items-center max-h-screen lg:max-h-none">
           {/* Window Demo - Top on mobile, Left on desktop */}
           <div className="relative w-full order-1 lg:order-1">
             <div className="aspect-[16/9] lg:aspect-[4/3] overflow-hidden rounded-xl lg:rounded-2xl shadow-2xl" style={{ backgroundImage: `url(${windowImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
@@ -419,15 +419,7 @@ const InteractiveDemoSection = () => {
           </div>
         </div>
 
-        {/* Bottom CTA */}
-        <div className="text-center mt-8 lg:mt-16">
-          <Button 
-            onClick={() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })}
-            className="btn-cta w-full sm:w-auto"
-          >
-            Experience This Control
-          </Button>
-        </div>
+
       </div>
       </section>
     </>

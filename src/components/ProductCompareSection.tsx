@@ -46,11 +46,11 @@ const products = [
 const ProductCompareSection = () => {
   const [videoLoaded, setVideoLoaded] = useState<{[key: string]: boolean}>({});
   return (
-    <section id="compare" className="py-12 md:py-16 bg-gray-50">
+    <section id="compare" className="py-12 md:py-16 bg-gray-50" style={{paddingBottom: '8rem'}}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-headline text-primary mb-4 px-4">
+          <h2 className="lg:text-[2.7rem] xl:text-[3.24rem] font-semibold leading-tight tracking-tight apple-gradient-text mb-6 text-[3.24rem]" style={{lineHeight: 1.09}}>
             Choose Your Style
           </h2>
           <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto font-light px-4">
@@ -163,12 +163,7 @@ const ProductCompareSection = () => {
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="text-center mt-12 md:mt-16 px-4">
-          <div className="inline-flex items-center px-4 md:px-6 py-3 bg-black text-white rounded-full text-sm md:text-base font-medium hover:bg-gray-800 transition-colors duration-300 cursor-pointer">
-            Experience #BuiltForComfort Today
-          </div>
-        </div>
+
       </div>
     </section>
   );

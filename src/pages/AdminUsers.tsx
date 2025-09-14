@@ -247,13 +247,13 @@ const AdminUsers = () => {
                             user.role === 'support' ? 'bg-gradient-to-br from-green-500 to-emerald-600' :
                             'bg-gradient-to-br from-purple-500 to-indigo-600'
                           }`}>
-                            {user.name.split(' ').map(n => n[0]).join('')}
+                            {String(user.name || '').replace(/[<>&"']/g, '').split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-gray-900">{user.name}</p>
-                          <p className="text-sm text-gray-500">{user.email}</p>
-                          <p className="text-xs text-gray-400">{user.id}</p>
+                          <p className="font-medium text-gray-900">{String(user.name || '').replace(/[<>&"']/g, '')}</p>
+                          <p className="text-sm text-gray-500">{String(user.email || '').replace(/[<>&"']/g, '')}</p>
+                          <p className="text-xs text-gray-400">{String(user.id || '').replace(/[<>&"']/g, '')}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -261,16 +261,16 @@ const AdminUsers = () => {
                       <div className="space-y-1">
                         <Badge className={getRoleColor(user.role)}>
                           {user.role === 'admin' && <Shield className="w-3 h-3 mr-1" />}
-                          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          {String(user.role || '').replace(/[<>&"']/g, '').charAt(0).toUpperCase() + String(user.role || '').replace(/[<>&"']/g, '').slice(1)}
                         </Badge>
-                        <p className="text-sm text-gray-500">{user.department}</p>
+                        <p className="text-sm text-gray-500">{String(user.department || '').replace(/[<>&"']/g, '')}</p>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Badge className={getStatusColor(user.status)}>
                           {user.status === 'active' ? <UserCheck className="w-3 h-3 mr-1" /> : <UserX className="w-3 h-3 mr-1" />}
-                          {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
+                          {String(user.status || '').replace(/[<>&"']/g, '').charAt(0).toUpperCase() + String(user.status || '').replace(/[<>&"']/g, '').slice(1)}
                         </Badge>
                       </div>
                     </TableCell>
@@ -287,7 +287,7 @@ const AdminUsers = () => {
                       <div className="space-y-1">
                         {user.permissions?.slice(0, 2).map((permission, index) => (
                           <Badge key={index} variant="outline" className="text-xs mr-1">
-                            {permission.replace('_', ' ').toUpperCase()}
+                            {permission.replace('_', ' ').toUpperCase().replace(/[<>&"']/g, '')}
                           </Badge>
                         )) || <Badge variant="outline" className="text-xs">No permissions</Badge>}
                         {user.permissions && user.permissions.length > 2 && (
@@ -315,12 +315,12 @@ const AdminUsers = () => {
                                     user.role === 'support' ? 'bg-gradient-to-br from-green-500 to-emerald-600' :
                                     'bg-gradient-to-br from-purple-500 to-indigo-600'
                                   }`}>
-                                    {user.name.split(' ').map(n => n[0]).join('')}
+                                    {String(user.name || '').replace(/[<>&"']/g, '').split(' ').map(n => n[0]).join('')}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
-                                  <h2 className="text-xl font-bold">{user.name}</h2>
-                                  <p className="text-sm text-gray-500">{user.email}</p>
+                                  <h2 className="text-xl font-bold">{String(user.name || '').replace(/[<>&"']/g, '')}</h2>
+                                  <p className="text-sm text-gray-500">{String(user.email || '').replace(/[<>&"']/g, '')}</p>
                                 </div>
                               </DialogTitle>
                             </DialogHeader>
@@ -330,7 +330,7 @@ const AdminUsers = () => {
                                   <CardContent className="p-4">
                                     <h3 className="font-semibold text-blue-900 mb-2">Role Information</h3>
                                     <p className="text-blue-800">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
-                                    <p className="text-sm text-blue-600">{user.department}</p>
+                                    <p className="text-sm text-blue-600">{String(user.department || '').replace(/[<>&"']/g, '')}</p>
                                   </CardContent>
                                 </Card>
                                 <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
@@ -350,7 +350,7 @@ const AdminUsers = () => {
                                     {user.permissions?.map((permission, index) => (
                                       <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg">
                                         <Shield className="w-4 h-4 text-green-600" />
-                                        <span className="text-sm">{permission.replace('_', ' ').toUpperCase()}</span>
+                                        <span className="text-sm">{permission.replace('_', ' ').toUpperCase().replace(/[<>&"']/g, '')}</span>
                                       </div>
                                     )) || <p className="text-gray-500">No permissions assigned</p>}
                                   </div>

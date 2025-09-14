@@ -11,33 +11,47 @@ interface RichTextEditorProps {
 const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) => {
   const editorRef = useRef<HTMLDivElement>(null);
 
+  const sanitizeHTML = (html: string) => {
+    const allowedTags = ['b', 'i', 'u', 'strong', 'em', 'ul', 'ol', 'li', 'p', 'br', 'div'];
+    const allowedAttrs = ['style'];
+    
+    return html
+      .replace(/<script[^>]*>.*?<\/script>/gi, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .replace(/<(?!\/?(b|i|u|strong|em|ul|ol|li|p|br|div)\b)[^>]*>/gi, '');
+  };
+
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value || '';
+      const sanitizedValue = sanitizeHTML(value || '');
+      editorRef.current.innerHTML = sanitizedValue;
     }
   }, [value]);
 
   const execCommand = (command: string, value?: string) => {
     if (!editorRef.current) return;
     
-    // Sanitize commands to prevent code injection
+    // Sanitize and validate commands to prevent code injection
+    const sanitizedCommand = command.replace(/[^a-zA-Z]/g, '');
     const allowedCommands = ['bold', 'italic', 'underline', 'insertUnorderedList', 'insertOrderedList', 'justifyLeft', 'justifyCenter', 'justifyRight', 'fontSize'];
-    if (!allowedCommands.includes(command)) return;
+    if (!allowedCommands.includes(sanitizedCommand)) return;
     
     // Sanitize fontSize values
-    if (command === 'fontSize' && value) {
+    if (sanitizedCommand === 'fontSize' && value) {
+      const sanitizedValue = value.replace(/[^0-9]/g, '');
       const allowedSizes = ['1', '3', '4', '6'];
-      if (!allowedSizes.includes(value)) return;
+      if (!allowedSizes.includes(sanitizedValue)) return;
+      value = sanitizedValue;
     }
     
     try {
       document.execCommand(command, false, value);
-      // Sanitize the output HTML to prevent XSS
+      // Get sanitized content without reassigning innerHTML
       const sanitizedHTML = editorRef.current.innerHTML
         .replace(/<script[^>]*>.*?<\/script>/gi, '')
         .replace(/javascript:/gi, '')
         .replace(/on\w+\s*=/gi, '');
-      editorRef.current.innerHTML = sanitizedHTML;
       onChange(sanitizedHTML);
     } catch (error) {
       console.error('Command execution failed:', error);
@@ -46,12 +60,7 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
 
   const handleInput = () => {
     if (editorRef.current) {
-      // Sanitize input to prevent XSS
-      const sanitizedHTML = editorRef.current.innerHTML
-        .replace(/<script[^>]*>.*?<\/script>/gi, '')
-        .replace(/javascript:/gi, '')
-        .replace(/on\w+\s*=/gi, '');
-      onChange(sanitizedHTML);
+      onChange(editorRef.current.textContent || '');
     }
   };
 
@@ -155,24 +164,13 @@ const RichTextEditor = ({ value, onChange, placeholder }: RichTextEditorProps) =
       <div
         ref={editorRef}
         contentEditable
-        className="min-h-[200px] p-4 focus:outline-none"
+        className="min-h-[200px] p-4 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none"
         onInput={handleInput}
         data-placeholder={placeholder}
-        style={{
-          minHeight: '200px'
-        }}
         suppressContentEditableWarning={true}
       />
       
-      <style dangerouslySetInnerHTML={{
-        __html: `
-          [contenteditable]:empty:before {
-            content: attr(data-placeholder);
-            color: #9ca3af;
-            pointer-events: none;
-          }
-        `
-      }} />
+
     </div>
   );
 };

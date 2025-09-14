@@ -159,7 +159,7 @@ const AdminProductsEnhanced = memo(() => {
       setProducts(prev => [data, ...prev]);
     } catch (error) {
       console.error('Product creation error:', error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: String(error?.message || 'An error occurred').replace(/[<>&"']/g, ''), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -267,7 +267,7 @@ const AdminProductsEnhanced = memo(() => {
       ));
     } catch (error) {
       console.error('Product update error:', error);
-      toast({ title: "Error", description: error?.message || 'Update failed', variant: "destructive" });
+      toast({ title: "Error", description: String(error?.message || 'Update failed').replace(/[<>&"']/g, ''), variant: "destructive" });
     } finally {
       setSaving(false);
     }
@@ -721,7 +721,7 @@ const AdminProductsEnhanced = memo(() => {
                       const file = e.dataTransfer.files[0];
                       if (file && file.type.startsWith('image/')) {
                         const reader = new FileReader();
-                        reader.onload = (e) => setProductForm({...productForm, image: e.target.result});
+                        reader.onload = (e) => setProductForm({...productForm, image: e.target?.result as string});
                         reader.readAsDataURL(file);
                       }
                     }}
@@ -760,7 +760,7 @@ const AdminProductsEnhanced = memo(() => {
                       const file = e.target.files[0];
                       if (file) {
                         const reader = new FileReader();
-                        reader.onload = (e) => setProductForm({...productForm, image: e.target.result});
+                        reader.onload = (e) => setProductForm({...productForm, image: e.target?.result as string});
                         reader.readAsDataURL(file);
                       }
                     }}
@@ -794,7 +794,7 @@ const AdminProductsEnhanced = memo(() => {
                               const reader = new FileReader();
                               reader.onload = (e) => {
                                 const updated = [...additionalImages];
-                                updated[index] = e.target.result;
+                                updated[index] = e.target?.result as string;
                                 setAdditionalImages(updated);
                               };
                               reader.readAsDataURL(file);
@@ -837,7 +837,7 @@ const AdminProductsEnhanced = memo(() => {
                               const reader = new FileReader();
                               reader.onload = (e) => {
                                 const updated = [...additionalImages];
-                                updated[index] = e.target.result;
+                                updated[index] = e.target?.result as string;
                                 setAdditionalImages(updated);
                               };
                               reader.readAsDataURL(file);
@@ -1046,7 +1046,7 @@ const AdminProductsEnhanced = memo(() => {
                         const file = e.dataTransfer.files[0];
                         if (file && file.type.startsWith('image/')) {
                           const reader = new FileReader();
-                          reader.onload = (e) => setProductForm({...productForm, help_image_url: e.target.result});
+                          reader.onload = (e) => setProductForm({...productForm, help_image_url: e.target?.result as string});
                           reader.readAsDataURL(file);
                         }
                       }}
@@ -1084,7 +1084,7 @@ const AdminProductsEnhanced = memo(() => {
                         const file = e.target.files[0];
                         if (file) {
                           const reader = new FileReader();
-                          reader.onload = (e) => setProductForm({...productForm, help_image_url: e.target.result});
+                          reader.onload = (e) => setProductForm({...productForm, help_image_url: e.target?.result as string});
                           reader.readAsDataURL(file);
                         }
                       }}
@@ -1120,7 +1120,7 @@ const AdminProductsEnhanced = memo(() => {
                         const file = e.dataTransfer.files[0];
                         if (file && file.type.startsWith('image/')) {
                           const reader = new FileReader();
-                          reader.onload = (e) => setProductForm({...productForm, engraving_image_url: e.target.result});
+                          reader.onload = (e) => setProductForm({...productForm, engraving_image_url: e.target?.result as string});
                           reader.readAsDataURL(file);
                         }
                       }}
@@ -1158,7 +1158,7 @@ const AdminProductsEnhanced = memo(() => {
                         const file = e.target.files[0];
                         if (file) {
                           const reader = new FileReader();
-                          reader.onload = (e) => setProductForm({...productForm, engraving_image_url: e.target.result});
+                          reader.onload = (e) => setProductForm({...productForm, engraving_image_url: e.target?.result as string});
                           reader.readAsDataURL(file);
                         }
                       }}
@@ -1207,7 +1207,7 @@ const AdminProductsEnhanced = memo(() => {
             
             <div className="py-4">
               <p className="text-gray-600 mb-4">
-                Are you sure you want to delete <span className="font-semibold text-gray-900">{productToDelete?.title}</span>?
+                Are you sure you want to delete <span className="font-semibold text-gray-900">{String(productToDelete?.title || '').replace(/[<>&"']/g, '')}</span>?
               </p>
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <p className="text-sm text-red-800">
@@ -1242,7 +1242,7 @@ const AdminProductsEnhanced = memo(() => {
                     setProductToDelete(null);
                     loadData();
                   } catch (error) {
-                    toast({ title: "Error", description: error.message, variant: "destructive" });
+                    toast({ title: "Error", description: String(error?.message || 'An error occurred').replace(/[<>&"']/g, ''), variant: "destructive" });
                   }
                 }}
                 className="bg-red-600 hover:bg-red-700"
