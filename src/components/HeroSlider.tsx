@@ -30,6 +30,15 @@ const HeroSlider = () => {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [showImages, setShowImages] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState<{[key: number]: boolean}>({});
+  
+  // Reset video loaded state when slide changes
+  useEffect(() => {
+    const currentSlideData = slides[currentSlide];
+    if (currentSlideData.youtubeId && !showImages) {
+      // Reset video loaded state for smooth transition
+      setVideoLoaded(prev => ({ ...prev, [currentSlideData.id]: false }));
+    }
+  }, [currentSlide, showImages]);
   const heroRef = useRef<HTMLElement>(null);
   const headlineRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
@@ -102,20 +111,22 @@ const HeroSlider = () => {
             }`}
           >
             <div className="relative w-full h-full">
-              {/* Default thumbnail background - always visible */}
+              {/* Default image - show during loading or when videos are paused */}
               <img
-                src={slide.thumbnail}
+                src={showImages || !videoLoaded[slide.id] ? slide.thumbnail : slide.image}
                 alt={slide.alt}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition-opacity duration-500 ${
+                  showImages || !videoLoaded[slide.id] ? 'opacity-100' : 'opacity-30'
+                }`}
                 loading="eager"
               />
               
               {/* YouTube video overlay - only show when loaded and not paused */}
-              {slide.youtubeId && !showImages && (
+              {slide.youtubeId && !showImages && index === currentSlide && (
                 <iframe
-                  key={slide.id}
-                  src={`https://www.youtube-nocookie.com/embed/${slide.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${slide.youtubeId}&rel=0&showinfo=0&modestbranding=1`}
-                  className={`absolute inset-0 w-full h-full transition-opacity duration-500 ${
+                  key={`${slide.id}-${currentSlide}`}
+                  src={`https://www.youtube.com/embed/${slide.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${slide.youtubeId}&rel=0&showinfo=0&modestbranding=1&enablejsapi=1&origin=${window.location.origin}`}
+                  className={`absolute inset-0 w-full h-full transition-opacity duration-1000 ${
                     videoLoaded[slide.id] ? 'opacity-100' : 'opacity-0'
                   }`}
                   style={{ 
@@ -128,7 +139,8 @@ const HeroSlider = () => {
                     top: '50%',
                     transform: 'translate(-50%, -50%)'
                   }}
-                  allow="autoplay; encrypted-media"
+                  allow="autoplay; encrypted-media; fullscreen"
+                  allowFullScreen
                   title={slide.alt}
                   loading="eager"
                   onLoad={() => {
