@@ -568,7 +568,7 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
 
       {/* Help Modal */}
       <Dialog open={helpModalOpen} onOpenChange={setHelpModalOpen}>
-        <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
+        <DialogContent className="max-w-2xl p-0 rounded-2xl bg-white shadow-2xl border-0">
           {/* Close Button */}
           <button 
             onClick={() => setHelpModalOpen(false)}
@@ -579,37 +579,102 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
             </svg>
           </button>
           
-          {/* Product Image */}
-          <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
-            <img
-              src={'/assets/Security/Accesories/motion_sensor.jpeg'}
-              alt="Security Sensors"
-              className="w-32 h-32 object-cover rounded-lg"
-            />
+          {/* Header */}
+          <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white p-6 rounded-t-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Sensor Selection Guide</h2>
+                <p className="text-green-100 text-sm">Choose the right sensors for your security system</p>
+              </div>
+            </div>
           </div>
           
-          <div className="p-6">
-            {/* Headline */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
-            </div>
-            
-            {/* Options */}
-            <div className="space-y-6">
-              {/* Option 1 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Basic Sensor Package</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Essential sensors for home security including motion, door, and smoke detectors. Perfect for standard home protection with basic monitoring capabilities.
-                </p>
+          <div className="p-6 max-h-[70vh] overflow-y-auto">
+            {/* Sensor Categories */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Available Sensor Types</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">Detection Sensors:</h4>
+                  <ul className="text-blue-800 space-y-1 text-sm">
+                    <li>• Motion Sensor - ৳1,200</li>
+                    <li>• Door Sensor - ৳850</li>
+                    <li>• Shutter Sensor - ৳1,550</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-red-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-red-900 mb-2">Safety Sensors:</h4>
+                  <ul className="text-red-800 space-y-1 text-sm">
+                    <li>• Smoke Detector - ৳4,500</li>
+                    <li>• Gas Detector - ৳1,850</li>
+                  </ul>
+                </div>
               </div>
               
-              {/* Option 2 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Complete Sensor Package</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Comprehensive security coverage with all sensor types including gas detection, vibration monitoring, and advanced motion sensors. Ideal for complete home security.
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-purple-900 mb-2">Alert Systems:</h4>
+                  <ul className="text-purple-800 space-y-1 text-sm">
+                    <li>• Wireless Siren - ৳2,600</li>
+                    <li>• SOS Band - ৳1,200</li>
+                  </ul>
+                </div>
+                
+                <div className="bg-amber-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-amber-900 mb-2">Enhancement:</h4>
+                  <ul className="text-amber-800 space-y-1 text-sm">
+                    <li>• Signal Extender - ৳4,500</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            {/* Recommendations */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Recommended Packages</h3>
+              
+              <div className="space-y-4">
+                <div className="border border-green-200 bg-green-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-green-900 mb-2">Basic Package (৳4,600)</h4>
+                  <p className="text-green-800 text-sm mb-2">Essential protection for small homes:</p>
+                  <ul className="text-green-700 text-sm space-y-1">
+                    <li>• Motion Sensor + Door Sensor + Wireless Siren</li>
+                    <li>• Perfect for apartments and small houses</li>
+                  </ul>
+                </div>
+                
+                <div className="border border-blue-200 bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">Complete Package (৳12,550)</h4>
+                  <p className="text-blue-800 text-sm mb-2">Comprehensive security for larger homes:</p>
+                  <ul className="text-blue-700 text-sm space-y-1">
+                    <li>• All sensors + Signal Extender</li>
+                    <li>• Ideal for multi-story homes and businesses</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            {/* Contact Section */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Still need help?
+              </h4>
+              <p className="text-gray-600 text-sm mb-3">Our security experts are here to help you choose the perfect sensor combination.</p>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors">
+                  Chat with Expert
+                </button>
+                <button className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors">
+                  Call Us
+                </button>
               </div>
             </div>
           </div>

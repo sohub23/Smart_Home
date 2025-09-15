@@ -612,7 +612,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                         <div className="text-sm text-gray-600">
                           {engravingText ? (
                             <span className="flex items-center gap-1">
-                              <span className="font-medium">"${engravingText}"</span>
+                              <span className="font-medium">"{engravingText}"</span>
                               <span className="text-green-600">✓ Added</span>
                             </span>
                           ) : (

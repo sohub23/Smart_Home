@@ -46,7 +46,7 @@ const sharedSpecGroups: SpecGroup[] = [
     specs: [
       { label: 'Connectivity', value: 'Wi-Fi/Zigbee', tooltip: 'Dual connectivity options' },
       { label: 'App Control', value: 'iOS/Android', tooltip: 'Universal app support' },
-      { label: 'Voice Control', value: 'Alexa/Google', tooltip: 'Smart assistant integration' },
+      { label: 'Voice Control', value: 'Apple/Alexa/Google', tooltip: 'Smart assistant integration' },
       { label: 'Scenes', value: 'Unlimited', tooltip: 'Custom automation scenarios' }
     ]
   },
@@ -66,8 +66,7 @@ const sharedSpecGroups: SpecGroup[] = [
     specs: [
       { label: 'Overload Protection', value: 'Built-in', tooltip: 'Automatic motor protection' },
       { label: 'Certifications', value: 'CE, FCC, RoHS', tooltip: 'International safety standards' },
-      { label: 'Warranty', value: '3 Years', tooltip: 'Comprehensive coverage' },
-      { label: 'Support', value: '24/7 Local', tooltip: 'Bangladesh-based support team' }
+      { label: 'Warranty', value: '1 Year', tooltip: 'Comprehensive coverage' }
     ]
   }
 ];

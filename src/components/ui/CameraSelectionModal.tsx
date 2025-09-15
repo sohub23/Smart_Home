@@ -6,24 +6,21 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { enhancedProductService } from '@/supabase';
-import { useQuery } from '@tanstack/react-query';
 
-// Preload camera data immediately
-const preloadCameraData = async () => {
-  try {
-    const [categories, products] = await Promise.all([
-      enhancedProductService.getCategories(),
-      enhancedProductService.getProducts()
-    ]);
-    return { categories, products };
-  } catch (error) {
-    console.error('Camera preload failed:', error);
-    return { categories: [], products: [] };
+// Static camera data
+const staticCameras = [
+  { 
+    id: '1', 
+    name: 'AI Camera', 
+    desc: 'Smart AI-powered security camera with motion detection', 
+    price: 3500, 
+    image: '/assets/Security/Camera/ai_camera.jpeg',
+    additionalImages: [
+      '/assets/Security/Camera/camera_1.jpeg',
+      '/assets/Security/Camera/camera2.jpeg'
+    ]
   }
-};
-
-const cameraDataPromise = preloadCameraData();
+];
 
 // Add custom styles for text truncation
 const styles = `
@@ -65,103 +62,27 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
   const [detailImageIndex, setDetailImageIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Get all camera images including additional images
+  // Static camera images including additional images
   const getAllCameraImages = () => {
     const allImages = [];
-    accessories.forEach(camera => {
+    staticCameras.forEach(camera => {
       if (camera.image) allImages.push(camera.image);
-      
-      // Add additional images if they exist
-      if (camera.originalProduct?.additional_images) {
-        try {
-          const additional = typeof camera.originalProduct.additional_images === 'string' 
-            ? JSON.parse(camera.originalProduct.additional_images) 
-            : camera.originalProduct.additional_images;
-          if (Array.isArray(additional)) {
-            allImages.push(...additional.filter(Boolean));
-          }
-        } catch (e) {}
+      if (camera.additionalImages) {
+        allImages.push(...camera.additionalImages);
       }
     });
     return allImages;
   };
-  
   const allCameraImages = getAllCameraImages();
-
-  // Use React Query for instant data access
-  const { data: cameraData } = useQuery({
-    queryKey: ['camera-data'],
-    queryFn: () => cameraDataPromise,
-    staleTime: 5 * 60 * 1000,
-    cacheTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false
-  });
 
   // Reset to default when modal opens
   useEffect(() => {
     if (open) {
       setActiveTab('included');
       setSelectedImage(0);
-      if (cameraData) {
-        fetchAccessories();
-      }
+      setAccessories(staticCameras);
     }
-  }, [open, cameraData]);
-
-  const fetchAccessories = () => {
-    if (!cameraData?.categories || !cameraData?.products) return;
-    
-    const { categories, products } = cameraData;
-    const securityCategory = categories.find(cat => 
-      cat.name?.toLowerCase().includes('security')
-    );
-    
-    if (!securityCategory) {
-      setAccessories([]);
-      return;
-    }
-    
-    // Filter for all camera products
-    const cameraProducts = products.filter(p => {
-      const isSecurityCategory = p.category_id === securityCategory.id;
-      const name = (p.title || p.display_name || '').toLowerCase();
-      const desc = (p.overview || p.product_overview || p.description || '').toLowerCase();
-      
-      const cameraKeywords = ['camera', 'cam', 'surveillance', 'cctv', 'webcam', 'ai camera', 'security camera', 'c11'];
-      const isCamera = cameraKeywords.some(keyword => name.includes(keyword) || desc.includes(keyword));
-      
-      return isSecurityCategory && isCamera;
-    });
-    
-    const mappedProducts = cameraProducts.map(p => {
-      let productPrice = 0;
-      if (p.variants) {
-        try {
-          let variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
-          if (variants && variants.length > 0) {
-            const firstVariant = variants[0];
-            productPrice = firstVariant.discount_price > 0 ? firstVariant.discount_price : firstVariant.price || 0;
-          }
-        } catch (e) {
-          productPrice = p.price || 0;
-        }
-      }
-      if (!productPrice) {
-        productPrice = p.price || 0;
-      }
-      
-      return {
-        id: p.id,
-        name: p.title || p.display_name,
-        desc: (p.overview || p.product_overview || 'Security camera').replace(/<[^>]*>/g, '').trim(),
-        price: productPrice,
-        image: p.image,
-        originalProduct: p
-      };
-    });
-    
-    setAccessories(mappedProducts);
-  };
+  }, [open]);
 
   const accessoryTotal = selectedAccessories.reduce((sum, index) => {
     const accessory = accessories[index];
@@ -261,7 +182,7 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
                   <img
-                    src={allCameraImages[selectedImage]}
+                    src={allCameraImages[selectedImage] || '/assets/Security/Accesories/ai_camera.jpeg'}
                     alt="Security Cameras"
                     className="w-full h-full object-contain rounded-lg"
                   />
@@ -419,14 +340,7 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
                           <h4 className="font-bold text-black text-sm mb-1 line-clamp-2">{accessory.name}</h4>
                           <p className="text-xs text-gray-500 mb-2 line-clamp-2">{accessory.desc}</p>
                           <div className="mb-2">
-                            {accessory.originalProduct?.discount_price ? (
-                              <div className="flex flex-col">
-                                <span className="text-xs font-bold text-green-600">{Number(accessory.price).toLocaleString()} BDT</span>
-                                <span className="text-xs text-gray-400 line-through">{Number(accessory.originalProduct.base_price).toLocaleString()} BDT</span>
-                              </div>
-                            ) : (
-                              <span className="text-xs font-bold">{Number(accessory.price).toLocaleString()} BDT</span>
-                            )}
+                            <span className="text-xs font-bold">{Number(accessory.price).toLocaleString()} BDT</span>
                           </div>
                           
                           {isSelected && (
@@ -565,79 +479,71 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
             <div className="flex-1 flex items-center justify-center relative">
               <img
                 src={(() => {
-                  const images = [selectedProductDetail?.image].filter(Boolean);
-                  if (selectedProductDetail?.originalProduct?.additional_images) {
-                    try {
-                      const additional = typeof selectedProductDetail.originalProduct.additional_images === 'string' 
-                        ? JSON.parse(selectedProductDetail.originalProduct.additional_images) 
-                        : selectedProductDetail.originalProduct.additional_images;
-                      if (Array.isArray(additional)) {
-                        images.push(...additional.filter(Boolean));
-                      }
-                    } catch (e) {}
+                  const images = [selectedProductDetail?.image];
+                  if (selectedProductDetail?.additionalImages) {
+                    images.push(...selectedProductDetail.additionalImages);
                   }
-                  return images[detailImageIndex];
+                  return images[detailImageIndex] || '/assets/Security/Camera/ai_camera.jpeg';
                 })()}
                 alt={selectedProductDetail?.name}
                 className="w-48 h-48 object-contain rounded-lg"
               />
               
+              {(() => {
+                const images = [selectedProductDetail?.image];
+                if (selectedProductDetail?.additionalImages) {
+                  images.push(...selectedProductDetail.additionalImages);
+                }
+                
+                if (images.length > 1) {
+                  return (
+                    <>
+                      <button
+                        onClick={() => setDetailImageIndex(detailImageIndex > 0 ? detailImageIndex - 1 : images.length - 1)}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-gray-600" />
+                      </button>
+                      
+                      <button
+                        onClick={() => setDetailImageIndex(detailImageIndex < images.length - 1 ? detailImageIndex + 1 : 0)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-gray-200 flex items-center justify-center hover:bg-white transition-all duration-200 shadow-sm"
+                      >
+                        <ChevronRight className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </>
+                  );
+                }
+                return null;
+              })()}
+              
 
             </div>
             
             {(() => {
-              const images = [selectedProductDetail?.image].filter(Boolean);
-              if (selectedProductDetail?.originalProduct?.additional_images) {
-                try {
-                  const additional = typeof selectedProductDetail.originalProduct.additional_images === 'string' 
-                    ? JSON.parse(selectedProductDetail.originalProduct.additional_images) 
-                    : selectedProductDetail.originalProduct.additional_images;
-                  if (Array.isArray(additional)) {
-                    images.push(...additional.filter(Boolean));
-                  }
-                } catch (e) {}
+              const images = [selectedProductDetail?.image];
+              if (selectedProductDetail?.additionalImages) {
+                images.push(...selectedProductDetail.additionalImages);
               }
               
               if (images.length > 1) {
                 return (
-                  <div className="relative">
-                    <div className="flex gap-2 justify-center p-4 overflow-x-auto scrollbar-hide" id="camera-detail-thumbnails">
-                      {images.map((image, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setDetailImageIndex(index)}
-                          className={`w-12 h-12 rounded-lg overflow-hidden transition-all duration-200 flex-shrink-0 ${
-                            detailImageIndex === index ? 'ring-2 ring-black' : 'opacity-70 hover:opacity-100'
-                          }`}
-                        >
-                          <img 
-                            src={image} 
-                            alt={`${selectedProductDetail?.name} ${index + 1}`} 
-                            className="w-full h-full object-cover"
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <button
-                      onClick={() => {
-                        const container = document.getElementById('camera-detail-thumbnails');
-                        container?.scrollBy({ left: -100, behavior: 'smooth' });
-                      }}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
-                    >
-                      <ChevronLeft className="w-4 h-4 text-gray-600" />
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        const container = document.getElementById('camera-detail-thumbnails');
-                        container?.scrollBy({ left: 100, behavior: 'smooth' });
-                      }}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 bg-white/90 shadow-lg rounded-full flex items-center justify-center hover:bg-white transition-colors border"
-                    >
-                      <ChevronRight className="w-4 h-4 text-gray-600" />
-                    </button>
+                  <div className="flex gap-2 justify-center p-4">
+                    {images.map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setDetailImageIndex(index)}
+                        className={`w-12 h-12 rounded-lg overflow-hidden transition-all duration-200 ${
+                          detailImageIndex === index ? 'ring-2 ring-black' : 'opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <img 
+                          src={image} 
+                          alt={`${selectedProductDetail?.name} ${index + 1}`} 
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
                   </div>
                 );
               }
@@ -657,7 +563,7 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
 
       {/* Help Modal */}
       <Dialog open={helpModalOpen} onOpenChange={setHelpModalOpen}>
-        <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
+        <DialogContent className="max-w-2xl p-0 rounded-2xl bg-white shadow-2xl border-0">
           {/* Close Button */}
           <button 
             onClick={() => setHelpModalOpen(false)}
@@ -668,37 +574,72 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
             </svg>
           </button>
           
-          {/* Product Image */}
-          <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
-            <img
-              src={accessories[0]?.image}
-              alt="Security Cameras"
-              className="w-32 h-32 object-cover rounded-lg"
-            />
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Camera Selection Guide</h2>
+                <p className="text-blue-100 text-sm">Choose the right camera for your security needs</p>
+              </div>
+            </div>
           </div>
           
-          <div className="p-6">
-            {/* Headline */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Need help deciding? We've got you covered</h2>
-            </div>
-            
-            {/* Options */}
-            <div className="space-y-6">
-              {/* Option 1 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Indoor Camera Package</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Essential indoor surveillance with AI-powered cameras and doorbell integration. Perfect for home monitoring with smart detection features.
-                </p>
+          <div className="p-6 max-h-[70vh] overflow-y-auto">
+            {/* AI Camera Details */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">AI Camera Features</h3>
+              <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Smart Detection Capabilities:</h4>
+                <ul className="text-blue-800 space-y-1">
+                  <li>• Motion detection with AI recognition</li>
+                  <li>• Person and vehicle identification</li>
+                  <li>• Real-time alerts and notifications</li>
+                  <li>• Night vision with infrared technology</li>
+                </ul>
               </div>
               
-              {/* Option 2 */}
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Complete Camera Package</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  Comprehensive indoor and outdoor surveillance with PTZ cameras, weatherproof housing, and advanced AI analytics. Ideal for complete property security.
-                </p>
+              <div className="bg-green-50 p-4 rounded-lg mb-4">
+                <h4 className="font-semibold text-green-900 mb-2">Installation Benefits:</h4>
+                <ul className="text-green-800 space-y-1">
+                  <li>• Easy wireless setup</li>
+                  <li>• Mobile app integration</li>
+                  <li>• Cloud storage compatibility</li>
+                  <li>• Weather-resistant design</li>
+                </ul>
+              </div>
+              
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-amber-900 mb-2">Best Use Cases:</h4>
+                <ul className="text-amber-800 space-y-1">
+                  <li>• Home entrance monitoring</li>
+                  <li>• Driveway and parking surveillance</li>
+                  <li>• Garden and backyard security</li>
+                  <li>• Business perimeter protection</li>
+                </ul>
+              </div>
+            </div>
+            
+            {/* Contact Section */}
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+              <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Still need help?
+              </h4>
+              <p className="text-gray-600 text-sm mb-3">Our security experts are here to help you choose the perfect camera system.</p>
+              <div className="flex gap-2">
+                <button className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                  Chat with Expert
+                </button>
+                <button className="px-4 py-2 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-gray-50 transition-colors">
+                  Call Us
+                </button>
               </div>
             </div>
           </div>
