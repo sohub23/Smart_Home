@@ -11,7 +11,7 @@ import { SliderCurtainModal } from "@/components/ui/SliderCurtainModal_new";
 import { RollerCurtainModal } from "@/components/ui/RollerCurtainModal_new";
 import { PDLCFilmModal } from "@/components/ui/PDLCFilmModal";
 import { SohubProtectModal } from "@/components/ui/SohubProtectModal";
-import { SmartSecurityBoxModal } from "@/components/ui/SmartSecurityBoxModal";
+import { SmartSecurityBoxModal } from "@/components/ui/SmartSecurityBoxModal_new";
 import { SecurityPanelModal } from "@/components/ui/SecurityPanelModal";
 import { SensorsSelectionModal } from "@/components/ui/SensorsSelectionModal";
 import { CameraSelectionModal } from "@/components/ui/CameraSelectionModal";
