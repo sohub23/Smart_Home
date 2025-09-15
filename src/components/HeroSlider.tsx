@@ -170,10 +170,10 @@ const HeroSlider = () => {
       <div className="absolute inset-0 flex items-center justify-center z-10">
         <div className="container-width px-4 md:px-6">
           <div className="text-center text-black max-w-4xl mx-auto">
-            <h1 ref={headlineRef} className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 whitespace-nowrap">
+            <h1 ref={headlineRef} className="text-2xl sm:text-3xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 whitespace-nowrap">
               {slides[currentSlide].headline}
             </h1>
-            <p ref={subtitleRef} className="text-body-large mb-8 md:mb-10 max-w-3xl mx-auto opacity-90 px-4">
+            <p ref={subtitleRef} className="text-sm sm:text-base md:text-lg lg:text-xl mb-8 md:mb-10 max-w-3xl mx-auto opacity-90 px-4 leading-relaxed">
               {slides[currentSlide].subtitle}
             </p>
           </div>

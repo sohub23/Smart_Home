@@ -18,13 +18,13 @@ const fanSwitchProducts = [
     name: '1 Gang Fan Switch (Mechanical)',
     price: 3500,
     discount_price: 3200,
-    image: '/assets/Fan_switch/touch/touch1.png',
+    image: '/assets/Fan_switch/mechanical/mechanical1.png',
     additional_images: JSON.stringify([
-      '/assets/Fan_switch/touch/touch2.png',
-      '/assets/Fan_switch/touch/touch3.png',
-      '/assets/Fan_switch/touch/touch4.png',
-      '/assets/Fan_switch/touch/touch5.png',
-      '/assets/Fan_switch/touch/touch6.png'
+      '/assets/Fan_switch/mechanical/mechanical2.png',
+      '/assets/Fan_switch/mechanical/mechanical3.png',
+      '/assets/Fan_switch/mechanical/mechanical4.png',
+      '/assets/Fan_switch/mechanical/mechanical5.png',
+      '/assets/Fan_switch/mechanical/mechanical6.png'
     ]),
     overview: 'Variable speed fan controller with smart controls and energy-efficient operation. Perfect for ceiling fans and ventilation systems.',
     technical_details: 'AC 100-240V input, Variable speed control, Standard electrical box mounting, High-quality plastic housing',
@@ -46,13 +46,13 @@ const fanSwitchProducts = [
     name: '2 Gang Fan Switch (Mechanical)',
     price: 4200,
     discount_price: 3900,
-    image: '/assets/Fan_switch/touch/touch1.png',
+    image: '/assets/Fan_switch/mechanical/mechanical1.png',
     additional_images: JSON.stringify([
-      '/assets/Fan_switch/touch/touch2.png',
-      '/assets/Fan_switch/touch/touch3.png',
-      '/assets/Fan_switch/touch/touch4.png',
-      '/assets/Fan_switch/touch/touch5.png',
-      '/assets/Fan_switch/touch/touch6.png'
+      '/assets/Fan_switch/mechanical/mechanical2.png',
+      '/assets/Fan_switch/mechanical/mechanical3.png',
+      '/assets/Fan_switch/mechanical/mechanical4.png',
+      '/assets/Fan_switch/mechanical/mechanical5.png',
+      '/assets/Fan_switch/mechanical/mechanical6.png'
     ]),
     overview: 'Dual fan controller for independent speed control of two fans or fan with light combination.',
     technical_details: 'AC 100-240V input, Dual variable speed control, Standard electrical box mounting, High-quality plastic housing',
@@ -74,13 +74,13 @@ const fanSwitchProducts = [
     name: '3 Gang Fan Switch (Mechanical)', 
     price: 4800,
     discount_price: 4500,
-    image: '/assets/Fan_switch/touch/touch1.png',
+    image: '/assets/Fan_switch/mechanical/mechanical1.png',
     additional_images: JSON.stringify([
-      '/assets/Fan_switch/touch/touch2.png',
-      '/assets/Fan_switch/touch/touch3.png',
-      '/assets/Fan_switch/touch/touch4.png',
-      '/assets/Fan_switch/touch/touch5.png',
-      '/assets/Fan_switch/touch/touch6.png'
+      '/assets/Fan_switch/mechanical/mechanical2.png',
+      '/assets/Fan_switch/mechanical/mechanical3.png',
+      '/assets/Fan_switch/mechanical/mechanical4.png',
+      '/assets/Fan_switch/mechanical/mechanical5.png',
+      '/assets/Fan_switch/mechanical/mechanical6.png'
     ]),
     overview: 'Triple fan controller for comprehensive control of multiple fans and lighting combinations.',
     technical_details: 'AC 100-240V input, Triple variable speed control, Standard electrical box mounting, High-quality plastic housing',
@@ -164,7 +164,7 @@ export function FanSwitchModal({ open, onOpenChange, product, onAddToCart, onBuy
   const currentStock = 10; // Static stock
   
   const allImages = [
-    currentProductData.image,
+    '/assets/Fan_switch/mechanical/mechanical1.png',
     '/assets/Fan_switch/mechanical/mechanical2.png',
     '/assets/Fan_switch/mechanical/mechanical3.png',
     '/assets/Fan_switch/mechanical/mechanical4.png',
@@ -266,15 +266,15 @@ export function FanSwitchModal({ open, onOpenChange, product, onAddToCart, onBuy
           <div className="flex flex-col lg:contents gap-0">
 
             {/* Left: Hero Image Section */}
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 lg:p-8 flex flex-col h-64 lg:h-full lg:max-h-[85vh]">
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-2 lg:p-4 flex flex-col h-64 lg:h-full lg:max-h-[85vh]">
               {/* Main Product Image */}
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
-                <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
+                <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[70vh]">
                   {allImages.length > 0 ? (
                     <img
                       src={allImages[selectedImage]}
                       alt={selectedProduct?.name || currentProductData.name || product.name}
-                      className="w-full h-full object-contain lg:object-cover rounded-lg"
+                      className="w-full h-full object-contain rounded-lg"
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center">
