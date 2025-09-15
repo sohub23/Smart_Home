@@ -6,25 +6,18 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { productService } from '@/supabase/products';
-import { enhancedProductService } from '@/supabase';
-import { useQuery } from '@tanstack/react-query';
 
-// Preload sensor data immediately
-const preloadSensorData = async () => {
-  try {
-    const [categories, products] = await Promise.all([
-      enhancedProductService.getCategories(),
-      enhancedProductService.getProducts()
-    ]);
-    return { categories, products };
-  } catch (error) {
-    console.error('Sensor preload failed:', error);
-    return { categories: [], products: [] };
-  }
-};
-
-const sensorDataPromise = preloadSensorData();
+// Static sensor data
+const staticSensors = [
+  { id: '1', name: 'Motion Sensor PR200', desc: 'PIR motion detection sensor for indoor use', price: 1200, image: '/assets/Security/Accesories/motion_sensor.jpeg' },
+  { id: '2', name: 'Door Sensor DS200', desc: 'Magnetic door and window sensor', price: 850, image: '/assets/Security/Accesories/door_sensor.jpeg' },
+  { id: '3', name: 'Vibration Sensor GB010', desc: 'Window and door vibration monitoring', price: 1550, image: '/assets/Security/Accesories/vivration_sensor.jpeg' },
+  { id: '4', name: 'Gas Detector GS020', desc: 'LPG and natural gas leak detector', price: 1850, image: '/assets/Security/Accesories/gas_sensor.jpeg' },
+  { id: '5', name: 'Smoke Detector', desc: 'Advanced smoke and fire detection', price: 4500, image: '/assets/Security/Accesories/fire_alarm.jpeg' },
+  { id: '6', name: 'Wireless Siren WSR101', desc: 'High-decibel wireless alarm siren', price: 2600, image: '/assets/Security/Accesories/shutter sensor.jpeg' },
+  { id: '7', name: 'SOS Band B020', desc: 'Emergency panic button wristband', price: 1200, image: '/assets/Security/Accesories/sos_band.jpeg' },
+  { id: '8', name: 'Signal Extender EX010', desc: 'Wireless signal range extender', price: 4500, image: '/assets/Security/Accesories/signal_extender.jpeg' }
+];
 
 interface SensorsSelectionModalProps {
   open: boolean;
@@ -49,85 +42,17 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
   const [detailImageIndex, setDetailImageIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Only database sensor images
-  const sensorImages = accessories.map(sensor => sensor.image).filter(Boolean);
-
-  // Use React Query for instant data access
-  const { data: sensorData } = useQuery({
-    queryKey: ['sensor-data'],
-    queryFn: () => sensorDataPromise,
-    staleTime: 5 * 60 * 1000,
-    cacheTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false
-  });
+  // Static sensor images
+  const sensorImages = staticSensors.map(sensor => sensor.image).filter(Boolean);
 
   // Reset to default when modal opens
   useEffect(() => {
     if (open) {
       setActiveTab('overview');
       setSelectedImage(0);
-      if (sensorData) {
-        fetchAccessories();
-      }
+      setAccessories(staticSensors);
     }
-  }, [open, sensorData]);
-
-  const fetchAccessories = () => {
-    if (!sensorData?.categories || !sensorData?.products) return;
-    
-    const { categories, products } = sensorData;
-    const securityCategory = categories.find(cat => 
-      cat.name?.toLowerCase().includes('security')
-    );
-    
-    if (!securityCategory) {
-      setAccessories([]);
-      return;
-    }
-    
-    const filteredProducts = products.filter(p => {
-      const isSecurityCategory = p.category_id === securityCategory.id;
-      const name = (p.title || p.display_name || '').toLowerCase();
-      const desc = (p.overview || p.product_overview || p.description || '').toLowerCase();
-      
-      // Include all sensor-related products
-      const sensorKeywords = ['sensor', 'detector', 'motion', 'door', 'vibration', 'gas', 'smoke', 'fire', 'alarm', 'siren', 'sos', 'band', 'doorbell', 'button', 'shutter', 'extender', 'pr200', 'ds200', 'gb010', 'gs020', 'wsr101', 'b020', 'b100', 'ex010', 'ss010'];
-      const isSensor = sensorKeywords.some(keyword => name.includes(keyword) || desc.includes(keyword));
-      
-      // Exclude cameras and main panels
-      const isNotExcluded = !name.includes('camera') && !name.includes('sp-01') && !name.includes('sp-05') && !name.includes('sp01') && !name.includes('sp05');
-      
-      return isSecurityCategory && isSensor && isNotExcluded;
-    });
-    
-    const formattedAccessories = filteredProducts.map(p => {
-      let productPrice = 0;
-      if (p.variants) {
-        try {
-          let variants = typeof p.variants === 'string' ? JSON.parse(p.variants) : p.variants;
-          if (variants && variants.length > 0) {
-            const firstVariant = variants[0];
-            productPrice = firstVariant.discount_price > 0 ? firstVariant.discount_price : firstVariant.price || 0;
-          }
-        } catch (e) {
-          productPrice = p.price || 0;
-        }
-      }
-      if (!productPrice) {
-        productPrice = p.price || 0;
-      }
-      
-      return {
-        id: p.id,
-        name: p.title || p.display_name,
-        desc: (p.overview || p.product_overview || 'Security sensor').replace(/<[^>]*>/g, '').trim(),
-        price: productPrice,
-        image: p.image
-      };
-    });
-    
-    setAccessories(formattedAccessories);
-  };
+  }, [open]);
 
   const accessoryTotal = selectedAccessories.reduce((sum, index) => {
     const accessory = accessories[index];
@@ -227,7 +152,7 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
                   <img
-                    src={accessories[selectedImage]?.image || sensorImages[selectedImage]}
+                    src={accessories[selectedImage]?.image || '/assets/Security/Accesories/motion_sensor.jpeg'}
                     alt={accessories[selectedImage]?.name || "Security Sensors"}
                     className="w-full h-full object-contain rounded-lg"
                   />
@@ -657,7 +582,7 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
           {/* Product Image */}
           <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
             <img
-              src={sensorImages[0] || '/images/sohub_protect/accesories/Motion_pr200.png'}
+              src={'/assets/Security/Accesories/motion_sensor.jpeg'}
               alt="Security Sensors"
               className="w-32 h-32 object-cover rounded-lg"
             />
