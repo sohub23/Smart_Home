@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { RainbowButton } from '@/components/ui/rainbow-button';
-import navbarLogo from '@/assets/navbar_imgaes.png';
+
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -88,7 +88,7 @@ const Navigation = () => {
             }}
           >
             <img 
-              src={navbarLogo} 
+              src="/assets/navbar_imgaes.png" 
               alt="Curtain Luxe" 
               className="h-10 w-auto transition-opacity group-hover:opacity-80"
             />

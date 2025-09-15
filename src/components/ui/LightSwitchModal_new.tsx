@@ -67,11 +67,11 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       title: '1 Gang Light Switch',
       display_name: '1 Gang Mechanical Switch',
       price: 3500,
-      image: 'src/assets/light_switch/light_1.jpg',
-      image2: 'src/assets/light_switch/light2.jpg',
-      image3: 'src/assets/light_switch/light3.jpg',
-      image4: 'src/assets/light_switch/light4.jpg',
-      image5: 'src/assets/light_switch/light5.jpg',
+      image: '/assets/light_switch/light_1.jpg',
+      image2: '/assets/light_switch/light2.jpg',
+      image3: '/assets/light_switch/light3.jpg',
+      image4: '/assets/light_switch/light4.jpg',
+      image5: '/assets/light_switch/light5.jpg',
       variants: JSON.stringify([{ price: 3500, discount_price: 0 }]),
       help_text: 'Perfect for single light control',
       engraving_available: true,
@@ -82,11 +82,11 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       title: '2 Gang Light Switch',
       display_name: '2 Gang Mechanical Switch',
       price: 3800,
-      image: 'src/assets/light_switch/light_1.jpg',
-      image2: 'src/assets/light_switch/light2.jpg',
-      image3: 'src/assets/light_switch/light3.jpg',
-      image4: 'src/assets/light_switch/light4.jpg',
-      image5: 'src/assets/light_switch/light5.jpg',
+      image: '/assets/light_switch/light_1.jpg',
+      image2: '/assets/light_switch/light2.jpg',
+      image3: '/assets/light_switch/light3.jpg',
+      image4: '/assets/light_switch/light4.jpg',
+      image5: '/assets/light_switch/light5.jpg',
       variants: JSON.stringify([{ price: 3800, discount_price: 0 }]),
       help_text: 'Control two lights independently',
       engraving_available: true,
@@ -97,11 +97,11 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       title: '3 Gang Light Switch',
       display_name: '3 Gang Mechanical Switch',
       price: 4000,
-      image: 'src/assets/light_switch/light_1.jpg',
-      image2: 'src/assets/light_switch/light2.jpg',
-      image3: 'src/assets/light_switch/light3.jpg',
-      image4: 'src/assets/light_switch/light4.jpg',
-      image5: 'src/assets/light_switch/light5.jpg',
+      image: '/assets/light_switch/light_1.jpg',
+      image2: '/assets/light_switch/light2.jpg',
+      image3: '/assets/light_switch/light3.jpg',
+      image4: '/assets/light_switch/light4.jpg',
+      image5: '/assets/light_switch/light5.jpg',
       variants: JSON.stringify([{ price: 4000, discount_price: 0 }]),
       help_text: 'Control three lights independently',
       engraving_available: true,
@@ -163,7 +163,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
     const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5].filter(Boolean);
     
     // Add video as first item
-    images.unshift('src/assets/light_switch/video.mp4');
+    images.unshift('/assets/light_switch/video.mp4');
     
     // Add additional images if they exist
     if (productData.additional_images) {
@@ -557,14 +557,14 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                         }}
                       >
                         <img 
-                          src={`src/assets/light_switch/${gangNumber}gang.png`}
+                          src={`/assets/light_switch/${gangNumber}gang.png`}
                           alt={`${gangNumber} Gang Switch`}
                           className="w-full h-full object-cover"
                         />
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedGangImage(`src/assets/light_switch/${gangNumber}gang.png`);
+                            setSelectedGangImage(`/assets/light_switch/${gangNumber}gang.png`);
                             setSelectedGangTitle(`Variations: ${gangNumber} Gang`);
                             setImageModalOpen(true);
                           }}
@@ -830,7 +830,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             open={engravingModalOpen}
             onOpenChange={setEngravingModalOpen}
             productImage={allImages[selectedImage] || currentProductData.image || ''}
-            engravingImage="src/assets/light_switch/engreving.png"
+            engravingImage="/assets/light_switch/engreving.png"
             productName={selectedProduct?.name || currentProductData.name}
             engravingTextColor={selectedProduct?.engraving_text_color || currentProductData.engraving_text_color}
             initialText={engravingText}

@@ -14,11 +14,7 @@ import {
   ExternalLink,
   Info
 } from 'lucide-react';
-import slidingImage1 from '@/assets/specification/sliding_1.webp';
-import slidingImage2 from '@/assets/specification/sliding_2.webp';
-import slidingImage3 from '@/assets/specification/sliding_3.webp';
-import rollerImage1 from '@/assets/specification/roller_1.webp';
-import rollerImage3 from '@/assets/specification/roller_3.webp';
+
 
 type TabType = 'sliding' | 'roller';
 
@@ -86,9 +82,9 @@ const tabContent = {
       "Wi-Fi and Zigbee connectivity options"
     ],
     images: [
-      { src: slidingImage1, alt: "Sliding curtain system" },
-      { src: slidingImage2, alt: "Sliding curtain details" },
-      { src: slidingImage3, alt: "Sliding curtain installation" }
+      { src: '/assets/specification/sliding_1.webp', alt: "Sliding curtain system" },
+      { src: '/assets/specification/sliding_2.webp', alt: "Sliding curtain details" },
+      { src: '/assets/specification/sliding_3.webp', alt: "Sliding curtain installation" }
     ],
     badge: "Calibrated for whisper-quiet bedrooms"
   },
@@ -101,8 +97,8 @@ const tabContent = {
       "Advanced motor technology"
     ],
     images: [
-      { src: rollerImage1, alt: "Roller curtain system" },
-      { src: rollerImage3, alt: "Roller curtain installation" }
+      { src: '/assets/specification/roller_1.webp', alt: "Roller curtain system" },
+      { src: '/assets/specification/roller_3.webp', alt: "Roller curtain installation" }
     ],
     badge: "Engineered for precision control"
   }

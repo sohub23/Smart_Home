@@ -1,5 +1,5 @@
 import { Component as ImageAutoSlider } from '@/components/ui/image-auto-slider';
-import everyDetailBanner from '@/assets/every_detail.png';
+
 
 const AutoGallerySection = () => {
   return (
@@ -16,7 +16,7 @@ const AutoGallerySection = () => {
           
           <div className="w-full">
             <img
-              src={everyDetailBanner}
+              src="/assets/every_detail.png"
               alt="Every Detail Matters Banner"
               className="w-full h-auto rounded-lg shadow-lg"
             />

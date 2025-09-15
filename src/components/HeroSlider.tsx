@@ -2,17 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { gsap } from 'gsap';
-import heroSlidingImage from '@/assets/hero-sliding-curtain.jpg';
-import heroRollerImage from '@/assets/hero-roller-curtain.jpg';
-import sliderThumbnail from '@/assets/default_images/slider_thumbnail.png';
-import rollerThumbnail from '@/assets/default_images/roller_thumbnail.png';
+
 
 const slides = [
   {
     id: 1,
     youtubeId: 'APm2EDVBljw',
-    image: heroSlidingImage,
-    thumbnail: sliderThumbnail,
+    image: '/assets/hero-sliding-curtain.jpg',
+    thumbnail: '/assets/default_images/slider_thumbnail.png',
     headline: "Every Home. A Smart Home.",
     subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
     alt: "Smart curtain demonstration video"
@@ -20,8 +17,8 @@ const slides = [
   {
     id: 2,
     youtubeId: 'K0MZDn2Tw_4',
-    image: heroRollerImage,
-    thumbnail: rollerThumbnail,
+    image: '/assets/hero-roller-curtain.jpg',
+    thumbnail: '/assets/default_images/roller_thumbnail.png',
     headline: "Every Home. A Smart Home.",
     subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
     alt: "Roller curtain demonstration video"

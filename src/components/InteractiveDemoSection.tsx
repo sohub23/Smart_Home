@@ -2,13 +2,11 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Pause, ChevronLeft, ChevronRight, Square, ArrowLeft, ArrowRight, ChevronsLeft, ChevronsRight, ChevronDown, ChevronUp } from 'lucide-react';
-import natureViewImage from '@/assets/nature-view.jpg';
-import iphoneMockupImage from '@/assets/iphone-mockup.jpg';
-import windowImage from '@/assets/window.jpeg';
+
 
 // Realistic indoor background with window image
 const realisticRoomBackground = `
-  background-image: url(${windowImage});
+  background-image: url('/assets/window.jpeg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -141,7 +139,7 @@ const InteractiveDemoSection = () => {
         <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-8 items-center max-h-screen lg:max-h-none">
           {/* Window Demo - Top on mobile, Left on desktop */}
           <div className="relative w-full order-1 lg:order-1">
-            <div className="aspect-[16/9] lg:aspect-[4/3] overflow-hidden rounded-xl lg:rounded-2xl shadow-2xl" style={{ backgroundImage: `url(${windowImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+            <div className="aspect-[16/9] lg:aspect-[4/3] overflow-hidden rounded-xl lg:rounded-2xl shadow-2xl" style={{ backgroundImage: `url('/assets/window.jpeg')`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
               <div className="relative w-full h-full">
                 {/* Window Frame */}
                 <div className="absolute inset-0 border-4 lg:border-8 border-white/20 rounded-2xl" />

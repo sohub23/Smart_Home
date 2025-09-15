@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
-import sliderThumbnail from '@/assets/default_images/slider_thumbnail.png';
-import rollerThumbnail from '@/assets/default_images/roller_thumbnail.png';
+
 
 const products = [
   {
     name: 'Smart Sliding Curtain',
     youtubeId: 'APm2EDVBljw',
-    thumbnail: sliderThumbnail,
+    thumbnail: '/assets/default_images/slider_thumbnail.png',
     description: 'Traditional elegance meets smart technology',
     features: [
       'Traditional curtain appearance',
@@ -26,7 +25,7 @@ const products = [
   {
     name: 'Smart Roller Curtain',
     youtubeId: 'K0MZDn2Tw_4',
-    thumbnail: rollerThumbnail,
+    thumbnail: '/assets/default_images/roller_thumbnail.png',
     description: 'Minimal design with maximum control',
     features: [
       'Modern minimal aesthetic',

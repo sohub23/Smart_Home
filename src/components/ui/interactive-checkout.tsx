@@ -19,10 +19,12 @@ import { SmartSwitchModal } from "@/components/ui/SmartSwitchModal";
 import { LightSwitchModal } from "@/components/ui/LightSwitchModal_new";
 import { LightSwitchModal as LightMechanicalSwitchModal } from "@/components/ui/LightMechanicalSwitch";
 import { FanSwitchModal } from "@/components/ui/FanSwitchModal";
+import { FanSwitchModal as FanMechanicalSwitchModal } from "@/components/ui/FanSwitchmodal_mechanical";
 import { BoilerSwitchModal } from "@/components/ui/BoilerSwitchModal";
 import { productData } from "@/lib/productData";
 import { SpotLightModal } from '@/components/ui/SpotLightModal';
 import { StripLightModal } from '@/components/ui/StripLightModal';
+import { CeilingLampModal } from '@/components/ui/Ceiling_lamb_modal';
 
 import { ServicesModal } from "@/components/ui/ServicesModal";
 import { InstallationModal } from "@/components/ui/InstallationModal";
@@ -224,9 +226,11 @@ function InteractiveCheckout({
     const [lightSwitchModalOpen, setLightSwitchModalOpen] = useState(false);
     const [lightMechanicalSwitchModalOpen, setLightMechanicalSwitchModalOpen] = useState(false);
     const [fanSwitchModalOpen, setFanSwitchModalOpen] = useState(false);
+    const [fanMechanicalSwitchModalOpen, setFanMechanicalSwitchModalOpen] = useState(false);
     const [boilerSwitchModalOpen, setBoilerSwitchModalOpen] = useState(false);
     const [spotLightModalOpen, setSpotLightModalOpen] = useState(false);
     const [stripLightModalOpen, setStripLightModalOpen] = useState(false);
+    const [ceilingLampModalOpen, setCeilingLampModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -1065,7 +1069,14 @@ function InteractiveCheckout({
                                             setLightSwitchModalOpen(true);
                                         }
                                         break;
-                                    case 'fanSwitch': setFanSwitchModalOpen(true); break;
+                                    case 'fanSwitch': 
+                                        // Check if it's mechanical switch
+                                        if (product.name.toLowerCase().includes('mechanical')) {
+                                            setFanMechanicalSwitchModalOpen(true);
+                                        } else {
+                                            setFanSwitchModalOpen(true);
+                                        }
+                                        break;
                                     case 'boilerSwitch': setBoilerSwitchModalOpen(true); break;
                                     case 'lighting':
                                         if (product.name.toLowerCase().includes('spot')) {
@@ -1074,6 +1085,9 @@ function InteractiveCheckout({
                                         } else if (product.name.toLowerCase().includes('strip')) {
                                             console.log('Opening strip light modal');
                                             setStripLightModalOpen(true);
+                                        } else if (product.name.toLowerCase().includes('ceiling') || product.name.toLowerCase().includes('lamp')) {
+                                            console.log('Opening ceiling lamp modal');
+                                            setCeilingLampModalOpen(true);
                                         } else {
                                             console.log('Opening default spot light modal');
                                             setSpotLightModalOpen(true);
@@ -2147,6 +2161,57 @@ function InteractiveCheckout({
                 />
             )}
             
+            {/* Fan Mechanical Switch Modal */}
+            {selectedVariant && (
+                <FanMechanicalSwitchModal
+                    open={fanMechanicalSwitchModalOpen}
+                    onOpenChange={(open) => {
+                        setFanMechanicalSwitchModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return productData ? {
+                            ...productData,
+                            additional_image_1: productData.additional_image_1,
+                            additional_image_2: productData.additional_image_2,
+                            additional_image_3: productData.additional_image_3,
+                            additional_image_4: productData.additional_image_4,
+                            additional_image_5: productData.additional_image_5
+                        } : {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Switch',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')),
+                            description: '',
+                            image: selectedVariant.imageUrl,
+                            stock: 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.engravingText ? ` (Engraved: "${payload.engravingText}")` : ''}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice,
+                                category: 'Switch',
+                                image: selectedVariant.imageUrl,
+                                color: 'Switch',
+                                quantity: payload.quantity,
+                                installationCharge: payload.installationCharge
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Fan Mechanical Switch products
+                    }}
+                />
+            )}
+            
             {/* Boiler Switch Modal */}
             {selectedVariant && (
                 <BoilerSwitchModal
@@ -2461,6 +2526,52 @@ function InteractiveCheckout({
                     }}
                     onBuyNow={async (payload) => {
                         // Handle buy now for Strip Light products
+                    }}
+                />
+            )}
+            
+            {/* Ceiling Lamp Modal */}
+            {selectedVariant && (
+                <CeilingLampModal
+                    open={ceilingLampModalOpen}
+                    onOpenChange={(open) => {
+                        setCeilingLampModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return productData ? {
+                            ...productData
+                        } : {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Lighting',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')) || 2500,
+                            description: '',
+                            image: selectedVariant.imageUrl,
+                            stock: 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice || 2500,
+                                category: 'Lighting',
+                                image: selectedVariant.imageUrl,
+                                color: 'Lighting',
+                                quantity: payload.quantity || 1,
+                                installationCharge: payload.installationCharge || 0
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Ceiling Lamp products
                     }}
                 />
             )}

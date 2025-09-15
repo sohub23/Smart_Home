@@ -2,26 +2,37 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Minus, Plus, Truck, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Minus, Plus, Truck, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 
-import { useQuery } from '@tanstack/react-query';
-
-const loadSpotlightProducts = async () => {
-  const { supabase } = await import('@/supabase/client');
-  const { data, error } = await supabase
-    .from('products')
-    .select('*, help_text, help_image_url')
-    .or('title.ilike.%spot%,display_name.ilike.%spot%,category.ilike.%spot%')
-    .limit(10);
-  
-  if (error) {
-    console.error('Error fetching spotlight products:', error);
-    return [];
+// Static spotlight products data
+const spotlightProducts = [
+  {
+    id: 'spotlight-1',
+    title: 'LED Downlight Ceiling Lamp',
+    display_name: 'LED Downlight Ceiling Lamp',
+    name: 'LED Downlight Ceiling Lamp',
+    price: 2500,
+    discount_price: 2200,
+    image: '/assets/Lighting/spot_light/light1.jpg',
+    additional_images: JSON.stringify([
+      '/assets/Lighting/spot_light/light2.jpg',
+      '/assets/Lighting/spot_light/light3.jpg',
+      '/assets/Lighting/spot_light/light4.jpg',
+      '/assets/Lighting/spot_light/light5.jpg',
+      '/assets/Lighting/spot_light/light6.jpg'
+    ]),
+    overview: 'High-quality LED spotlight with smart controls and adjustable brightness. Perfect for accent lighting and task illumination.',
+    technical_details: 'LED Power: 12W, Color Temperature: 3000K-6500K, Beam Angle: 30°, Dimming: 1-100%, Lifespan: 25,000 hours',
+    warranty: '2 Year Manufacturer Warranty\nFree replacement for defects\n24/7 customer support',
+    variants: JSON.stringify([
+      { name: '3.5 inch', price: 6200, discount_price: 0, size: '3.5' }
+    ]),
+    help_text: 'Smart LED spotlights are perfect for highlighting artwork, creating ambient lighting, or providing focused task lighting. Choose Zigbee for hub-based control or WiFi for direct connection.',
+    help_image_url: '/assets/Lighting/spot_light/light1.jpg'
   }
-  return data || [];
-};
+];
 
 interface SpotLightModalProps {
   open: boolean;
@@ -50,26 +61,26 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
   const [installationSelected, setInstallationSelected] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(spotlightProducts[0]);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedGangImage, setSelectedGangImage] = useState('');
+  const [selectedGangTitle, setSelectedGangTitle] = useState('');
 
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
-  const [connectionType, setConnectionType] = useState('zigbee');
+  const [selectedSize, setSelectedSize] = useState('3.5');
 
 
-  const { data: spotlightProducts, isLoading } = useQuery({
-    queryKey: ['spotlight-products'],
-    queryFn: loadSpotlightProducts,
-    enabled: open,
-    staleTime: 5 * 60 * 1000
-  });
+  const isLoading = false;
 
   useEffect(() => {
-    if (open && spotlightProducts?.length) {
+    if (open) {
       setQuantity(1);
       setSelectedImage(0);
       
       const productData = spotlightProducts[0];
-      setSelectedProduct(productData);
+      if (!selectedProduct) {
+        setSelectedProduct(productData);
+      }
       
       try {
         let variants = [];
@@ -82,7 +93,6 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
         if (variants.length > 0) {
           setSelectedVariant(variants[0]);
         } else {
-          // Create default variant if none exists
           setSelectedVariant({
             name: 'Standard',
             price: productData.price || 0,
@@ -90,7 +100,6 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
           });
         }
       } catch (error) {
-        console.error('Error parsing variants:', error);
         setSelectedVariant({
           name: 'Standard',
           price: productData.price || 0,
@@ -98,11 +107,14 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
         });
       }
     }
-  }, [open, spotlightProducts]);
+  }, [open]);
 
-  const currentPrice = selectedVariant?.discount_price && selectedVariant.discount_price > 0 
-    ? selectedVariant.discount_price 
-    : selectedVariant?.price || selectedProduct?.price || 0;
+  const getSizePrice = () => {
+    const sizeMap = { '24': 4500, '3.5': 5000 };
+    return sizeMap[selectedSize] || 4500;
+  };
+  
+  const currentPrice = getSizePrice();
   
   let additionalImages = [];
   try {
@@ -119,27 +131,45 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
     selectedProduct?.image,
     ...(Array.isArray(additionalImages) ? additionalImages : [])
   ].filter(Boolean);
+  
+  console.log('Debug allImages:', {
+    selectedProduct: selectedProduct?.id,
+    mainImage: selectedProduct?.image,
+    additionalImages: additionalImages,
+    allImages: allImages,
+    totalCount: allImages.length,
+    selectedImageIndex: selectedImage,
+    currentDisplayImage: allImages[selectedImage]
+  });
+  
+  console.log('All images array:', allImages);
+  console.log('Selected image index:', selectedImage);
+  console.log('Current image being displayed:', allImages[selectedImage]);
 
   const handleAddToCart = async () => {
     setLoading(true);
     try {
       const basePrice = currentPrice * quantity;
-      const wifiUpcharge = selectedVariant?.wifi_upcharge || 0;
-      const totalPrice = connectionType === 'wifi' ? basePrice + wifiUpcharge : basePrice;
+      const totalPrice = basePrice;
       
       const cartPayload = {
-        productId: `${selectedProduct.id}_${Date.now()}`,
-        productName: `${selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || ''}`,
+        id: `${selectedProduct.id}_${selectedSize}_${Date.now()}`,
+        name: `${selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || ''} - ${selectedSize === '24' ? '24 degree' : '36 degree'}`,
+        price: currentPrice,
+        category: product.category,
+        image: selectedProduct?.image || '',
         quantity: quantity,
-        connectionType: connectionType,
-        variant: selectedVariant?.name || 'Standard',
-        model: connectionType === 'zigbee' ? 'Zigbee' : 'Wifi',
-        installationCharge: 0,
-        totalPrice: totalPrice,
-        unitPrice: currentPrice
+        selectedSize: selectedSize,
+        variation: selectedSize === '24' ? '24 degree' : '36 degree',
+        size: selectedSize === '24' ? '24 degree' : '36 degree',
+        totalPrice: currentPrice * quantity
       };
       
-      await onAddToCart(cartPayload);
+      if (addToCart) {
+        addToCart(cartPayload);
+      } else {
+        await onAddToCart(cartPayload);
+      }
       
       if (installationSelected && addToCart) {
         addToCart({
@@ -191,24 +221,32 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
                   {allImages.length > 0 ? (
-                    <img
-                      src={allImages[selectedImage]}
-                      alt={selectedProduct?.title || selectedProduct?.name || 'Spotlight'}
-                      className="w-full h-full object-contain lg:object-cover rounded-lg"
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        const fallback = target.nextElementSibling as HTMLElement;
-                        if (fallback) {
-                          target.style.display = 'none';
-                          fallback.style.display = 'flex';
-                        }
-                      }}
-                    />
-                  ) : null}
-                  <div className={`w-full h-full bg-gray-100 rounded-lg flex flex-col items-center justify-center ${allImages.length > 0 ? 'hidden' : ''}`}>
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg mb-3 animate-pulse"></div>
-                    <span className="text-gray-400 text-sm">Loading image...</span>
-                  </div>
+                    allImages[selectedImage]?.endsWith('.mp4') ? (
+                      <video
+                        src={allImages[selectedImage]}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <img
+                        src={allImages[selectedImage]}
+                        alt={selectedProduct?.title || selectedProduct?.name || 'Spotlight'}
+                        className="w-full h-full object-contain lg:object-cover rounded-lg"
+                        onLoad={() => console.log('Image loaded successfully:', allImages[selectedImage])}
+                        onError={(e) => {
+                          console.error('Image failed to load:', allImages[selectedImage]);
+                          console.error('Error details:', e);
+                        }}
+                      />
+                    )
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+                      <span className="text-gray-500">No images available</span>
+                    </div>
+                  )}
                 </div>
                 
                 {allImages.length > 1 && (
@@ -238,16 +276,38 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
                         <button
                           key={index}
                           onClick={() => setSelectedImage(index)}
+                          onMouseEnter={() => setSelectedImage(index)}
                           className={cn(
                             "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200 flex-shrink-0",
                             selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
                           )}
                         >
-                          <img 
-                            src={image} 
-                            alt={`Product ${index + 1}`} 
-                            className="w-full h-full object-cover"
-                          />
+                          {image.endsWith('.mp4') ? (
+                            <div className="relative w-full h-full bg-black rounded-md overflow-hidden">
+                              <video 
+                                src={image} 
+                                muted
+                                playsInline
+                                preload="metadata"
+                                className="w-full h-full object-cover"
+                                onMouseEnter={(e) => e.target.play()}
+                                onMouseLeave={(e) => e.target.pause()}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-4 h-4 bg-white/90 rounded-full flex items-center justify-center">
+                                  <svg className="w-2 h-2 text-gray-800" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <img 
+                              src={image} 
+                              alt={`Product ${index + 1}`} 
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -278,71 +338,67 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
 
             {/* Right: Product Purchase Panel */}
             <div className="p-4 lg:p-8 bg-white lg:overflow-y-auto lg:max-h-[85vh]">
-            <>
+            {/* Top Section */}
             <div className="mb-6">
-              {!isLoading && selectedProduct ? (
-                <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                  {selectedProduct.title || selectedProduct.display_name || selectedProduct.name}
-                </h1>
-              ) : (
-                <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
-              )}
+              <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
+                {selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name}
+              </h1>
               
-              {!isLoading ? (
-                <div className="mb-4">
-                  <div className="flex items-baseline gap-3 mb-2">
-                    <span className="text-base text-gray-900">
-                      {((currentPrice || 0) * quantity).toLocaleString()} BDT
-                    </span>
-                    {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
-                      <>
-                        <span className="text-xs text-gray-500 line-through">
-                          {(selectedVariant.price * quantity).toLocaleString()} BDT
-                        </span>
-                        <span className="text-xs text-green-600 font-medium">
-                          Save {((selectedVariant.price - selectedVariant.discount_price) * quantity).toLocaleString()} BDT
-                        </span>
-                      </>
-                    )}
-                  </div>
+              {/* Price Section */}
+              <div className="mb-4">
+                <div className="flex items-baseline gap-4 mb-3">
+                  <span className="text-lg lg:text-xl font-bold text-black">
+                    {((currentPrice || 0) * quantity).toLocaleString()} BDT
+                  </span>
+                  {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
+                    <>
+                      <span className="text-xs text-gray-500 line-through">
+                        {(selectedVariant.price * quantity).toLocaleString()} BDT
+                      </span>
+                      <span className="text-xs text-green-600 font-medium">
+                        Save {((selectedVariant.price - selectedVariant.discount_price) * quantity).toLocaleString()} BDT
+                      </span>
+                    </>
+                  )}
                 </div>
-              ) : (
-                <div className="h-4 bg-gray-200 rounded animate-pulse mb-4 w-24"></div>
-              )}
+
+              </div>
               
-              <div className="flex items-center gap-2 text-gray-600 text-sm mb-6">
-                <Truck className="w-4 h-4" />
+              {/* Shipping Info */}
+              <div className="flex items-center gap-2 text-gray-800 text-base font-medium mb-6">
+                <Truck className="w-5 h-5 text-gray-700" />
                 <span>Ships within 3–7 business days | Free shipping</span>
               </div>
             </div>
 
+            {/* Details Accordion */}
             <div className="mb-4">
               <Accordion type="single" collapsible className="w-full border-t border-b border-gray-200">
                 <AccordionItem value="details" className="border-none">
-                  <AccordionTrigger className="text-left text-sm font-semibold no-underline hover:no-underline py-3">Product description</AccordionTrigger>
+                  <AccordionTrigger className="text-left text-lg font-bold text-gray-900 no-underline hover:no-underline py-2">Product Description</AccordionTrigger>
                   <AccordionContent className="pb-2">
                     <div className="border-b border-gray-200">
                       <div className="flex space-x-8">
                         <button 
                           onClick={() => setActiveTab('benefits')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'benefits' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'benefits' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Overview
                         </button>
                         <button 
                           onClick={() => setActiveTab('bestfor')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'bestfor' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'bestfor' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Technical Details
                         </button>
                         <button 
                           onClick={() => setActiveTab('bonuses')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'bonuses' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'bonuses' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Warranty
@@ -352,67 +408,48 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          {!isLoading ? (
-                            selectedProduct?.overview ? (
-                              <div className="text-sm text-gray-500">
-                                {selectedProduct.overview.replace(/<[^>]*>/g, '')}
-                              </div>
-                            ) : (
-                              <div className="text-sm text-gray-500">
-                                No overview available
-                              </div>
-                            )
-                          ) : (
-                            <div className="animate-pulse">
-                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                            </div>
-                          )}
+                          <ul className="space-y-2">
+                            <li className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                              Versatile lighting solution with wide color range and smart features
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                              Compatible with major smart home platforms for convenient control
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                              Dimmable feature allows customizable ambiance with long lifespan for durability
+                            </li>
+                          </ul>
                         </div>
                       )}
                       {activeTab === 'bestfor' && (
                         <div className="text-sm text-gray-500">
-                          {!isLoading ? (
-                            selectedProduct?.technical_details ? (
-                              <div className="text-sm text-gray-500">
-                                {selectedProduct.technical_details.replace(/<[^>]*>/g, '')}
-                              </div>
-                            ) : (
-                              <div className="text-sm text-gray-500">
-                                No technical details available
-                              </div>
-                            )
-                          ) : (
-                            <div className="animate-pulse">
-                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                            </div>
-                          )}
+                          <ul className="space-y-2">
+                            <li className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                              Power Options: 2.5" (9W), 3.5" (12W), 4" (15W) sizes available
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                              Connectivity: 2.4GHz WiFi, compatible with Alexa, Google Home, Apple HomeKit
+                            </li>
+                            <li className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                              RGBCW color modes, 120° beam angle, CRI &gt;80, 30,000 hours lifespan
+                            </li>
+                          </ul>
                         </div>
                       )}
                       {activeTab === 'bonuses' && (
                         <div className="text-sm text-gray-500">
-                          {!isLoading ? (
-                            selectedProduct?.warranty ? (
-                              <div className="text-sm text-gray-500">
-                                {selectedProduct.warranty.split('\n').filter(w => w.trim()).map((warrantyItem, index) => (
-                                  <div key={index} className="flex items-start gap-2 mb-2">
-                                    <span className="w-2 h-2 bg-gradient-to-r from-black to-gray-600 rounded-full mt-1.5 flex-shrink-0 opacity-80"></span>
-                                    <span>{warrantyItem.trim().replace(/<[^>]*>/g, '')}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-sm text-gray-500">
-                                No warranty information available
-                              </div>
-                            )
-                          ) : (
-                            <div className="animate-pulse">
-                              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                            </div>
-                          )}
+                          <ul className="space-y-2">
+                            <li className="flex items-start gap-2">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                              1 Year Service Warranty
+                            </li>
+                          </ul>
                         </div>
                       )}
                     </div>
@@ -421,69 +458,79 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
               </Accordion>
             </div>
 
-            {/* Choose Model Section */}
+            {/* Product Variation Section */}
             <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Choose Model</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  connectionType === 'zigbee' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
-                }`} onClick={() => setConnectionType('zigbee')} style={connectionType === 'zigbee' ? {backgroundColor: '#e8e8ed'} : {}}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`text-xs flex items-center gap-2 ${
-                      connectionType === 'zigbee' ? 'text-black font-bold' : 'text-gray-900 font-medium'
-                    }`}>
-                      <img src="/images/zigbee.svg" alt="Zigbee" className="w-4 h-4" />
-                      Zigbee
+              <h3 className="text-base font-bold text-gray-900 mb-3">Variations</h3>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {['24', '3.5'].map((size) => {
+                  const isSelected = selectedSize === size;
+                  
+                  return (
+                    <div key={size} className="text-center">
+                      <div 
+                        className={`rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden relative ${
+                          isSelected ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 
+                          'border-gray-200 hover:border-gray-300 bg-white'
+                        }`}
+                        onClick={() => setSelectedSize(size)}
+                      >
+                        <img 
+                          src={size === '24' ? '/assets/Lighting/spot_light/24_degree.png' : '/assets/Lighting/spot_light/36_degree.png'}
+                          alt={`${size} degree Spotlight`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedGangImage(size === '24' ? '/assets/Lighting/spot_light/24_degree.png' : '/assets/Lighting/spot_light/36_degree.png');
+                            setSelectedGangTitle(`Variations: ${size} degree`);
+                            setImageModalOpen(true);
+                          }}
+                          className="absolute top-2 right-2 w-6 h-6 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-colors shadow-sm"
+                        >
+                          <Eye className="w-3 h-3 text-gray-600" />
+                        </button>
+                      </div>
+                      <div className={`mt-2 text-xs font-medium ${
+                        isSelected ? 'text-[#0a1d3a]' : 'text-gray-700'
+                      }`}>
+                        <div className="text-xs text-black">{size === '24' ? '24 degree' : '36 degree'}</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-xs text-gray-600">Wifi + Hub required</div>
-                </div>
-                
-                <div className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  connectionType === 'wifi' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
-                }`} onClick={() => setConnectionType('wifi')} style={connectionType === 'wifi' ? {backgroundColor: '#e8e8ed'} : {}}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className={`text-xs flex items-center gap-2 ${
-                      connectionType === 'wifi' ? 'text-black font-bold' : 'text-gray-900 font-medium'
-                    }`}>
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>
-                      </svg>
-                      Wifi
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-600">Only Wifi required</div>
-                </div>
+                  );
+                })}
               </div>
             </div>
 
 
 
+            {/* Quantity Selection */}
             <div className="mb-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-900">Quantity</h3>
+                <h3 className="text-base font-bold text-gray-900">Quantity</h3>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="w-2.5 h-2.5" />
                   </button>
-                  <span className="text-lg font-semibold text-gray-900 min-w-[2rem] text-center">
+                  <span className="text-sm font-semibold text-gray-900 min-w-[2rem] text-center">
                     {quantity}
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-2.5 h-2.5" />
                   </button>
                 </div>
               </div>
             </div>
 
+            {/* Installation and setup */}
             <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Installation and setup</h3>
+              <h3 className="text-base font-bold text-gray-900 mb-3">Installation and setup</h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <input 
@@ -517,10 +564,10 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
             </div>
 
             <div className="mb-20 lg:mb-16"></div>
-            </>
             </div>
           </div>
           
+          {/* Fixed Bottom CTA - Right Side Only */}
           <div className="fixed bottom-0 left-0 right-0 lg:right-0 lg:left-auto lg:w-[600px] bg-white border-t lg:border-l border-gray-200 p-3 lg:p-4 z-[60] shadow-lg">
             <Button
               onClick={handleAddToCart}
@@ -554,7 +601,7 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
       
       {/* Help Modal */}
       <Dialog open={helpModalOpen} onOpenChange={setHelpModalOpen}>
-        <DialogContent className="max-w-lg p-0 rounded-2xl bg-white shadow-2xl border-0">
+        <DialogContent className="max-w-md p-0 rounded-2xl bg-white shadow-2xl border-0">
           <button 
             onClick={() => setHelpModalOpen(false)}
             className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
@@ -564,43 +611,76 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
             </svg>
           </button>
           
-          <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 rounded-t-2xl flex items-center justify-center">
-            {(selectedProduct?.help_image_url || allImages[0]) ? (
-              <img
-                src={selectedProduct?.help_image_url || allImages[0]}
-                alt={selectedProduct?.name || product.name}
-                className="w-32 h-32 object-cover rounded-lg"
-              />
-            ) : (
-              <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-gray-500 text-sm">No image</span>
-              </div>
-            )}
-          </div>
-          
           <div className="p-6">
-            {selectedProduct?.help_text ? (
-              <div className="text-sm text-gray-600 leading-relaxed">
-                {selectedProduct.help_text?.replace(/<[^>]*>/g, '') || 'No help information available'}
-              </div>
-            ) : (
-              <>
-                <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">
-                    {selectedProduct?.help_title || 'Need help deciding? We\'ve got you covered'}
-                  </h2>
-                </div>
-                
-                <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Need Help Deciding?</h2>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    B
+                  </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 mb-2">Installation Service</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      Professional installation service available. Our team will contact you with pricing and scheduling details.
+                    <h3 className="font-bold text-gray-900 mb-1">Basic</h3>
+                    <p className="text-xs text-gray-700">
+                      Simple on/off, fixed white light, suitable for hallways, bedrooms, or general lighting.
                     </p>
                   </div>
                 </div>
-              </>
-            )}
+              </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    S
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-1">Smart</h3>
+                    <p className="text-xs text-gray-700">
+                      WiFi control via app, voice commands (Alexa/Google Home), adjustable brightness & tunable white (2700–6500K). Great for living rooms, kitchens, or study areas.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    C
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 mb-1">Complete</h3>
+                    <p className="text-xs text-gray-700">
+                      Full RGB + tunable white, integration with HomeKit/Matter/SmartThings, scheduling, scenes, high CRI lighting. Perfect for premium smart homes, entertainment rooms, or showrooms.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Image Modal */}
+      <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
+        <DialogContent className="max-w-md p-0 rounded-2xl bg-white shadow-2xl border-0">
+          <button 
+            onClick={() => setImageModalOpen(false)}
+            className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+          >
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div className="p-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{selectedGangTitle}</h2>
+            <img
+              src={selectedGangImage}
+              alt="Size Variation"
+              className="w-full h-auto object-contain rounded-lg"
+            />
           </div>
         </DialogContent>
       </Dialog>

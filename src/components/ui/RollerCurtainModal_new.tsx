@@ -148,12 +148,12 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   // Video first, then roller curtain images
   const allImages = [
     'https://youtu.be/K0MZDn2Tw_4?si=lNusOrl2Drzkah-T', // Video first
-    '/src/assets/roller_curtain/roller1.jpg',
-    '/src/assets/roller_curtain/roller2.jpg',
-    '/src/assets/roller_curtain/roller3.jpg',
-    '/src/assets/roller_curtain/roller4.jpg',
-    '/src/assets/roller_curtain/roller5.jpg',
-    '/src/assets/roller_curtain/roller6.jpg'
+    '/assets/roller_curtain/roller1.jpg',
+    '/assets/roller_curtain/roller2.jpg',
+    '/assets/roller_curtain/roller3.jpg',
+    '/assets/roller_curtain/roller4.jpg',
+    '/assets/roller_curtain/roller5.jpg',
+    '/assets/roller_curtain/roller6.jpg'
   ];
 
   const totalQuantity = trackQuantities.reduce((sum, qty) => sum + qty, 0);
@@ -564,7 +564,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   connectionType === 'zigbee' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
                 }`} onClick={() => setConnectionType('zigbee')} style={connectionType === 'zigbee' ? {backgroundColor: '#e8e8ed'} : {}}>
                   <div className="flex items-center gap-2 mb-1">
-                    <img src="/src/assets/battary.png" alt="Battery" className="w-4 h-4" />
+                    <img src="/assets/battary.png" alt="Battery" className="w-4 h-4" />
                     <span className={`text-sm ${
                       connectionType === 'zigbee' ? 'text-black font-bold' : 'text-gray-900 font-semibold'
                     }`}>With Battery</span>
@@ -576,7 +576,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   connectionType === 'wifi' ? 'border-gray-400' : 'border-gray-200 hover:border-gray-300'
                 }`} onClick={() => setConnectionType('wifi')} style={connectionType === 'wifi' ? {backgroundColor: '#e8e8ed'} : {}}>
                   <div className="flex items-center gap-2 mb-1">
-                    <img src="/src/assets/without_battary.png" alt="Without Battery" className="w-4 h-4" />
+                    <img src="/assets/without_battary.png" alt="Without Battery" className="w-4 h-4" />
                     <span className={`text-sm ${
                       connectionType === 'wifi' ? 'text-black font-bold' : 'text-gray-900 font-semibold'
                     }`}>Without Battery</span>

@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Phone, Mail, MapPin, CreditCard, Smartphone } from 'lucide-react';
-import navbarLogo from '@/assets/navbar_imgaes.png';
-import footerLogo from '@/assets/footer_logo.png';
+
 
 const Footer = () => {
   const [activeSection, setActiveSection] = useState('');
@@ -44,7 +43,7 @@ const Footer = () => {
           <div className="space-y-4">
             <div>
               <img 
-                src={navbarLogo} 
+                src="/assets/navbar_imgaes.png" 
                 alt="Curtain Luxe" 
                 className="h-8 w-auto mb-2"
               />
@@ -60,7 +59,7 @@ const Footer = () => {
                 rel="noopener noreferrer"
                 className="text-xs text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-2"
               >
-                <img src={footerLogo} alt="SOHUB" className="h-4 w-auto" />
+                <img src="/assets/footer_logo.png" alt="SOHUB" className="h-4 w-auto" />
                 <span>Powered by SOHUB</span>
               </a>
             </div>
@@ -190,7 +189,7 @@ const Footer = () => {
           <div className="text-center">
             <p className="text-xs md:text-sm text-gray-600 mb-2 md:mb-3">We Accept</p>
             <img 
-              src="/src/assets/footer/payment.png" 
+              src="/assets/footer/payment.png" 
               alt="Payment methods - bKash, Nagad, Visa, Mastercard" 
               className="mx-auto h-5 md:h-6 lg:h-10 max-w-full"
             />
@@ -209,7 +208,7 @@ const Footer = () => {
               rel="noopener noreferrer"
               className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
-              <img src={footerLogo} alt="SOHUB" className="h-4 w-auto" />
+              <img src="/assets/footer_logo.png" alt="SOHUB" className="h-4 w-auto" />
               <span>Powered by SOHUB</span>
             </a>
           </div>

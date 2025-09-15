@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User, Settings, LogOut, Shield, Key, HelpCircle, UserCog, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-import navbarLogo from '@/assets/navbar_imgaes.png';
+
 import NotificationPanel from './NotificationPanel';
 
 const AdminNavbar = () => {
@@ -29,7 +29,7 @@ const AdminNavbar = () => {
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         <div className="flex items-center space-x-8">
           <div className="flex items-center space-x-3">
-            <img src={navbarLogo} alt="Smart Home" className="h-10 w-auto" />
+            <img src="/assets/navbar_imgaes.png" alt="Smart Home" className="h-10 w-auto" />
             <Badge className="px-3 py-1 text-sm font-medium bg-[#0a1d3a] text-white">
               Admin Panel
             </Badge>

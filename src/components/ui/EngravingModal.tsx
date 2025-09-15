@@ -70,8 +70,8 @@ export function EngravingModal({ open, onOpenChange, productImage, engravingImag
   const handleSave = async () => {
     if (!isValid) return;
     
-    // Check minimum order requirement for switches
-    if (productName.toLowerCase().includes('switch') && currentQuantity < 10) {
+    // Check minimum order requirement
+    if (currentQuantity < 10) {
       setShowMinOrderAlert(true);
       return;
     }

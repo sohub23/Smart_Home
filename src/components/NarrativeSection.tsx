@@ -3,7 +3,7 @@ import { Check, Smartphone, Clock, Volume } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import rollerThumbnail from '@/assets/default_images/roller_thumbnail.png';
+
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -121,7 +121,7 @@ const NarrativeSection = () => {
             <div className="aspect-video rounded-[var(--radius-large)] overflow-hidden shadow-medium relative">
               {/* Thumbnail placeholder */}
               <img
-                src={rollerThumbnail}
+                src="/assets/default_images/roller_thumbnail.png"
                 alt="Roller curtain thumbnail"
                 className={`w-full h-full object-cover transition-opacity duration-500 ${
                   videoLoaded ? 'opacity-0' : 'opacity-100'
