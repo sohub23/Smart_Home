@@ -9,14 +9,14 @@ import { toast } from '@/components/ui/use-toast';
 
 // Static sensor data
 const staticSensors = [
-  { id: '1', name: 'Motion Sensor PR200', desc: 'PIR motion detection sensor for indoor use', price: 1200, image: '/assets/Security/Accesories/motion_sensor.jpeg' },
-  { id: '2', name: 'Door Sensor DS200', desc: 'Magnetic door and window sensor', price: 850, image: '/assets/Security/Accesories/door_sensor.jpeg' },
-  { id: '3', name: 'Vibration Sensor GB010', desc: 'Window and door vibration monitoring', price: 1550, image: '/assets/Security/Accesories/vivration_sensor.jpeg' },
-  { id: '4', name: 'Gas Detector GS020', desc: 'LPG and natural gas leak detector', price: 1850, image: '/assets/Security/Accesories/gas_sensor.jpeg' },
-  { id: '5', name: 'Smoke Detector', desc: 'Advanced smoke and fire detection', price: 4500, image: '/assets/Security/Accesories/fire_alarm.jpeg' },
-  { id: '6', name: 'Wireless Siren WSR101', desc: 'High-decibel wireless alarm siren', price: 2600, image: '/assets/Security/Accesories/shutter sensor.jpeg' },
-  { id: '7', name: 'SOS Band B020', desc: 'Emergency panic button wristband', price: 1200, image: '/assets/Security/Accesories/sos_band.jpeg' },
-  { id: '8', name: 'Signal Extender EX010', desc: 'Wireless signal range extender', price: 4500, image: '/assets/Security/Accesories/signal_extender.jpeg' }
+  { id: '1', name: 'Shutter Sensor', desc: 'Window and door shutter monitoring sensor', price: 1550, image: '/assets/Security/Accesories/shutter sensor.jpeg' },
+  { id: '2', name: 'Wireless Siren', desc: 'High-decibel wireless alarm siren', price: 2600, image: '/assets/Security/Accesories/vivration_sensor.jpeg' },
+  { id: '3', name: 'Door Sensor', desc: 'Magnetic door and window sensor', price: 850, image: '/assets/Security/Accesories/door_sensor.jpeg' },
+  { id: '4', name: 'Smoke Detector', desc: 'Advanced smoke detection sensor', price: 4500, image: '/assets/Security/Accesories/fire_alarm.jpeg' },
+  { id: '5', name: 'Gas Detector', desc: 'LPG and natural gas leak detector', price: 1850, image: '/assets/Security/Accesories/gas_sensor.jpeg' },
+  { id: '6', name: 'Motion Sensor', desc: 'PIR motion detection sensor', price: 1200, image: '/assets/Security/Accesories/motion_sensor.jpeg' },
+  { id: '7', name: 'Signal Extender', desc: 'Wireless signal range extender', price: 4500, image: '/assets/Security/Accesories/signal_extender.jpeg' },
+  { id: '8', name: 'SOS Band', desc: 'Emergency panic button wristband', price: 1200, image: '/assets/Security/Accesories/sos_band.jpeg' }
 ];
 
 interface SensorsSelectionModalProps {
