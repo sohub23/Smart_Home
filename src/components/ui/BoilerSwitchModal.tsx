@@ -6,7 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Minus, Plus, Star, Shield, Truck, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import { useSupabase, enhancedProductService } from '@/supabase';
+
 import { EngravingTrigger } from '@/components/ui/EngravingTrigger';
 import { EngravingModal } from '@/components/ui/EngravingModal';
 
@@ -40,8 +40,36 @@ interface BoilerSwitchModalProps {
   addToCart?: (item: any) => void;
 }
 
+// Static boiler switch product data
+const boilerSwitchProduct = {
+  id: 'boiler-switch-1',
+  title: 'Heavy Duty Boiler Switch',
+  display_name: 'Heavy Duty Boiler Switch',
+  name: 'Heavy Duty Boiler Switch',
+  price: 2500,
+  discount_price: 2200,
+  image: '/assets/Boiler_switch/boiler1.jpg',
+  image2: '/assets/Boiler_switch/boiler2.jpg',
+  image3: '/assets/Boiler_switch/boiler3.jpg',
+  image4: '/assets/Boiler_switch/boiler4.jpg',
+  image5: '/assets/Boiler_switch/boiler5.jpg',
+  additional_images: JSON.stringify([
+    '/assets/Boiler_switch/boiler6.jpg',
+    '/assets/Boiler_switch/white.png'
+  ]),
+  overview: 'Heavy-duty electrical switch engineered for high-power appliances like boilers, water heaters, and industrial equipment\nPremium heat-resistant materials with enhanced safety mechanisms and thermal protection for reliable operation\nProfessional-grade construction with reinforced contacts and arc suppression technology for extended lifespan',
+  technical_details: 'Voltage Rating: AC 100-240V, Maximum Current: 20A, Power Rating: 4800W with overload protection\nDimensions: 86mm x 86mm x 45mm, Operating Temperature: -10°C to +60°C, IP20 protection rating\nElectrical Life: 100,000 switching cycles, Contact Material: Silver alloy, Mounting: Standard 35mm DIN rail compatible',
+  warranty: '1 Year Service Warranty',
+  variants: JSON.stringify([
+    { name: 'Standard', price: 2500, discount_price: 2200, stock: 15 }
+  ]),
+  help_text: 'This heavy-duty boiler switch is specifically designed for controlling high-power electrical appliances like boilers and water heaters. Features enhanced safety mechanisms and heat-resistant materials.',
+  help_image_url: '/assets/Boiler_switch/boiler1.jpg',
+  engraving_available: false,
+  stock: 15
+};
+
 export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: BoilerSwitchModalProps) {
-  const { executeQuery } = useSupabase();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -51,49 +79,15 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
   const [installationSelected, setInstallationSelected] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(product);
-  const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
-  const [dynamicLoading, setDynamicLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState(boilerSwitchProduct);
 
-  // Load dynamic products from database when modal opens
   useEffect(() => {
     if (open) {
-      loadBoilerSwitchProducts();
       setQuantity(1);
-      setSelectedProduct(product);
+      setSelectedImage(0);
+      setSelectedProduct(boilerSwitchProduct);
     }
-  }, [open, product]);
-
-  const loadBoilerSwitchProducts = async () => {
-    setDynamicLoading(false); // Show UI immediately
-    
-    try {
-      const { supabase } = await import('@/supabase/client');
-      
-      const { data } = await supabase
-        .from('products')
-        .select('id, title, display_name, price, image, image2, image3, image4, image5, additional_images, variants, overview, technical_details, warranty, help_text, help_image_url')
-        .ilike('title', '%boiler%')
-        .limit(10);
-      
-      if (data?.length) {
-        setDynamicProducts(data);
-        // Update the selected product with full data including images
-        const productWithImages = data[0];
-        setSelectedProduct(productWithImages);
-        console.log('Boiler product loaded:', {
-          id: productWithImages.id,
-          hasImage: !!productWithImages.image,
-          hasImage2: !!productWithImages.image2,
-          hasImage3: !!productWithImages.image3,
-          hasAdditionalImages: !!productWithImages.additional_images,
-          additionalImagesRaw: productWithImages.additional_images
-        });
-      }
-    } catch (error) {
-      console.error('Load error:', error);
-    }
-  };
+  }, [open]);
 
   const currentProductData = selectedProduct || product;
   
@@ -175,13 +169,23 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
   const handleAddToCart = async () => {
     setLoading(true);
     try {
-      await onAddToCart({
-        productId: currentProductData.id || product.id,
+      const cartPayload = {
+        id: `${currentProductData.id || product.id}_white_${Date.now()}`,
+        name: `${currentProductData?.title || currentProductData?.name || product.name} - White`,
+        price: currentPrice,
+        category: product.category,
+        image: currentProductData?.image || '',
         quantity: quantity,
-        installationCharge: 0,
-        engravingText: engravingText || undefined,
-        totalPrice: currentPrice * quantity
-      });
+        selectedVariation: 'White',
+        color: 'White',
+        totalPrice: totalPrice
+      };
+      
+      if (addToCart) {
+        addToCart(cartPayload);
+      } else {
+        await onAddToCart(cartPayload);
+      }
       
       // Add installation service if selected
       if (installationSelected && addToCart) {
@@ -309,14 +313,14 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
             <div className="p-4 lg:p-8 bg-white lg:overflow-y-auto lg:max-h-[85vh]">
             {/* Top Section */}
             <div className="mb-6">
-              <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
+              <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
                 {currentProductData.title || currentProductData.name || product.name}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
-                <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-base text-gray-900">
+                <div className="flex items-baseline gap-4 mb-3">
+                  <span className="text-lg lg:text-xl font-bold text-black">
                     {totalPrice.toLocaleString()} BDT
                   </span>
                   {(() => {
@@ -357,8 +361,8 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
               </div>
               
               {/* Shipping Info */}
-              <div className="flex items-center gap-2 text-gray-600 text-sm mb-6">
-                <Truck className="w-4 h-4" />
+              <div className="flex items-center gap-2 text-gray-800 text-base font-medium mb-6">
+                <Truck className="w-5 h-5 text-gray-700" />
                 <span>Ships within 3–7 business days | Free shipping</span>
               </div>
             </div>
@@ -367,30 +371,30 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
             <div className="mb-4">
               <Accordion type="single" collapsible className="w-full border-t border-b border-gray-200">
                 <AccordionItem value="details" className="border-none">
-                  <AccordionTrigger className="text-left text-sm font-semibold no-underline hover:no-underline py-3">Product description</AccordionTrigger>
+                  <AccordionTrigger className="text-left text-lg font-bold text-gray-900 no-underline hover:no-underline py-2">Product Description</AccordionTrigger>
                   <AccordionContent className="pb-2">
                     <div className="border-b border-gray-200">
                       <div className="flex space-x-8">
                         <button 
                           onClick={() => setActiveTab('benefits')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'benefits' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'benefits' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Overview
                         </button>
                         <button 
                           onClick={() => setActiveTab('bestfor')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'bestfor' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'bestfor' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Technical Details
                         </button>
                         <button 
                           onClick={() => setActiveTab('bonuses')}
-                          className={`py-2 px-1 border-b-2 font-medium text-xs ${
-                            activeTab === 'bonuses' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+                          className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                            activeTab === 'bonuses' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
                           }`}
                         >
                           Warranty
@@ -401,12 +405,14 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
                           {(currentProductData?.overview || currentProductData?.description) ? (
-                            <div 
-                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
-                              dangerouslySetInnerHTML={{ 
-                                __html: currentProductData.overview || currentProductData.description 
-                              }}
-                            />
+                            <ul className="space-y-2">
+                              {(currentProductData.overview || currentProductData.description).split('\n').filter(item => item.trim()).map((item, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {item.trim()}
+                                </li>
+                              ))}
+                            </ul>
                           ) : features.length > 0 ? (
                             <ul className="space-y-2">
                               {features.map((feature, index) => (
@@ -420,15 +426,15 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                             <ul className="space-y-2">
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Heavy-duty switch designed for high-power boiler and water heater control
+                                Heavy-duty electrical switch engineered for high-power appliances like boilers, water heaters, and industrial equipment
                               </li>
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Heat-resistant construction with premium materials for safety and durability
+                                Premium heat-resistant materials with enhanced safety mechanisms and thermal protection for reliable operation
                               </li>
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Easy installation with standard wiring compatibility and safety features
+                                Professional-grade construction with reinforced contacts and arc suppression technology for extended lifespan
                               </li>
                             </ul>
                           )}
@@ -437,12 +443,14 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                       {activeTab === 'bestfor' && (
                         <div className="text-sm text-gray-500">
                           {currentProductData?.technical_details ? (
-                            <div 
-                              className="prose prose-sm max-w-none [&_ul]:list-none [&_ul]:pl-0 [&_li]:flex [&_li]:items-start [&_li]:gap-2 [&_li]:mb-2 [&_li]:before:content-[''] [&_li]:before:w-2 [&_li]:before:h-2 [&_li]:before:bg-gradient-to-r [&_li]:before:from-black [&_li]:before:to-gray-600 [&_li]:before:rounded-full [&_li]:before:mt-1.5 [&_li]:before:flex-shrink-0 [&_li]:before:opacity-80"
-                              dangerouslySetInnerHTML={{ 
-                                __html: currentProductData.technical_details 
-                              }}
-                            />
+                            <ul className="space-y-2">
+                              {currentProductData.technical_details.split('\n').filter(item => item.trim()).map((item, index) => (
+                                <li key={index} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                                  {item.trim()}
+                                </li>
+                              ))}
+                            </ul>
                           ) : specifications.length > 0 ? (
                             <ul className="space-y-2">
                               {specifications.map((spec, index) => (
@@ -456,15 +464,15 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                             <ul className="space-y-2">
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                AC 100-240V input with heavy-duty switching mechanism for high loads
+                                Voltage Rating: AC 100-240V, Maximum Current: 20A, Power Rating: 4800W with overload protection
                               </li>
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Standard electrical box mounting with enhanced safety features
+                                Dimensions: 86mm x 86mm x 45mm, Operating Temperature: -10°C to +60°C, IP20 protection rating
                               </li>
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Heat-resistant plastic housing with robust operation
+                                Electrical Life: 100,000 switching cycles, Contact Material: Silver alloy, Mounting: Standard 35mm DIN rail compatible
                               </li>
                             </ul>
                           )}
@@ -497,27 +505,42 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
               </Accordion>
             </div>
 
-
+            {/* Color Variation Section */}
+            <div className="mb-4">
+              <h3 className="text-base font-bold text-gray-900 mb-3">Variations</h3>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="text-center">
+                  <div className="rounded-xl border-2 border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md overflow-hidden relative">
+                    <img 
+                      src="/assets/Boiler_switch/white.png"
+                      alt="White Boiler Switch"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="mt-2 text-xs font-medium text-[#0a1d3a]">White</div>
+                </div>
+              </div>
+            </div>
 
             {/* Quantity Selection */}
             <div className="mb-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-900">Quantity</h3>
+                <h3 className="text-base font-bold text-gray-900">Quantity</h3>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
-                    <Minus className="w-4 h-4" />
+                    <Minus className="w-2.5 h-2.5" />
                   </button>
-                  <span className="text-lg font-semibold text-gray-900 min-w-[2rem] text-center">
+                  <span className="text-sm font-semibold text-gray-900 min-w-[2rem] text-center">
                     {quantity}
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    className="w-6 h-6 rounded-md border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-2.5 h-2.5" />
                   </button>
                 </div>
               </div>
@@ -525,7 +548,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
 
             {/* Installation and setup */}
             <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Installation and setup</h3>
+              <h3 className="text-base font-bold text-gray-900 mb-3">Installation and setup</h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <input 

@@ -44,6 +44,18 @@ const products = [
 
 const ProductCompareSection = () => {
   const [videoLoaded, setVideoLoaded] = useState<{[key: string]: boolean}>({});
+  
+  // Preload videos after component mounts
+  useState(() => {
+    const timer = setTimeout(() => {
+      products.forEach(product => {
+        if (!videoLoaded[product.youtubeId]) {
+          // Trigger video loading
+        }
+      });
+    }, 1000);
+    return () => clearTimeout(timer);
+  });
   return (
     <section id="compare" className="py-12 md:py-16 bg-gray-50" style={{paddingBottom: '8rem'}}>
       <div className="max-w-6xl mx-auto px-4 md:px-6">
@@ -63,39 +75,55 @@ const ProductCompareSection = () => {
             <div key={index} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500">
               {/* Product Video */}
               <div className="h-[400px] overflow-hidden relative">
-                {/* YouTube video - hidden initially */}
-                <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${product.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${product.youtubeId}`}
-                  className={`absolute hover:scale-105 transition-all duration-500 ${
-                    videoLoaded[product.youtubeId] ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  style={{ 
-                    border: 'none',
-                    width: '150%',
-                    height: '150%',
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                  allow="autoplay; encrypted-media"
-                  title={product.name}
-                  onLoad={() => {
-                    setTimeout(() => {
-                      setVideoLoaded(prev => ({ ...prev, [product.youtubeId]: true }));
-                    }, 3000);
-                  }}
+                {/* Default image - always visible as background */}
+                <img
+                  src={product.thumbnail}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
                 />
                 
-                {/* Default thumbnail overlay - covers everything until video is ready */}
-                <div className={`absolute inset-0 transition-opacity duration-500 ${
-                  videoLoaded[product.youtubeId] ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                }`}>
-                  <img
-                    src={product.thumbnail}
-                    alt={product.name}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                {/* YouTube video overlay - only show when loaded */}
+                {videoLoaded[product.youtubeId] && (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${product.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${product.youtubeId}&enablejsapi=1&origin=${window.location.origin}`}
+                    className="absolute inset-0 w-full h-full transition-opacity duration-1000 opacity-100 hover:scale-105 transition-all duration-500"
+                    style={{ 
+                      border: 'none',
+                      width: '150%',
+                      height: '150%',
+                      left: '50%',
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    allow="autoplay; encrypted-media; fullscreen"
+                    allowFullScreen
+                    title={product.name}
                   />
-                </div>
+                )}
+                
+                {/* Video loading trigger - invisible but loads video */}
+                {!videoLoaded[product.youtubeId] && (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${product.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${product.youtubeId}&enablejsapi=1&origin=${window.location.origin}`}
+                    className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
+                    style={{ 
+                      border: 'none',
+                      width: '150%',
+                      height: '150%',
+                      left: '50%',
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)'
+                    }}
+                    allow="autoplay; encrypted-media; fullscreen"
+                    allowFullScreen
+                    title={product.name}
+                    onLoad={() => {
+                      setTimeout(() => {
+                        setVideoLoaded(prev => ({ ...prev, [product.youtubeId]: true }));
+                      }, 2000);
+                    }}
+                  />
+                )}
               </div>
               
               {/* Product Content */}

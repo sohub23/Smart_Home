@@ -13,9 +13,9 @@ import { EngravingModal } from '@/components/ui/EngravingModal';
 const fanSwitchProducts = [
   {
     id: '1-gang-fan',
-    title: '1 Gang Fan Switch (Touch)',
-    display_name: '1 Gang Fan Switch (Touch)',
-    name: '1 Gang Fan Switch (Touch)',
+    title: '1 Gang Fan Switch (Mechanical)',
+    display_name: '1 Gang Fan Switch (Mechanical)',
+    name: '1 Gang Fan Switch (Mechanical)',
     price: 3500,
     discount_price: 3200,
     image: '/assets/Fan_switch/touch/touch1.png',
@@ -41,9 +41,9 @@ const fanSwitchProducts = [
   },
   {
     id: '2-gang-fan',
-    title: '2 Gang Fan Speed Controller',
-    display_name: '2 Gang Fan Speed Controller', 
-    name: '2 Gang Fan Speed Controller',
+    title: '2 Gang Fan Switch (Mechanical)',
+    display_name: '2 Gang Fan Switch (Mechanical)', 
+    name: '2 Gang Fan Switch (Mechanical)',
     price: 4200,
     discount_price: 3900,
     image: '/assets/Fan_switch/touch/touch1.png',
@@ -69,9 +69,9 @@ const fanSwitchProducts = [
   },
   {
     id: '3-gang-fan',
-    title: '3 Gang Fan Speed Controller',
-    display_name: '3 Gang Fan Speed Controller',
-    name: '3 Gang Fan Speed Controller', 
+    title: '3 Gang Fan Switch (Mechanical)',
+    display_name: '3 Gang Fan Switch (Mechanical)',
+    name: '3 Gang Fan Switch (Mechanical)', 
     price: 4800,
     discount_price: 4500,
     image: '/assets/Fan_switch/touch/touch1.png',
