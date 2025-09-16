@@ -5,8 +5,8 @@ const FAQSection = () => {
     <section id="faq" className="section-padding bg-surface">
       <div className="container-width px-4 md:px-6">
         <div className="text-center mb-8 md:mb-12">
-          <h2 className="text-headline text-primary mb-4">Questions, Answered</h2>
-          <p className="text-body text-muted-foreground max-w-2xl mx-auto">
+          <h2 className="text-headline text-primary mb-4" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>Questions, Answered</h2>
+          <p className="text-body text-muted-foreground max-w-2xl mx-auto" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
             Everything you need to know about Curtain Luxe smart curtains.
           </p>
         </div>

@@ -10,8 +10,8 @@ const slides = [
     youtubeId: 'APm2EDVBljw',
     image: '/assets/hero-sliding-curtain.jpg',
     thumbnail: '/assets/default_images/slider_thumbnail.png',
-    headline: "Every Home. A Smart Home.",
-    subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
+    headline: "Every Home A Smart Home",
+    subtitle: "Transform your home into a world of secure control and hassle-free living",
     alt: "Smart curtain demonstration video"
   },
   {
@@ -19,8 +19,8 @@ const slides = [
     youtubeId: 'K0MZDn2Tw_4',
     image: '/assets/hero-roller-curtain.jpg',
     thumbnail: '/assets/default_images/roller_thumbnail.png',
-    headline: "Every Home. A Smart Home.",
-    subtitle: "Transform your home into a world of safety, security comfort, and effortless control.",
+    headline: "Every Home A Smart Home",
+    subtitle: "Transform your home into a world of secure control and hassle-free living",
     alt: "Roller curtain demonstration video"
   }
 ];
@@ -167,13 +167,13 @@ const HeroSlider = () => {
       </div>
 
       {/* Content */}
-      <div className="absolute inset-0 flex items-center justify-center z-10">
+      <div className="absolute inset-0 flex items-end justify-center pb-16 z-10">
         <div className="container-width px-4 md:px-6">
           <div className="text-center text-black max-w-4xl mx-auto">
-            <h1 ref={headlineRef} className="text-2xl sm:text-3xl md:text-6xl lg:text-7xl font-bold mb-6 md:mb-8 whitespace-nowrap">
+            <h1 ref={headlineRef} className="text-xl sm:text-2xl md:text-4xl lg:text-5xl font-bold mb-6 md:mb-8 whitespace-nowrap" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
               {slides[currentSlide].headline}
             </h1>
-            <p ref={subtitleRef} className="text-sm sm:text-base md:text-lg lg:text-xl mb-8 md:mb-10 max-w-3xl mx-auto opacity-90 px-4 leading-relaxed">
+            <p ref={subtitleRef} className="text-sm sm:text-base md:text-lg lg:text-xl mb-8 md:mb-10 max-w-3xl mx-auto px-4 leading-relaxed" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
               {slides[currentSlide].subtitle}
             </p>
           </div>

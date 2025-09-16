@@ -1,22 +1,50 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Play } from 'lucide-react';
+import { supabase } from '@/supabase';
 
 export const Component = () => {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set());
+  const [galleryVideos, setGalleryVideos] = useState([]);
   
-  const youtubeVideos = [
-    'cIDcLSghrJY',
-    '3K-vu8aWYAs',
-    'KihfqNckf8g',
-    'Oivl481b1kA',
-    '2jh58viBn2g',
-    'DcLR83ElzH0',
-    'PCNSRqS0b78',
-    'bLHPxZDQyPI'
-  ];
+  useEffect(() => {
+    loadGalleryVideos();
+  }, []);
 
-  const duplicatedVideos = [...youtubeVideos, ...youtubeVideos];
+  const loadGalleryVideos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('category_gallery_videos')
+        .select('*')
+        .eq('is_active', true)
+        .order('position');
+      
+      if (error) throw error;
+      
+      const videoIds = data?.map(video => {
+        const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+        const match = video.video_url.match(regex);
+        return match ? match[1] : null;
+      }).filter(Boolean) || [];
+      
+      setGalleryVideos(videoIds);
+    } catch (error) {
+      console.error('Error loading gallery videos:', error);
+      // Fallback to original videos if database fails
+      setGalleryVideos([
+        'cIDcLSghrJY',
+        '3K-vu8aWYAs',
+        'KihfqNckf8g',
+        'Oivl481b1kA',
+        '2jh58viBn2g',
+        'DcLR83ElzH0',
+        'PCNSRqS0b78',
+        'bLHPxZDQyPI'
+      ]);
+    }
+  };
+
+  const duplicatedVideos = [...galleryVideos, ...galleryVideos];
 
   const handleVideoClick = (videoId: string, index: number) => {
     setLoadedVideos(prev => new Set([...prev, index]));
@@ -73,7 +101,7 @@ export const Component = () => {
         <div className="relative z-10 w-full flex items-center justify-center">
           <div className="scroll-container w-full">
             <div className="infinite-scroll flex gap-6 w-max">
-              {duplicatedVideos.map((videoId, index) => (
+              {duplicatedVideos.length > 0 && duplicatedVideos.map((videoId, index) => (
                 <div
                   key={index}
                   className="video-item flex-shrink-0 w-80 h-48 md:w-96 md:h-56 lg:w-[420px] lg:h-64 rounded-xl overflow-hidden shadow-lg cursor-pointer relative group"
@@ -107,6 +135,11 @@ export const Component = () => {
                   )}
                 </div>
               ))}
+              {duplicatedVideos.length === 0 && (
+                <div className="flex items-center justify-center w-full h-64 text-gray-500">
+                  <p>No videos available</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

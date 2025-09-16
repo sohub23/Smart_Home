@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Check, Smartphone, Clock, Volume } from 'lucide-react';
+import { Check, Zap, Clock, Hand } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -51,16 +51,16 @@ const NarrativeSection = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="section-padding bg-gradient-section" style={{paddingBottom: '8rem'}}>
+    <section ref={sectionRef} className="section-padding bg-gradient-section">
       <div className="container-width px-4 md:px-6">
         <div className="grid lg:grid-cols-2 gap-6 md:gap-8 lg:gap-10 items-center">
           {/* Content */}
           <div className="space-y-4 md:space-y-6">
             <div className="space-y-3 md:space-y-4">
-              <h2 ref={headingRef} className="text-headline text-primary">
+              <h2 ref={headingRef} className="text-headline text-primary" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
                 Control Your Comfort
               </h2>
-              <p ref={subtitleRef} className="text-body-large text-muted-foreground">
+              <p ref={subtitleRef} className="text-body-large text-muted-foreground" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
                 Manual curtains steal your time. Go smart—control with one tap, from anywhere.
               </p>
             </div>
@@ -69,17 +69,17 @@ const NarrativeSection = () => {
             <div ref={cardsRef} className="space-y-3">
               <div className="flex items-center space-x-4 p-3 rounded-[var(--radius-card)] bg-surface border border-border">
                 <div className="flex-shrink-0 w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
-                  <Volume className="w-5 h-5 text-accent-soft" />
+                  <Hand className="w-5 h-5 text-accent-soft" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-primary mb-1">No more tug & pull</h3>
-                  <p className="text-body-small text-muted-foreground">Silent, effortless operation</p>
+                  <h3 className="text-lg font-semibold text-primary mb-1">No more manual handeling</h3>
+                  <p className="text-body-small text-muted-foreground">Silent & Hassle free opertation</p>
                 </div>
               </div>
 
               <div className="flex items-center space-x-4 p-3 rounded-[var(--radius-card)] bg-surface border border-border">
                 <div className="flex-shrink-0 w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
-                  <Smartphone className="w-5 h-5 text-accent-soft" />
+                  <Zap className="w-5 h-5 text-accent-soft" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-primary mb-1">One-tap open/close</h3>
@@ -92,21 +92,28 @@ const NarrativeSection = () => {
                   <Clock className="w-5 h-5 text-accent-soft" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-primary mb-1">Schedules & scenes</h3>
-                  <p className="text-body-small text-muted-foreground">Automated comfort, exactly when you need it</p>
+                  <h3 className="text-lg font-semibold text-primary mb-1">Set your timer</h3>
+                  <p className="text-body-small text-muted-foreground">Automated comfort, when you need it</p>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6">
               <Button 
-                onClick={() => document.getElementById('specs')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => window.open('/contact', '_blank')}
                 className="btn-primary text-base py-3 px-6"
               >
-                Learn More
+                Contact Us
               </Button>
               <Button 
-                onClick={() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => {
+                  const productSection = document.querySelector('[data-main-container]');
+                  if (productSection) {
+                    const rect = productSection.getBoundingClientRect();
+                    const offsetTop = window.pageYOffset + rect.top - 80;
+                    window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+                  }
+                }}
                 className="btn-secondary text-base py-3 px-6"
               >
                 Buy Now

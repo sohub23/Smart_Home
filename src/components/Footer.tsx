@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Facebook, Instagram, Twitter, Phone, Mail, MapPin, CreditCard, Smartphone } from 'lucide-react';
 
 
 const Footer = () => {
   const [activeSection, setActiveSection] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -94,9 +95,9 @@ const Footer = () => {
               </li>
               <li>
                 <button 
-                  onClick={() => scrollToSection('gallery')}
+                  onClick={() => navigate('/gallery')}
                   className={`hover:text-gray-900 transition-colors ${
-                    activeSection === 'gallery' ? 'text-black font-bold' : 'text-gray-700'
+                    location.pathname === '/gallery' ? 'text-black font-bold' : 'text-gray-700'
                   }`}
                 >
                   Gallery

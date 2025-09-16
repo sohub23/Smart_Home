@@ -81,9 +81,7 @@ const tabContent = {
       "Wi-Fi and Zigbee connectivity options"
     ],
     images: [
-      { src: '/assets/specification/sliding_1.webp', alt: "Sliding curtain system" },
-      { src: '/assets/specification/sliding_2.webp', alt: "Sliding curtain details" },
-      { src: '/assets/specification/sliding_3.webp', alt: "Sliding curtain installation" }
+      { src: '/assets/specification/sliding_1.webp', alt: "Sliding curtain system" }
     ],
     badge: "Calibrated for whisper-quiet bedrooms"
   },
@@ -96,8 +94,7 @@ const tabContent = {
       "Advanced motor technology"
     ],
     images: [
-      { src: '/assets/specification/roller_1.webp', alt: "Roller curtain system" },
-      { src: '/assets/specification/roller_3.webp', alt: "Roller curtain installation" }
+      { src: '/assets/specification/roller_1.webp', alt: "Roller curtain system" }
     ],
     badge: "Engineered for precision control"
   }
@@ -110,11 +107,11 @@ const SpecificationsSection = () => {
   const currentContent = tabContent[activeTab];
 
   return (
-    <section id="specs" className="section-padding bg-surface" style={{paddingBottom: '8rem'}}>
+    <section id="specs" className="section-padding bg-surface">
       <div className="container-width px-4 md:px-6">
         {/* Header */}
         <div className="text-center section-gap">
-          <h2 className="text-headline text-primary content-gap">
+          <h2 className="text-headline text-primary content-gap" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
             Curtain Luxe — Built the Right Way
           </h2>
           
@@ -151,7 +148,7 @@ const SpecificationsSection = () => {
           <div className="space-y-4 md:space-y-6">
             {/* Tab Introduction */}
             <div className="space-y-3 md:space-y-4 fade-in">
-              <h3 className="text-title text-primary">
+              <h3 className="text-title text-primary" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
                 {currentContent.subtitle}
               </h3>
               
@@ -169,51 +166,7 @@ const SpecificationsSection = () => {
               </Badge>
             </div>
 
-            {/* Specifications Tables */}
-            <div className="space-y-3 md:space-y-4">
-              {sharedSpecGroups.map((group, groupIndex) => {
-                const IconComponent = group.icon;
-                return (
-                  <div key={groupIndex} className="card-minimal p-3 md:p-4">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
-                        <IconComponent className="w-4 h-4 text-accent-soft" />
-                      </div>
-                      <h4 className="text-lg md:text-xl font-semibold text-primary">{group.title}</h4>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      {group.specs.map((spec, specIndex) => (
-                        <div key={specIndex} className="flex justify-between items-center py-3 border-b border-border last:border-b-0">
-                          <div className="flex items-center space-x-3">
-                            <span className="text-base font-medium text-muted-foreground">
-                              {spec.label}
-                            </span>
-                            {spec.tooltip && (
-                              <button
-                                onMouseEnter={() => setShowTooltip(`${groupIndex}-${specIndex}`)}
-                                onMouseLeave={() => setShowTooltip(null)}
-                                className="relative"
-                              >
-                                <Info className="w-5 h-5 text-muted-foreground hover:text-foreground" />
-                                {showTooltip === `${groupIndex}-${specIndex}` && (
-                                  <div className="absolute bottom-full left-0 mb-2 p-3 bg-primary text-primary-foreground text-sm rounded whitespace-nowrap shadow-medium z-10">
-                                    {spec.tooltip}
-                                  </div>
-                                )}
-                              </button>
-                            )}
-                          </div>
-                          <span className="text-base font-semibold text-primary">
-                            {spec.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-6">
@@ -224,7 +177,14 @@ const SpecificationsSection = () => {
                 Compare
               </Button>
               <Button 
-                onClick={() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })}
+                onClick={() => {
+                  const productSection = document.querySelector('[data-main-container]');
+                  if (productSection) {
+                    const rect = productSection.getBoundingClientRect();
+                    const offsetTop = window.pageYOffset + rect.top - 80;
+                    window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+                  }
+                }}
                 className="btn-cta text-base py-3 px-6"
               >
                 Buy Now

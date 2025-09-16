@@ -1,4 +1,4 @@
-const AutoGallerySection = () => {
+const DetailOverview = () => {
   return (
     <section id="gallery" className="section-padding bg-gradient-section">
       <div className="container-width px-4 md:px-6">
@@ -8,7 +8,7 @@ const AutoGallerySection = () => {
             Every Detail Matters
           </h2>
           <p className="text-body-large text-muted-foreground max-w-2xl mx-auto mb-6" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
-            Explore our complete smart home solutions - from automated curtains and PDLC film technology to comprehensive SOHUB Protect security systems.
+            Explore our complete smart home solutions
           </p>
           
           <div className="w-full">
@@ -24,4 +24,4 @@ const AutoGallerySection = () => {
   );
 };
 
-export default AutoGallerySection;
+export default DetailOverview;

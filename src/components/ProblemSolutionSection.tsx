@@ -69,10 +69,10 @@ const ProblemSolutionSection = () => {
       <div className="container-width px-4 md:px-6">
         {/* Header */}
         <div className="text-center section-gap">
-          <h2 ref={headingRef} className="text-headline text-primary content-gap px-4">
+          <h2 ref={headingRef} className="text-headline text-primary content-gap px-4" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
             Turn Everyday Hassles Into Instant Comfort
           </h2>
-          <p ref={subtitleRef} className="text-body-large text-gray-500 max-w-3xl mx-auto px-4">
+          <p ref={subtitleRef} className="text-body-large text-gray-500 max-w-3xl mx-auto px-4" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
             Experience the transformation from frustration to effortless living.
           </p>
         </div>

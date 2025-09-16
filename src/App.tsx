@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import BuiltForComfort from "./pages/BuiltForComfort";
 import ContactPage from "./pages/ContactPage";
 import AboutPage from "./pages/AboutPage";
+import GalleryPage from "./pages/GalleryPage";
 import TrackOrderPage from "./pages/TrackOrderPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -51,6 +52,7 @@ const App = () => (
           <Route path="/built-for-comfort" element={<BuiltForComfort />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/gallery" element={<GalleryPage />} />
           <Route path="/track-order" element={<TrackOrderPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />

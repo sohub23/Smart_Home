@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pause, ChevronLeft, ChevronRight, Square, ArrowLeft, ArrowRight, ChevronsLeft, ChevronsRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Pause, ChevronLeft, ChevronRight, Square, ArrowLeft, ArrowRight, ChevronsLeft, ChevronsRight, ChevronDown, ChevronUp, ArrowUp, ArrowDown } from 'lucide-react';
 
 
 // Realistic indoor background with window image
@@ -20,9 +20,11 @@ const InteractiveDemoSection = () => {
   const [curtainPosition, setCurtainPosition] = useState(0); // 0-100 percentage
   const [animationRef, setAnimationRef] = useState<number | null>(null);
   const [shouldStop, setShouldStop] = useState(false);
+  const [targetPosition, setTargetPosition] = useState(0);
 
-  const animateToPosition = (targetPosition) => {
+  const animateToPosition = (target) => {
     setShouldStop(false);
+    setTargetPosition(target);
     if (animationRef) {
       cancelAnimationFrame(animationRef);
     }
@@ -43,7 +45,7 @@ const InteractiveDemoSection = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const easeProgress = 0.5 * (1 - Math.cos(Math.PI * progress));
-      const currentPos = startPosition + (targetPosition - startPosition) * easeProgress;
+      const currentPos = startPosition + (target - startPosition) * easeProgress;
       
       setCurtainPosition(Math.round(currentPos));
       
@@ -51,8 +53,8 @@ const InteractiveDemoSection = () => {
         const id = requestAnimationFrame(animate);
         setAnimationRef(id);
       } else {
-        setCurtainPosition(targetPosition);
-        setCurtainOpen(targetPosition > 50);
+        setCurtainPosition(target);
+        setCurtainOpen(target > 50);
         setIsAnimating(false);
         setAnimationRef(null);
       }
@@ -127,11 +129,11 @@ const InteractiveDemoSection = () => {
       <div className="container-width" style={{paddingBottom: '4rem'}}>
         {/* Header */}
         <div className="text-center mb-6">
-          <h2 className="lg:text-[2.7rem] xl:text-[3.24rem] font-semibold leading-tight tracking-tight apple-gradient-text mb-6 text-[3.24rem]" style={{lineHeight: 1.09}}>
+          <h2 className="lg:text-[2.7rem] xl:text-[3.24rem] font-semibold leading-tight tracking-tight apple-gradient-text mb-6 text-[3.24rem]" style={{lineHeight: 1.09, background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
             See It in Action — Control With Your Phone
           </h2>
-          <p className="text-body-large text-muted-foreground max-w-2xl mx-auto">
-            Experience the smooth, silent operation of Curtain Luxe. Click the app controls to see your curtains respond instantly.
+          <p className="text-body-large text-muted-foreground max-w-2xl mx-auto" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
+            Click the phone buttons to see how the curtains work
           </p>
         </div>
 
@@ -221,7 +223,7 @@ const InteractiveDemoSection = () => {
                 {/* Real-time Status */}
                 <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
                   <div className="bg-black/70 text-white px-3 py-1 rounded-full text-xs lg:text-sm backdrop-blur-sm">
-                    {isAnimating ? (curtainPosition > 50 ? 'Opening...' : 'Closing...') : `${Math.round(curtainPosition)}%`}
+                    {isAnimating ? (targetPosition > curtainPosition ? 'Opening...' : 'Closing...') : `${Math.round(curtainPosition)}%`}
                   </div>
                 </div>
               </div>
@@ -236,7 +238,7 @@ const InteractiveDemoSection = () => {
           </div>
 
           {/* Control Panel - Bottom on mobile, Right on desktop */}
-          <div className="relative w-full order-2 lg:order-2 flex justify-center">
+          <div className="relative w-full order-2 lg:order-2 flex justify-center lg:mt-12">
             <div className="w-full max-w-[220px] lg:w-60 mobile-preview-fix">
               {/* iPhone Mockup */}
               <div className="relative aspect-[9/17] lg:aspect-[9/19.5] bg-black rounded-[2rem] lg:rounded-[2.5rem] p-1 lg:p-1.5 shadow-2xl mx-auto">
@@ -370,7 +372,7 @@ const InteractiveDemoSection = () => {
                           {curtainType === 'sliding' ? (
                             <span className="text-white text-xs lg:text-sm font-bold">⫸⫷</span>
                           ) : (
-                            <ChevronUp className="w-3 lg:w-5 h-3 lg:h-5 text-white" />
+                            <ArrowDown className="w-3 lg:w-5 h-3 lg:h-5 text-white" />
                           )}
                         </button>
                         <span className="text-xs text-slate-300 font-medium">Close</span>
@@ -394,7 +396,7 @@ const InteractiveDemoSection = () => {
                           {curtainType === 'sliding' ? (
                             <span className="text-white text-xs lg:text-sm font-bold">⫷⫸</span>
                           ) : (
-                            <ChevronDown className="w-3 lg:w-5 h-3 lg:h-5 text-white" />
+                            <ArrowUp className="w-3 lg:w-5 h-3 lg:h-5 text-white" />
                           )}
                         </button>
                         <span className="text-xs text-slate-300 font-medium">Open</span>
@@ -410,7 +412,7 @@ const InteractiveDemoSection = () => {
               {/* Interaction Hint - Only on desktop */}
               <div className="hidden lg:block text-center mt-6">
                 <p className="text-sm text-muted-foreground">
-                  👆 Tap the app controls to see the magic
+                  👆 Click the buttons to test
                 </p>
               </div>
             </div>

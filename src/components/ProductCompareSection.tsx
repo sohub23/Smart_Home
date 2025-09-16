@@ -5,7 +5,7 @@ import { Check } from 'lucide-react';
 
 const products = [
   {
-    name: 'Smart Sliding Curtain',
+    name: 'Smart Sliding Curtain Motor',
     youtubeId: 'APm2EDVBljw',
     thumbnail: '/assets/default_images/slider_thumbnail.png',
     description: 'Traditional elegance meets smart technology',
@@ -23,7 +23,7 @@ const products = [
     }
   },
   {
-    name: 'Smart Roller Curtain',
+    name: 'Smart Roller Curtain Motor',
     youtubeId: 'K0MZDn2Tw_4',
     thumbnail: '/assets/default_images/roller_thumbnail.png',
     description: 'Minimal design with maximum control',
@@ -57,15 +57,15 @@ const ProductCompareSection = () => {
     return () => clearTimeout(timer);
   });
   return (
-    <section id="compare" className="py-12 md:py-16 bg-gray-50" style={{paddingBottom: '8rem'}}>
+    <section id="compare" className="section-padding bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 md:px-6">
         {/* Header */}
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="lg:text-[2.7rem] xl:text-[3.24rem] font-semibold leading-tight tracking-tight apple-gradient-text mb-6 text-[3.24rem]" style={{lineHeight: 1.09}}>
-            Choose Your Style
+          <h2 className="lg:text-[2.7rem] xl:text-[3.24rem] font-semibold leading-tight tracking-tight apple-gradient-text mb-6 text-[3.24rem]" style={{lineHeight: 1.09, background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
+            Choose Your Smart Style
           </h2>
-          <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto font-light px-4">
-            Both products deliver exceptional smart control. The choice comes down to your aesthetic preference and space requirements.
+          <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto font-light px-4" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
+            Both smart curtains deliver seamless smart control
           </p>
         </div>
 
@@ -148,38 +148,17 @@ const ProductCompareSection = () => {
                   ))}
                 </div>
 
-                {/* Quick Specs */}
-                <div className="bg-gray-50 rounded-xl p-3 md:p-4 mb-4 md:mb-6">
-                  <h4 className="text-sm md:text-base font-semibold text-gray-900 mb-2 md:mb-3">Key Specifications</h4>
-                  <div className="space-y-2 md:space-y-3">
-                    {Object.entries(product.specs).map(([key, value]) => (
-                      <div key={key} className="flex justify-between items-center">
-                        <span className="text-xs md:text-sm text-gray-600">{key}</span>
-                        <span className="text-xs md:text-sm font-medium text-gray-900">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Actions */}
                 <div className="flex flex-col gap-3 md:gap-4">
                   <Button 
                     onClick={() => {
-                      const specsSection = document.getElementById('specs');
-                      if (specsSection) {
-                        specsSection.scrollIntoView({ behavior: 'smooth' });
-                        setTimeout(() => {
-                          const button = specsSection.querySelector(`button:${index === 0 ? 'first' : 'last'}-of-type`) as HTMLButtonElement;
-                          if (button) button.click();
-                        }, 500);
+                      const productSection = document.querySelector('[data-main-container]');
+                      if (productSection) {
+                        const rect = productSection.getBoundingClientRect();
+                        const offsetTop = window.pageYOffset + rect.top - 80;
+                        window.scrollTo({ top: offsetTop, behavior: 'smooth' });
                       }
                     }}
-                    className="flex-1 bg-gray-100 text-gray-900 hover:bg-gray-200 border-0"
-                  >
-                    View Full Specs
-                  </Button>
-                  <Button 
-                    onClick={() => document.getElementById('order')?.scrollIntoView({ behavior: 'smooth' })}
                     className="flex-1 bg-black text-white hover:bg-gray-800"
                   >
                     Buy Now

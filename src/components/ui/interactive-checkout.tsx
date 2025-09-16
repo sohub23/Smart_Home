@@ -505,7 +505,7 @@ function InteractiveCheckout({
                 return {
                     id: subcategory.id,
                     name: subcategory.name,
-                    price: firstProduct ? `From ${firstProduct.price} BDT` : 'Coming Soon',
+                    price: subcategory.starting_from || (firstProduct ? `${firstProduct.price} BDT` : 'Coming Soon'),
                     gangType: subcategory.name,
                     imageUrl: subcategory.image_url || firstProduct?.image || '/images/smart_switch/3 gang mechanical.webp',
                     isSoldOut: false
@@ -1142,7 +1142,13 @@ function InteractiveCheckout({
                                 <h3 className="font-medium text-gray-900 text-xs lg:text-sm leading-tight truncate font-apple">
                                     {product.name}
                                 </h3>
-
+                                <p className="text-xs text-gray-600 mt-1">
+                                    {(() => {
+                                        if (product.price === 'Coming Soon') return 'Starting From 0 BDT';
+                                        if (product.price.includes('Starting')) return product.price.includes('BDT') ? product.price : `${product.price} BDT`;
+                                        return product.price.includes('BDT') ? `Starting From ${product.price}` : `Starting From ${product.price} BDT`;
+                                    })()
+                                }</p>
                             </div>
                             
 
@@ -1150,8 +1156,11 @@ function InteractiveCheckout({
                                     ))}
                                 </div>
                             ) : (
-                                <div className="px-4 py-8 text-center text-gray-500">
-                                    <p>No products available in this category</p>
+                                <div className="px-4 py-12 text-center">
+                                    <div className="flex flex-col items-center space-y-3">
+                                        <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                                        <p className="text-sm text-gray-500">Loading products...</p>
+                                    </div>
                                 </div>
                             )}
                         </div>

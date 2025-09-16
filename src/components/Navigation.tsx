@@ -17,7 +17,7 @@ const Navigation = () => {
       
       // Check which section is currently visible
       if (location.pathname === '/') {
-        const sections = ['hero', 'specs', 'sohub-protect', 'gallery', 'faq'];
+        const sections = ['hero', 'specs', 'sohub-protect', 'gallery', 'compare', 'faq'];
         const currentSection = sections.find(section => {
           const element = document.getElementById(section);
           if (element) {
@@ -40,35 +40,27 @@ const Navigation = () => {
     if (location.pathname !== '/') {
       navigate('/');
       setTimeout(() => {
-        if (sectionId === 'order') {
-          // Scroll to product list section
-          const productSection = document.querySelector('[data-main-container]');
-          if (productSection) {
-            const rect = productSection.getBoundingClientRect();
-            const offsetTop = window.pageYOffset + rect.top - 80;
-            window.scrollTo({ top: offsetTop, behavior: 'smooth' });
-          }
-        } else {
-          const element = document.getElementById(sectionId);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth' });
-          }
-        }
-      }, 100);
+        scrollToSection(sectionId);
+      }, 200);
     } else {
-      if (sectionId === 'order') {
-        // Scroll to product list section
-        const productSection = document.querySelector('[data-main-container]');
-        if (productSection) {
-          const rect = productSection.getBoundingClientRect();
-          const offsetTop = window.pageYOffset + rect.top - 80;
-          window.scrollTo({ top: offsetTop, behavior: 'smooth' });
-        }
-      } else {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
+      scrollToSection(sectionId);
+    }
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    if (sectionId === 'order') {
+      const productSection = document.querySelector('[data-main-container]');
+      if (productSection) {
+        const rect = productSection.getBoundingClientRect();
+        const offsetTop = window.pageYOffset + rect.top - 80;
+        window.scrollTo({ top: offsetTop, behavior: 'smooth' });
+      }
+    } else {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const offsetTop = window.pageYOffset + rect.top - 80;
+        window.scrollTo({ top: offsetTop, behavior: 'smooth' });
       }
     }
   };
@@ -113,9 +105,12 @@ const Navigation = () => {
               Sohub Protect
             </button>
             <button 
-              onClick={() => handleNavigation('gallery')}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                navigate('/gallery');
+              }}
               className={`text-sm transition-colors hover:text-black text-black ${
-                activeSection === 'gallery' ? 'font-bold' : 'font-medium'
+                location.pathname === '/gallery' ? 'font-bold' : 'font-medium'
               }`}
             >
               Gallery
@@ -182,7 +177,10 @@ const Navigation = () => {
                 Sohub Protect
               </button>
               <button 
-                onClick={() => handleNavigation('gallery')}
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  navigate('/gallery');
+                }}
                 className="block w-full text-left py-2 text-black hover:text-black font-medium"
               >
                 Gallery

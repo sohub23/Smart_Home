@@ -45,8 +45,14 @@ const TrustedBySection = () => {
   }, [api, current]);
 
   return (
-    <section id="sohub-protect" className="pt-24 pb-16 md:pt-32 md:pb-24 bg-white">
+    <section id="sohub-protect" className="section-padding bg-white">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="text-center mb-8 md:mb-12">
+          <h2 className="text-headline text-primary mb-4" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>Protect your security</h2>
+          <p className="text-body-large text-muted-foreground max-w-2xl mx-auto" style={{background: 'linear-gradient(180deg, #1f2937, #374151, #6b7280)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
+            Secure your peace of mind
+          </p>
+        </div>
         <div className="flex flex-col gap-8 md:gap-12">
           <div className="w-full">
             <img 
