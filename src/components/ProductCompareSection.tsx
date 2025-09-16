@@ -122,6 +122,9 @@ const ProductCompareSection = () => {
                         setVideoLoaded(prev => ({ ...prev, [product.youtubeId]: true }));
                       }, 2000);
                     }}
+                    onError={() => {
+                      setVideoLoaded(prev => ({ ...prev, [product.youtubeId]: false }));
+                    }}
                   />
                 )}
               </div>

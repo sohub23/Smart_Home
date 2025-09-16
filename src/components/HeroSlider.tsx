@@ -148,6 +148,10 @@ const HeroSlider = () => {
                       setVideoLoaded(prev => ({ ...prev, [slide.id]: true }));
                     }, 2000);
                   }}
+                  onError={() => {
+                    setVideoLoaded(prev => ({ ...prev, [slide.id]: false }));
+                    setShowImages(true);
+                  }}
                 />
               )}
               

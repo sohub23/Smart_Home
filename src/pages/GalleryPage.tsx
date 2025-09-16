@@ -148,7 +148,7 @@ const GalleryPage = () => {
                       className="group cursor-pointer"
                       onClick={() => setSelectedVideo(video)}
                     >
-                      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-0 shadow-lg">
+                      <Card className="overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-white/90 backdrop-blur-sm border-0 shadow-lg h-full flex flex-col">
                         <div className="relative aspect-video overflow-hidden">
                           {youtubeId ? (
                             <img
@@ -198,7 +198,7 @@ const GalleryPage = () => {
                           </div>
                         </div>
                         
-                        <div className="p-5">
+                        <div className="p-5 flex-1 flex flex-col">
                           <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-gray-700 transition-colors duration-300">
                             {video.title || 'Smart Home Demo'}
                           </h3>
@@ -207,7 +207,7 @@ const GalleryPage = () => {
                               {video.description}
                             </p>
                           )}
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mt-auto">
                             <div className="flex items-center space-x-2">
                               <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center shadow-md">
                                 <span className="text-white text-xs font-bold">SH</span>

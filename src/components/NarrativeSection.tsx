@@ -146,6 +146,9 @@ const NarrativeSection = () => {
                 onLoad={() => {
                   setTimeout(() => setVideoLoaded(true), 2000);
                 }}
+                onError={() => {
+                  setVideoLoaded(false);
+                }}
               />
             </div>
             
