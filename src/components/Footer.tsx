@@ -152,6 +152,13 @@ const Footer = () => {
                 </a>
               </li>
               <li>
+                <a href="/price-list" className={`hover:text-gray-900 transition-colors ${
+                  location.pathname === '/price-list' ? 'text-black font-bold' : 'text-gray-700'
+                }`}>
+                  Product List
+                </a>
+              </li>
+              <li>
                 <a href="/track-order" className={`hover:text-gray-900 transition-colors ${
                   location.pathname === '/track-order' ? 'text-black font-bold' : 'text-gray-700'
                 }`}>

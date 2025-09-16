@@ -19,6 +19,7 @@ const AdminNavbar = () => {
     { path: '/admin/orders', label: 'Orders' },
     { path: '/admin/products-enhanced', label: 'Products' },
     { path: '/admin/categories-enhanced', label: 'Categories' },
+    { path: '/admin/price-list', label: 'All Product List' },
     { path: '/admin/customers', label: 'Customers' },
     { path: '/admin/reports', label: 'Reports' },
     { path: '/admin/users', label: 'Users' },

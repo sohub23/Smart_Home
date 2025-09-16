@@ -8,6 +8,7 @@ import BuiltForComfort from "./pages/BuiltForComfort";
 import ContactPage from "./pages/ContactPage";
 import AboutPage from "./pages/AboutPage";
 import GalleryPage from "./pages/GalleryPage";
+import PriceListPage from "./pages/PriceListPage";
 import TrackOrderPage from "./pages/TrackOrderPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -25,6 +26,7 @@ import AdminProductsEnhancedSimple from "./pages/AdminProductsEnhancedSimple";
 import AdminProductsSimple from "./pages/AdminProductsSimple";
 import AdminCategoriesEnhanced from "./pages/AdminCategoriesEnhanced";
 import AdminCategoriesSimple from "./pages/AdminCategoriesSimple";
+import AdminPriceList from "./pages/AdminPriceList";
 import TestEnhanced from "./pages/TestEnhanced";
 import AdminConnectionTest from "./pages/AdminConnectionTest";
 import CategoryProducts from "./pages/CategoryProducts";
@@ -53,6 +55,7 @@ const App = () => (
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/gallery" element={<GalleryPage />} />
+          <Route path="/price-list" element={<PriceListPage />} />
           <Route path="/track-order" element={<TrackOrderPage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
@@ -69,6 +72,7 @@ const App = () => (
           <Route path="/admin/products-enhanced" element={<ProtectedRoute><AdminProductsEnhanced /></ProtectedRoute>} />
           <Route path="/admin/products-test" element={<ProtectedRoute><AdminProductsTest /></ProtectedRoute>} />
           <Route path="/admin/categories-enhanced" element={<ProtectedRoute><AdminCategoriesEnhanced /></ProtectedRoute>} />
+          <Route path="/admin/price-list" element={<ProtectedRoute><AdminPriceList /></ProtectedRoute>} />
           <Route path="/admin/connection-test" element={<ProtectedRoute><AdminConnectionTest /></ProtectedRoute>} />
           <Route path="/admin/email-settings" element={<ProtectedRoute><AdminEmailSettings /></ProtectedRoute>} />
           <Route path="/setup-email-tables" element={<SetupEmailTables />} />
