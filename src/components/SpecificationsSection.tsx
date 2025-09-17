@@ -81,7 +81,7 @@ const tabContent = {
       "Wi-Fi and Zigbee connectivity options"
     ],
     images: [
-      { src: '/assets/specification/sliding_1.webp', alt: "Sliding curtain system" }
+      { src: '/assets/specification/sliding1.png', alt: "Sliding curtain system" }
     ],
     badge: "Calibrated for whisper-quiet bedrooms"
   },

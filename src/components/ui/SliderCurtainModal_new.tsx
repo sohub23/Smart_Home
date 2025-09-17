@@ -52,11 +52,12 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   // Price mapping for different sizes
   const sizePricing = {
     '2m set': 30000,
-    '3m set': 34000,
-    '4m set': 38000,
-    '5m set': 42000,
-    '6m set': 46000,
-    '7m set': 50000
+    '3m set': 31500,
+    '4m set': 33000,
+    '5m set': 34500,
+    '6m set': 36000,
+    '7m set': 37500,
+    '8m set': 39000
   };
   const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
   const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
@@ -531,7 +532,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                 
                 {/* Variation Options - Horizontal Row */}
                 <div className="flex gap-2">
-                  {['2m set', '3m set', '4m set', '5m set', '6m set', '7m set'].map((size) => (
+                  {['2m set', '3m set', '4m set', '5m set', '6m set', '7m set', '8m set'].map((size) => (
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
@@ -551,7 +552,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
             <div className="mb-6">
               <h3 className="text-base font-bold text-gray-900 mb-3">Capacity</h3>
               <div className="text-sm text-gray-700 flex gap-2 flex-wrap">
-                {['Matter over Thread', 'Matter Over wifi', 'Zigbee'].map((capacity) => (
+                {['Matter over Thread', 'Matter Over wifi', 'Zigbee', 'Wifi'].map((capacity) => (
                   <button
                     key={capacity}
                     onClick={() => setSelectedCapacity(capacity)}

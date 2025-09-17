@@ -180,10 +180,17 @@ const BuiltForComfort = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button className="w-full sm:w-auto bg-gradient-to-r from-gray-700 to-gray-900 text-white hover:from-gray-800 hover:to-black px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-medium rounded-lg transition-all duration-300">
+              <Button 
+                onClick={() => window.location.href = '/contact'}
+                className="w-full sm:w-auto bg-gradient-to-r from-gray-700 to-gray-900 text-white hover:from-gray-800 hover:to-black px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-medium rounded-lg transition-all duration-300"
+              >
                 Schedule Consultation
               </Button>
-              <Button variant="outline" className="w-full sm:w-auto border-2 border-gray-700 text-gray-700 hover:bg-gray-700 hover:text-white px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-medium rounded-lg transition-all duration-300">
+              <Button 
+                onClick={() => window.location.href = '/gallery'}
+                variant="outline" 
+                className="w-full sm:w-auto border-2 border-gray-700 text-gray-700 hover:bg-gray-700 hover:text-white px-6 md:px-8 py-2 md:py-3 text-sm md:text-base font-medium rounded-lg transition-all duration-300"
+              >
                 View Gallery
               </Button>
             </div>

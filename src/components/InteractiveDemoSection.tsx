@@ -138,7 +138,7 @@ const InteractiveDemoSection = () => {
         </div>
 
         {/* Mobile-First Layout */}
-        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-8 items-center max-h-screen lg:max-h-none">
+        <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4 lg:gap-8 items-start max-h-screen lg:max-h-none">
           {/* Window Demo - Top on mobile, Left on desktop */}
           <div className="relative w-full order-1 lg:order-1">
             <div className="aspect-[16/9] lg:aspect-[4/3] overflow-hidden rounded-xl lg:rounded-2xl shadow-2xl" style={{ backgroundImage: `url('/assets/window.jpeg')`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
@@ -238,7 +238,7 @@ const InteractiveDemoSection = () => {
           </div>
 
           {/* Control Panel - Bottom on mobile, Right on desktop */}
-          <div className="relative w-full order-2 lg:order-2 flex justify-center lg:mt-12">
+          <div className="relative w-full order-2 lg:order-2 flex justify-center">
             <div className="w-full max-w-[220px] lg:w-60 mobile-preview-fix">
               {/* iPhone Mockup */}
               <div className="relative aspect-[9/17] lg:aspect-[9/19.5] bg-black rounded-[2rem] lg:rounded-[2.5rem] p-1 lg:p-1.5 shadow-2xl mx-auto">
@@ -409,11 +409,8 @@ const InteractiveDemoSection = () => {
                 </div>
               </div>
 
-              {/* Interaction Hint - Only on desktop */}
+              {/* Spacer to maintain phone position */}
               <div className="hidden lg:block text-center mt-6">
-                <p className="text-sm text-muted-foreground">
-                  👆 Click the buttons to test
-                </p>
               </div>
             </div>
           </div>
