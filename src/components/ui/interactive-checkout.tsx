@@ -25,7 +25,7 @@ import { productData } from "@/lib/productData";
 import { SpotLightModal } from '@/components/ui/SpotLightModal';
 import { StripLightModal } from '@/components/ui/StripLightModal';
 import { CeilingLampModal } from '@/components/ui/Ceiling_lamb_modal';
-import { HubModal } from '@/components/ui/Hubmodal';
+import { GatewayModal } from '@/components/ui/gatewaymodal';
 
 import { ServicesModal } from "@/components/ui/ServicesModal";
 import { InstallationModal } from "@/components/ui/InstallationModal";
@@ -232,7 +232,7 @@ function InteractiveCheckout({
     const [spotLightModalOpen, setSpotLightModalOpen] = useState(false);
     const [stripLightModalOpen, setStripLightModalOpen] = useState(false);
     const [ceilingLampModalOpen, setCeilingLampModalOpen] = useState(false);
-    const [hubModalOpen, setHubModalOpen] = useState(false);
+    const [gatewayModalOpen, setGatewayModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -871,6 +871,16 @@ function InteractiveCheckout({
                                             <circle cx="18" cy="17" r="0.3" fill="currentColor"/>
                                         </svg>
                                     )}
+                                    {(category.name?.toLowerCase().includes('gateway') || category.name?.toLowerCase().includes('hub') || category.category?.toLowerCase().includes('gateway') || category.category?.toLowerCase().includes('hub')) && (
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                            <rect x="2" y="6" width="20" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                                            <circle cx="7" cy="12" r="1.5" fill="currentColor"/>
+                                            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                                            <circle cx="17" cy="12" r="1.5" fill="currentColor"/>
+                                            <path d="M6 9v6M18 9v6" stroke="currentColor" strokeWidth="1"/>
+                                            <path d="M4 8l2-2M20 8l-2-2M4 16l2 2M20 16l-2 2" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+                                        </svg>
+                                    )}
                                     {category.name}
                                 </span>
                                 
@@ -1044,16 +1054,16 @@ function InteractiveCheckout({
                                 
                                 // Handle M6 Hub clicks
                                 if (product.name.toLowerCase().includes('m6') || product.name.toLowerCase().includes('hub')) {
-                                    console.log('Opening Hub Modal for M6 Hub');
+                                    console.log('Opening Gateway Modal for M6 Hub');
                                     const hubVariant = {
                                         id: product.id,
                                         name: product.name,
                                         price: product.price,
-                                        gangType: 'Hub',
+                                        gangType: 'Gateway',
                                         imageUrl: product.imageUrl
                                     };
                                     setSelectedVariant(hubVariant);
-                                    setHubModalOpen(true);
+                                    setGatewayModalOpen(true);
                                     return;
                                 }
                                 
@@ -1119,8 +1129,8 @@ function InteractiveCheckout({
                                         break;
                                     case 'boilerSwitch': setBoilerSwitchModalOpen(true); break;
                                     case 'hub':
-                                        console.log('Opening hub modal');
-                                        setHubModalOpen(true);
+                                        console.log('Opening gateway modal');
+                                        setGatewayModalOpen(true);
                                         break;
                                     case 'lighting':
                                         if (product.name.toLowerCase().includes('spot')) {
@@ -2632,6 +2642,52 @@ function InteractiveCheckout({
                     }}
                     onBuyNow={async (payload) => {
                         // Handle buy now for Ceiling Lamp products
+                    }}
+                />
+            )}
+            
+            {/* Gateway Modal */}
+            {selectedVariant && (
+                <GatewayModal
+                    open={gatewayModalOpen}
+                    onOpenChange={(open) => {
+                        setGatewayModalOpen(open);
+                        if (!open) {
+                            setSelectedVariant(null);
+                        }
+                    }}
+                    product={(() => {
+                        const productData = dbProducts.find(p => p.id === selectedVariant.id);
+                        return productData ? {
+                            ...productData
+                        } : {
+                            id: selectedVariant.id,
+                            name: selectedVariant.name,
+                            category: selectedVariant.gangType || 'Gateway',
+                            price: parseInt(selectedVariant.price.replace(/[^0-9]/g, '')) || 5000,
+                            description: '',
+                            image: selectedVariant.imageUrl,
+                            stock: 0
+                        };
+                    })()}
+                    addToCart={addToCart}
+                    onAddToCart={async (payload) => {
+                        if (selectedVariant && payload.productId) {
+                            const cartItem = {
+                                id: payload.productId,
+                                name: `${selectedVariant.name}${payload.installationCharge > 0 ? ` + Installation` : ''}`,
+                                price: payload.totalPrice || 5000,
+                                category: 'Gateway',
+                                image: selectedVariant.imageUrl,
+                                color: 'Gateway',
+                                quantity: payload.quantity || 1,
+                                installationCharge: payload.installationCharge || 0
+                            };
+                            addToCart(cartItem);
+                        }
+                    }}
+                    onBuyNow={async (payload) => {
+                        // Handle buy now for Gateway products
                     }}
                 />
             )}

@@ -10,7 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { EngravingTrigger } from '@/components/ui/EngravingTrigger';
 import { EngravingModal } from '@/components/ui/EngravingModal';
 
-interface BoilerSwitchModalProps {
+interface GatewayModalProps {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   product: {
@@ -40,38 +40,37 @@ interface BoilerSwitchModalProps {
   addToCart?: (item: any) => void;
 }
 
-// Static boiler switch product data
-const boilerSwitchProduct = {
-  id: 'boiler-switch-1',
-  title: 'Touch DIY Series',
-  display_name: 'Touch DIY Series',
-  name: 'Touch DIY Series',
-  price: 6500,
-  discount_price: 6500,
-  image: '/assets/Touch_DIY/light_switch_main.png',
-  image2: '/assets/Touch_DIY/light_1.jpg',
-  image3: '/assets/Touch_DIY/light2.jpg',
-  image4: '/assets/Touch_DIY/light3.jpg',
-  image5: '/assets/Touch_DIY/light4.jpg',
+// Static gateway product data
+const gatewayProduct = {
+  id: 'gateway-m6-hub',
+  title: 'M6 Smart Gateway Hub',
+  display_name: 'M6 Smart Gateway Hub',
+  name: 'M6 Smart Gateway Hub',
+  price: 8500,
+  discount_price: 8500,
+  image: '/assets/Hub/hub1.jpg',
+  image2: '/assets/Hub/hub2.jpg',
+  image3: '/assets/Hub/hub3.jpg',
+  image4: '/assets/Hub/hub4.jpg',
+  image5: '/assets/Hub/hub5.jpg',
   additional_images: JSON.stringify([
-    '/assets/Touch_DIY/light5.jpg',
-    '/assets/Touch_DIY/light6.jpg'
+    '/assets/Hub/hub6.jpg'
   ]),
-  overview: 'Heavy-duty electrical switch engineered for high-power appliances like boilers, water heaters, and industrial equipment\nPremium heat-resistant materials with enhanced safety mechanisms and thermal protection for reliable operation\nProfessional-grade construction with reinforced contacts and arc suppression technology for extended lifespan',
-  technical_details: 'Voltage Rating: AC 100-240V, Maximum Current: 20A, Power Rating: 4800W with overload protection\nDimensions: 86mm x 86mm x 45mm, Operating Temperature: -10°C to +60°C, IP20 protection rating\nElectrical Life: 100,000 switching cycles, Contact Material: Silver alloy, Mounting: Standard 35mm DIN rail compatible',
-  warranty: '1 Year Service Warranty',
+  overview: 'Central smart home gateway hub for seamless device connectivity and automation control\nSupports multiple wireless protocols including Zigbee, WiFi, and Bluetooth for comprehensive smart home integration\nAdvanced processing power with cloud connectivity for remote monitoring and control of all connected devices',
+  technical_details: 'Wireless Protocols: Zigbee 3.0, WiFi 802.11 b/g/n, Bluetooth 5.0\nProcessor: ARM Cortex-A7 Quad-core, RAM: 1GB DDR3, Storage: 8GB eMMC\nConnectivity: Ethernet port, USB 2.0, Operating Temperature: 0°C to +40°C, Power: 12V DC adapter',
+  warranty: '2 Year Manufacturer Warranty',
   variants: JSON.stringify([
-    { name: '1 Gang', price: 6500, discount_price: 6500, stock: 15, image: '/assets/Touch_DIY/1gang.png' },
-    { name: '2 Gang', price: 6750, discount_price: 6750, stock: 12, image: '/assets/Touch_DIY/2gang.png' },
-    { name: '3 Gang', price: 7000, discount_price: 7000, stock: 8, image: '/assets/Touch_DIY/3gang.png' }
+    { name: 'Standard', price: 8500, discount_price: 8500, stock: 25, image: '/assets/Hub/hub1.jpg' },
+    { name: 'Pro', price: 12500, discount_price: 12500, stock: 15, image: '/assets/Hub/hub2.jpg' },
+    { name: 'Enterprise', price: 18500, discount_price: 18500, stock: 8, image: '/assets/Hub/hub3.jpg' }
   ]),
-  help_text: 'This heavy-duty boiler switch is specifically designed for controlling high-power electrical appliances like boilers and water heaters. Features enhanced safety mechanisms and heat-resistant materials.',
-  help_image_url: '/assets/Touch_DIY/light_switch_main.png',
+  help_text: 'The M6 Smart Gateway Hub is the central control unit for your smart home ecosystem. It connects and manages all your smart devices through multiple wireless protocols.',
+  help_image_url: '/assets/Hub/hub1.jpg',
   engraving_available: false,
-  stock: 15
+  stock: 25
 };
 
-export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: BoilerSwitchModalProps) {
+export function GatewayModal({ open, onOpenChange, product, onAddToCart, onBuyNow, addToCart }: GatewayModalProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -81,7 +80,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
   const [installationSelected, setInstallationSelected] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState(boilerSwitchProduct);
+  const [selectedProduct, setSelectedProduct] = useState(gatewayProduct);
   const [selectedGang, setSelectedGang] = useState('');
   const [hasSelectedGang, setHasSelectedGang] = useState(false);
 
@@ -89,15 +88,21 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
     if (open) {
       setQuantity(1);
       setSelectedImage(0);
-      setSelectedProduct(boilerSwitchProduct);
+      // Use database product data if available, otherwise fallback to static data
+      setSelectedProduct(product.name ? product : gatewayProduct);
       setHasSelectedGang(false);
       setSelectedGang('');
     }
-  }, [open]);
+  }, [open, product]);
 
   const currentProductData = selectedProduct || product;
   
   const getCurrentStock = () => {
+    // For gateway products, always return a positive stock value
+    if (currentProductData?.id === 'gateway-m6-hub' || currentProductData?.name?.toLowerCase().includes('gateway') || currentProductData?.name?.toLowerCase().includes('hub')) {
+      return 25; // Default stock for gateway products
+    }
+    
     if (!currentProductData) return 0;
     
     let variants = currentProductData.variants;
@@ -124,6 +129,18 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
   // Get all available images from current product (similar to other modals)
   const getProductImages = (productData) => {
     if (!productData) return [];
+    
+    // For gateway products, always use all Hub images
+    if (productData.id === 'gateway-m6-hub' || productData.name?.toLowerCase().includes('gateway') || productData.name?.toLowerCase().includes('hub')) {
+      return [
+        '/assets/Hub/hub1.jpg',
+        '/assets/Hub/hub2.jpg',
+        '/assets/Hub/hub3.jpg',
+        '/assets/Hub/hub4.jpg',
+        '/assets/Hub/hub5.jpg',
+        '/assets/Hub/hub6.jpg'
+      ];
+    }
     
     const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5].filter(Boolean);
     
@@ -174,21 +191,13 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
   const totalPrice = (currentPrice * quantity) + engravingPrice;
 
   const handleAddToCart = async () => {
-    if (!selectedGang) {
-      toast({
-        title: "Please Select Variation",
-        description: "Please select a gang variation before adding to bag.",
-        variant: "destructive"
-      });
-      return;
-    }
     
     setLoading(true);
     try {
       const unitPrice = currentPrice + (engravingText ? (currentProductData.engraving_price || 200) : 0);
       const cartPayload = {
-        id: `${currentProductData.id || product.id}_${selectedGang.replace(' ', '_')}_${Date.now()}`,
-        name: `${currentProductData?.title || currentProductData?.name || product.name} - ${selectedGang}${engravingText ? ` (Engraved: "${engravingText}")` : ''}`,
+        id: `${currentProductData.id || product.id}_${Date.now()}`,
+        name: `${currentProductData?.title || currentProductData?.name || product.name}`,
         price: unitPrice,
         category: product.category,
         image: currentProductData?.image || '',
@@ -335,14 +344,14 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
-                {currentProductData.title || currentProductData.name || product.name}
+                {product.name || currentProductData.title || currentProductData.name || 'M6 Hub'}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-4 mb-3">
                   <span className="text-lg lg:text-xl font-bold text-black">
-                    {!hasSelectedGang ? 'Starting From ' : ''}{(hasSelectedGang ? totalPrice : currentPrice).toLocaleString()} BDT
+                    {!hasSelectedGang ? 'Starting From ' : ''}{(hasSelectedGang ? totalPrice : (product.price || currentPrice)).toLocaleString()} BDT
                   </span>
                   {(() => {
                     // Check if variants exist and parse them
@@ -447,15 +456,15 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                             <ul className="space-y-2">
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Heavy-duty electrical switch engineered for high-power appliances like boilers, water heaters, and industrial equipment
+                                Central smart home gateway hub for seamless device connectivity and automation control
                               </li>
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Premium heat-resistant materials with enhanced safety mechanisms and thermal protection for reliable operation
+                                Supports multiple wireless protocols including Zigbee, WiFi, and Bluetooth for comprehensive smart home integration
                               </li>
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Professional-grade construction with reinforced contacts and arc suppression technology for extended lifespan
+                                Advanced processing power with cloud connectivity for remote monitoring and control of all connected devices
                               </li>
                             </ul>
                           )}
@@ -485,15 +494,15 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                             <ul className="space-y-2">
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Voltage Rating: AC 100-240V, Maximum Current: 20A, Power Rating: 4800W with overload protection
+                                Wireless Protocols: Zigbee 3.0, WiFi 802.11 b/g/n, Bluetooth 5.0
                               </li>
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Dimensions: 86mm x 86mm x 45mm, Operating Temperature: -10°C to +60°C, IP20 protection rating
+                                Processor: ARM Cortex-A7 Quad-core, RAM: 1GB DDR3, Storage: 8GB eMMC
                               </li>
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                Electrical Life: 100,000 switching cycles, Contact Material: Silver alloy, Mounting: Standard 35mm DIN rail compatible
+                                Connectivity: Ethernet port, USB 2.0, Operating Temperature: 0°C to +40°C, Power: 12V DC adapter
                               </li>
                             </ul>
                           )}
@@ -514,7 +523,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                             <ul className="space-y-2">
                               <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
-                                {product.warranty || '1 Year Service Warranty'}
+                                {product.warranty || '2 Year Manufacturer Warranty'}
                               </li>
                             </ul>
                           )}
@@ -526,97 +535,9 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
               </Accordion>
             </div>
 
-            {/* Gang Variation Section */}
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-gray-900 mb-3">Variations</h3>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {(() => {
-                  let variants = currentProductData.variants;
-                  if (typeof variants === 'string') {
-                    try {
-                      variants = JSON.parse(variants);
-                    } catch (e) {
-                      variants = [];
-                    }
-                  }
-                  return variants.map((variant) => (
-                    <div key={variant.name} className="flex flex-col items-center">
-                      <div 
-                        onClick={() => {
-                          setSelectedGang(variant.name);
-                          setHasSelectedGang(true);
-                        }}
-                        className={`w-24 h-24 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden relative flex items-center justify-center ${
-                          selectedGang === variant.name ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 
-                          'border-gray-200 hover:border-gray-300 bg-white'
-                        }`}
-                      >
-                        <img 
-                          src={variant.image}
-                          alt={`${variant.name} Switch`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className={`mt-2 text-xs font-medium text-center ${
-                        selectedGang === variant.name ? 'text-[#0a1d3a]' : 'text-gray-700'
-                      }`}>{variant.name}</div>
-                    </div>
-                  ));
-                })()}
-              </div>
-            </div>
 
-            {/* Customization Section */}
-            <div className="mb-4">
-                <h3 className="text-base font-bold text-gray-900 mb-3">Personalization</h3>
-                <div 
-                  onClick={() => setEngravingModalOpen(true)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
-                    engravingText 
-                      ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md hover:shadow-lg' 
-                      : 'border-dashed border-gray-300 bg-gray-50/50 hover:border-[#0a1d3a]/50 hover:bg-[#0a1d3a]/5'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        engravingText ? 'bg-[#0a1d3a]/10' : 'bg-gray-200'
-                      }`}>
-                        <svg className={`w-5 h-5 ${
-                          engravingText ? 'text-[#0a1d3a]' : 'text-gray-500'
-                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                      </div>
-                      <div className="text-left">
-                        <div className={`font-semibold ${
-                          engravingText ? 'text-[#0a1d3a]' : 'text-gray-700'
-                        }`}>Customize Your Switch</div>
-                        <div className="text-sm text-gray-600">
-                          {engravingText ? (
-                            <span className="flex items-center gap-1">
-                              <span className="font-medium">"{engravingText}"</span>
-                              <span className="text-green-600">✓ Added</span>
-                            </span>
-                          ) : (
-                            'Add personal text engraving'
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-sm font-semibold ${
-                        engravingText ? 'text-[#0a1d3a]' : 'text-gray-700'
-                      }`}>
-                        +{((currentProductData.engraving_price || 200) * quantity).toLocaleString()} BDT
-                      </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
-                        {engravingText ? 'Click to edit' : 'Optional'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
+
 
             {/* Quantity Selection */}
             <div className="mb-4">
@@ -734,39 +655,78 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
           </button>
           
           <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Touch DIY Series - Professional Guide</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Description</h3>
             
-            <div className="space-y-4 text-sm text-gray-600 leading-relaxed">
-              <div>
-                <h4 className="font-medium text-gray-800 mb-2">What is the Touch DIY Series?</h4>
-                <p>Heavy-duty electrical switch engineered specifically for high-power appliances like boilers, water heaters, and industrial equipment. Built with premium heat-resistant materials and enhanced safety mechanisms.</p>
+            <div className="border-b border-gray-200 mb-4">
+              <div className="flex space-x-8">
+                <button 
+                  onClick={() => setActiveTab('overview')}
+                  className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                    activeTab === 'overview' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
+                  }`}
+                >
+                  Overview
+                </button>
+                <button 
+                  onClick={() => setActiveTab('technical')}
+                  className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                    activeTab === 'technical' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
+                  }`}
+                >
+                  Technical Details
+                </button>
+                <button 
+                  onClick={() => setActiveTab('warranty')}
+                  className={`py-3 px-1 border-b-2 font-semibold text-sm ${
+                    activeTab === 'warranty' ? 'border-black text-black' : 'border-transparent text-gray-700 hover:text-gray-900'
+                  }`}
+                >
+                  Warranty
+                </button>
               </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-800 mb-2">Key Features:</h4>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Maximum Current: 20A with 4800W power rating</li>
-                  <li>Heat-resistant materials with thermal protection</li>
-                  <li>Professional-grade construction with reinforced contacts</li>
-                  <li>Arc suppression technology for extended lifespan</li>
-                  <li>100,000 switching cycles electrical life</li>
+            </div>
+            
+            <div className="text-sm text-gray-600 leading-relaxed">
+              {activeTab === 'overview' && (
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                    Central smart home gateway hub for seamless device connectivity and automation control
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                    Supports multiple wireless protocols including Zigbee, WiFi, and Bluetooth for comprehensive smart home integration
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                    Advanced processing power with cloud connectivity for remote monitoring and control of all connected devices
+                  </li>
                 </ul>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-800 mb-2">Perfect for:</h4>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Boiler and water heater control systems</li>
-                  <li>High-power industrial equipment</li>
-                  <li>Commercial kitchen appliances</li>
-                  <li>Heavy-duty electrical installations</li>
+              )}
+              {activeTab === 'technical' && (
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                    Wireless Protocols: Zigbee 3.0, WiFi 802.11 b/g/n, Bluetooth 5.0
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                    Processor: ARM Cortex-A7 Quad-core, RAM: 1GB DDR3, Storage: 8GB eMMC
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                    Connectivity: Ethernet port, USB 2.0, Operating Temperature: 0°C to +40°C, Power: 12V DC adapter
+                  </li>
                 </ul>
-              </div>
-              
-              <div>
-                <h4 className="font-medium text-gray-800 mb-2">Safety & Installation:</h4>
-                <p>Professional installation recommended for high-power applications. Features overload protection, IP20 rating, and operates reliably in temperatures from -10°C to +60°C. Standard 35mm DIN rail compatible mounting.</p>
-              </div>
+              )}
+              {activeTab === 'warranty' && (
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2 flex-shrink-0"></span>
+                    1 Year Service Warranty
+                  </li>
+                </ul>
+              )}
             </div>
           </div>
         </DialogContent>
