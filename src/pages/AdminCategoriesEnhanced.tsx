@@ -117,7 +117,29 @@ const AdminCategoriesEnhanced = memo(() => {
       setEditingCategory(null);
       loadData();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to save category", variant: "destructive" });
+      console.error('Category save error:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+        status: error?.status
+      });
+      
+      let errorMessage = 'Unknown error occurred';
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.details) {
+        errorMessage = error.details;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      toast({ 
+        title: "Error", 
+        description: `Failed to save category: ${errorMessage}`, 
+        variant: "destructive" 
+      });
     }
   };
 
@@ -262,12 +284,51 @@ const AdminCategoriesEnhanced = memo(() => {
 
   const handleDeleteSubcategory = async (id) => {
     try {
+      // First check if there are any products in this subcategory
+      const { data: products, error: checkError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('subcategory_id', id)
+        .limit(1);
+      
+      if (checkError) {
+        console.error('Error checking products:', checkError);
+        throw new Error('Failed to check for existing products');
+      }
+      
+      if (products && products.length > 0) {
+        const confirmed = window.confirm(
+          `This subcategory contains ${products.length} product(s). Do you want to delete the subcategory and all its products? This action cannot be undone.`
+        );
+        
+        if (!confirmed) return;
+        
+        // Delete all products in this subcategory first
+        const { error: deleteProductsError } = await supabase
+          .from('products')
+          .delete()
+          .eq('subcategory_id', id);
+        
+        if (deleteProductsError) {
+          console.error('Error deleting products:', deleteProductsError);
+          throw new Error('Failed to delete associated products');
+        }
+      }
+      
       const { error } = await supabase.from('product_subcategories').delete().eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
       toast({ title: "Success", description: "Subcategory deleted successfully" });
       loadData();
     } catch (error) {
-      toast({ title: "Error", description: "Failed to delete subcategory", variant: "destructive" });
+      console.error('Delete subcategory error:', error);
+      toast({ 
+        title: "Error", 
+        description: error.message || "Failed to delete subcategory", 
+        variant: "destructive" 
+      });
     }
   };
 

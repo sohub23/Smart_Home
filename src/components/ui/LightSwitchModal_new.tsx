@@ -53,25 +53,30 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const [installationSelected, setInstallationSelected] = useState(false);
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedGang, setSelectedGang] = useState('one');
+  const [selectedGang, setSelectedGang] = useState('');
   const [gangImageIndex, setGangImageIndex] = useState(0);
-  const [selectedColor, setSelectedColor] = useState('white');
+  const [selectedColor, setSelectedColor] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedGangImage, setSelectedGangImage] = useState('');
   const [selectedGangTitle, setSelectedGangTitle] = useState('');
+  const [selectedSwitchType, setSelectedSwitchType] = useState('');
   // Static light switch products data
-  const staticProducts = [
+  const lightSwitchProducts = [
     {
       id: '1-gang',
-      title: '1 Gang Light Switch',
-      display_name: '1 Gang Mechanical Switch',
+      title: '1 Gang Light Switch (Lw1)',
+      display_name: '1 Gang Touch Light Switch (Lw1)',
       price: 3500,
-      image: '/assets/light_switch/light_1.jpg',
-      image2: '/assets/light_switch/light2.jpg',
-      image3: '/assets/light_switch/light3.jpg',
-      image4: '/assets/light_switch/light4.jpg',
-      image5: '/assets/light_switch/light5.jpg',
+      image: '/assets/light_switch/touch_switch/white_1gang.png',
+      additional_images: JSON.stringify([
+        '/assets/light_switch/touch_switch/Lw1.jpg',
+        '/assets/light_switch/touch_switch/Lw2.jpg',
+        '/assets/light_switch/touch_switch/Lw3.jpg',
+        '/assets/light_switch/touch_switch/Lw4.jpg',
+        '/assets/light_switch/touch_switch/Lw5.jpg',
+        '/assets/light_switch/touch_switch/Lw6.jpg'
+      ]),
       variants: JSON.stringify([{ price: 3500, discount_price: 0 }]),
       help_text: 'Perfect for single light control',
       engraving_available: true,
@@ -79,35 +84,167 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
     },
     {
       id: '2-gang',
-      title: '2 Gang Light Switch',
-      display_name: '2 Gang Mechanical Switch',
-      price: 3800,
-      image: '/assets/light_switch/light_1.jpg',
-      image2: '/assets/light_switch/light2.jpg',
-      image3: '/assets/light_switch/light3.jpg',
-      image4: '/assets/light_switch/light4.jpg',
-      image5: '/assets/light_switch/light5.jpg',
-      variants: JSON.stringify([{ price: 3800, discount_price: 0 }]),
+      title: '2 Gang Light Switch (Lw2)',
+      display_name: '2 Gang Touch Light Switch (Lw2)',
+      price: 3650,
+      image: '/assets/light_switch/touch_switch/white_2gang.png',
+      additional_images: JSON.stringify([
+        '/assets/light_switch/touch_switch/Lw1.jpg',
+        '/assets/light_switch/touch_switch/Lw2.jpg',
+        '/assets/light_switch/touch_switch/Lw3.jpg',
+        '/assets/light_switch/touch_switch/Lw4.jpg',
+        '/assets/light_switch/touch_switch/Lw5.jpg',
+        '/assets/light_switch/touch_switch/Lw6.jpg'
+      ]),
+      variants: JSON.stringify([{ price: 3650, discount_price: 0 }]),
       help_text: 'Control two lights independently',
       engraving_available: true,
       engraving_price: 200
     },
     {
       id: '3-gang',
-      title: '3 Gang Light Switch',
-      display_name: '3 Gang Mechanical Switch',
-      price: 4000,
-      image: '/assets/light_switch/light_1.jpg',
-      image2: '/assets/light_switch/light2.jpg',
-      image3: '/assets/light_switch/light3.jpg',
-      image4: '/assets/light_switch/light4.jpg',
-      image5: '/assets/light_switch/light5.jpg',
-      variants: JSON.stringify([{ price: 4000, discount_price: 0 }]),
+      title: '3 Gang Light Switch (Lw3)',
+      display_name: '3 Gang Touch Light Switch (Lw3)',
+      price: 3800,
+      image: '/assets/light_switch/touch_switch/white_3gang.png',
+      additional_images: JSON.stringify([
+        '/assets/light_switch/touch_switch/Lw1.jpg',
+        '/assets/light_switch/touch_switch/Lw2.jpg',
+        '/assets/light_switch/touch_switch/Lw3.jpg',
+        '/assets/light_switch/touch_switch/Lw4.jpg',
+        '/assets/light_switch/touch_switch/Lw5.jpg',
+        '/assets/light_switch/touch_switch/Lw6.jpg'
+      ]),
+      variants: JSON.stringify([{ price: 3800, discount_price: 0 }]),
       help_text: 'Control three lights independently',
       engraving_available: true,
       engraving_price: 200
     }
   ];
+
+  // Static boiler switch products data
+  const boilerSwitchProducts = [
+    {
+      id: '1-gang-boiler',
+      title: '1 Gang Boiler Switch (Touch)',
+      display_name: '1 Gang Boiler Switch (Touch)',
+      price: 3700,
+      discount_price: 0,
+      image: '/assets/Boiler_switch/touch_boiler_switch/btouch1.jpg',
+      image2: '/assets/Boiler_switch/touch_boiler_switch/btouch2.jpg',
+      image3: '/assets/Boiler_switch/touch_boiler_switch/btouch3.jpg',
+      image4: '/assets/Boiler_switch/touch_boiler_switch/btouch4.jpg',
+      image5: '/assets/Boiler_switch/touch_boiler_switch/btouch5.jpg',
+      variants: JSON.stringify([
+        { name: 'White', price: 3700, discount_price: 0, color: 'White' }
+      ]),
+      help_text: 'Perfect for boiler control with safety features',
+      engraving_available: true,
+      engraving_price: 200
+    }
+  ];
+
+  // Static fan switch products data
+  const fanSwitchProducts = [
+    {
+      id: '1-gang-fan',
+      title: '1 Gang Fan Switch (Touch)',
+      display_name: '1 Gang Fan Switch (Touch)',
+      price: 3700,
+      discount_price: 0,
+      image: '/assets/Fan_switch/touch/touch1.png',
+      image2: '/assets/Fan_switch/touch/touch2.png',
+      image3: '/assets/Fan_switch/touch/touch3.png',
+      image4: '/assets/Fan_switch/touch/touch4.png',
+      image5: '/assets/Fan_switch/touch/touch5.png',
+      additional_images: JSON.stringify([
+        '/assets/Fan_switch/touch/touch1.png',
+        '/assets/Fan_switch/touch/touch2.png',
+        '/assets/Fan_switch/touch/touch3.png',
+        '/assets/Fan_switch/touch/touch4.png',
+        '/assets/Fan_switch/touch/touch5.png',
+        '/assets/Fan_switch/touch/touch6.png'
+      ]),
+      variants: JSON.stringify([
+        { name: 'White', price: 3700, discount_price: 0, color: 'White' },
+        { name: 'Gold', price: 3700, discount_price: 0, color: 'Gold' },
+        { name: 'Black', price: 3700, discount_price: 0, color: 'Black' }
+      ]),
+      help_text: 'Perfect for single fan control with variable speed',
+      engraving_available: true,
+      engraving_price: 200
+    },
+    {
+      id: '2-gang-fan',
+      title: '2 Gang Fan Speed Controller',
+      display_name: '2 Gang Fan Speed Controller',
+      price: 3850,
+      discount_price: 0,
+      image: '/assets/Fan_switch/touch/touch1.png',
+      image2: '/assets/Fan_switch/touch/touch2.png',
+      image3: '/assets/Fan_switch/touch/touch3.png',
+      image4: '/assets/Fan_switch/touch/touch4.png',
+      image5: '/assets/Fan_switch/touch/touch5.png',
+      additional_images: JSON.stringify([
+        '/assets/Fan_switch/touch/touch1.png',
+        '/assets/Fan_switch/touch/touch2.png',
+        '/assets/Fan_switch/touch/touch3.png',
+        '/assets/Fan_switch/touch/touch4.png',
+        '/assets/Fan_switch/touch/touch5.png',
+        '/assets/Fan_switch/touch/touch6.png'
+      ]),
+      variants: JSON.stringify([
+        { name: 'White', price: 3850, discount_price: 0, color: 'White' },
+        { name: 'Gold', price: 3850, discount_price: 0, color: 'Gold' },
+        { name: 'Black', price: 3850, discount_price: 0, color: 'Black' }
+      ]),
+      help_text: 'Control two fans independently or fan with light',
+      engraving_available: true,
+      engraving_price: 200
+    },
+    {
+      id: '3-gang-fan',
+      title: '3 Gang Fan Speed Controller',
+      display_name: '3 Gang Fan Speed Controller',
+      price: 4000,
+      discount_price: 0,
+      image: '/assets/Fan_switch/touch/touch1.png',
+      image2: '/assets/Fan_switch/touch/touch2.png',
+      image3: '/assets/Fan_switch/touch/touch3.png',
+      image4: '/assets/Fan_switch/touch/touch4.png',
+      image5: '/assets/Fan_switch/touch/touch5.png',
+      additional_images: JSON.stringify([
+        '/assets/Fan_switch/touch/touch1.png',
+        '/assets/Fan_switch/touch/touch2.png',
+        '/assets/Fan_switch/touch/touch3.png',
+        '/assets/Fan_switch/touch/touch4.png',
+        '/assets/Fan_switch/touch/touch5.png',
+        '/assets/Fan_switch/touch/touch6.png'
+      ]),
+      variants: JSON.stringify([
+        { name: 'White', price: 4000, discount_price: 0, color: 'White' },
+        { name: 'Gold', price: 4000, discount_price: 0, color: 'Gold' },
+        { name: 'Black', price: 4000, discount_price: 0, color: 'Black' }
+      ]),
+      help_text: 'Control three fans independently with advanced features',
+      engraving_available: true,
+      engraving_price: 200
+    }
+  ];
+
+  // Get current products based on selected switch type
+  const getCurrentProducts = () => {
+    switch (selectedSwitchType) {
+      case 'fan':
+        return fanSwitchProducts;
+      case 'boiler':
+        return boilerSwitchProducts;
+      default:
+        return lightSwitchProducts;
+    }
+  };
+
+  const currentProducts = getCurrentProducts();
 
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
@@ -115,23 +252,63 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   useEffect(() => {
     if (open) {
       setQuantity(1);
-      setSelectedProduct(staticProducts[0]); // Default to 1 gang
+      setSelectedSwitchType('');
+      setSelectedColor('');
+      setSelectedGang('');
+      setSelectedProduct(null);
+      setSelectedImage(0);
     }
   }, [open]);
 
-  // Reset image index when product changes
+  // Update selected product when switch type changes or gang changes
+  useEffect(() => {
+    if (selectedSwitchType) {
+      const products = getCurrentProducts();
+      if (selectedSwitchType === 'boiler' || selectedSwitchType === 'fan') {
+        // For boiler and fan switches, just use the first product
+        setSelectedProduct(products[0]);
+        setSelectedImage(0);
+      } else if (selectedSwitchType === 'light') {
+        // For light switches, use first product initially, then update based on gang selection
+        if (selectedGang) {
+          const gangNumber = selectedGang === 'one' ? '1' : selectedGang === 'two' ? '2' : '3';
+          const newProduct = products.find(p => p.id.includes(`${gangNumber}-gang`)) || products[0];
+          setSelectedProduct(newProduct);
+          setSelectedImage(0);
+        } else {
+          setSelectedProduct(products[0]);
+          setSelectedImage(0);
+        }
+      }
+    } else {
+      setSelectedProduct(null);
+      setSelectedImage(0);
+    }
+  }, [selectedSwitchType, selectedGang]);
+
+  // Reset image index when product changes or switch type changes
   useEffect(() => {
     setSelectedImage(0);
-  }, [selectedProduct]);
+  }, [selectedProduct, selectedSwitchType]);
 
   const currentProductData = product;
   const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
   const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
   const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
-  // Get current price from selected product
+  // Get current price from selected product or starting price
   const getCurrentPrice = () => {
-    if (!selectedProduct) return 3500; // Default price
-    return selectedProduct.price || 299;
+    if (selectedProduct) {
+      return selectedProduct.price || 3500;
+    }
+    // Show starting price from light switch products when modal first opens
+    const startingPrice = Math.min(...lightSwitchProducts.map(p => p.price));
+    return startingPrice;
+  };
+  
+  // Get starting price for display
+  const getStartingPrice = () => {
+    const allPrices = [...lightSwitchProducts, ...boilerSwitchProducts, ...fanSwitchProducts].map(p => p.price);
+    return Math.min(...allPrices);
   };
   
   const currentPrice = getCurrentPrice();
@@ -160,10 +337,9 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const getProductImages = (productData) => {
     if (!productData) return [];
     
-    const images = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5].filter(Boolean);
+    const images = [];
     
-    // Add video as first item
-    images.unshift('/assets/light_switch/video.mp4');
+    // No video for any switches, just images
     
     // Add additional images if they exist
     if (productData.additional_images) {
@@ -179,10 +355,45 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
       }
     }
     
+    // Add main product images (image, image2, etc.) after additional images
+    const mainImages = [productData.image, productData.image2, productData.image3, productData.image4, productData.image5].filter(Boolean);
+    images.push(...mainImages);
+    
     return images;
   };
   
-  const allImages = getProductImages(selectedProduct);
+  // Get all switch images when no switch is selected, specific images when selected
+  const getAllSwitchImages = () => {
+    if (selectedSwitchType && selectedProduct) {
+      return getProductImages(selectedProduct);
+    } else {
+      // Show all switch images when no switch is selected
+      const allSwitchImages = [];
+      
+      // Add light switch images
+      lightSwitchProducts.forEach(product => {
+        const images = getProductImages(product);
+        allSwitchImages.push(...images);
+      });
+      
+      // Add boiler switch images
+      boilerSwitchProducts.forEach(product => {
+        const images = getProductImages(product);
+        allSwitchImages.push(...images);
+      });
+      
+      // Add fan switch images
+      fanSwitchProducts.forEach(product => {
+        const images = getProductImages(product);
+        allSwitchImages.push(...images);
+      });
+      
+      // Remove duplicates
+      return [...new Set(allSwitchImages)];
+    }
+  };
+  
+  const allImages = getAllSwitchImages();
   
   console.log('Image debug:', {
     selectedProductId: selectedProduct?.id,
@@ -196,30 +407,96 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
   const totalPrice = (currentPrice * quantity) + engravingPrice;
 
   const handleAddToCart = async () => {
+    // Validation checks
+    if (!selectedSwitchType) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a switch type first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (selectedSwitchType === 'light' && !selectedColor) {
+      toast({
+        title: "Color Selection Required",
+        description: "Please select a color for the light switch.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (selectedSwitchType === 'light' && selectedColor && !selectedProduct) {
+      toast({
+        title: "Variation Selection Required",
+        description: "Please select a variation (gang) for the light switch.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (selectedSwitchType === 'fan' && !selectedColor) {
+      toast({
+        title: "Color Selection Required",
+        description: "Please select a color for the fan switch.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (selectedSwitchType === 'boiler' && !selectedColor) {
+      toast({
+        title: "Color Selection Required",
+        description: "Please select a color for the boiler switch.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
+      const switchTypeDisplay = selectedSwitchType === 'light' ? 'Light Switch' : selectedSwitchType === 'fan' ? 'Fan Switch' : selectedSwitchType === 'boiler' ? 'Boiler Switch' : 'Touch Switch';
+      
+      // Handle different naming for different switch types
+      let productName = '';
+      if (selectedSwitchType === 'light') {
+        const gangDisplay = selectedGang === 'one' ? '1' : selectedGang === 'two' ? '2' : '3';
+        productName = `${switchTypeDisplay} - ${gangDisplay} Gang${selectedColor ? ` (${selectedColor})` : ''}${engravingText ? ` - Engraved: "${engravingText}"` : ''}`;
+      } else if (selectedSwitchType === 'boiler') {
+        productName = `${switchTypeDisplay}${selectedColor ? ` (${selectedColor})` : ''}${engravingText ? ` - Engraved: "${engravingText}"` : ''}`;
+      } else if (selectedSwitchType === 'fan') {
+        productName = `${switchTypeDisplay}${selectedColor ? ` (${selectedColor})` : ''}${engravingText ? ` - Engraved: "${engravingText}"` : ''}`;
+      }
+      
+      const unitPrice = currentPrice + (engravingText ? (selectedProduct?.engraving_price || currentProductData.engraving_price || 200) : 0);
       if (addToCart) {
         addToCart({
-          id: product.id,
-          name: `${product.name} - ${selectedGang.charAt(0).toUpperCase() + selectedGang.slice(1)} Gang${engravingText ? ` (Engraved: "${engravingText}")` : ''}`,
-          price: totalPrice / quantity,
+          id: `${selectedProduct?.id || product.id}_${selectedSwitchType}_${selectedColor}_${selectedGang || 'single'}`,
+          name: productName,
+          price: unitPrice,
           category: product.category,
-          image: getCurrentGangImage() || product.image || '',
-          color: product.category,
+          image: selectedProduct?.image || getCurrentGangImage() || product.image || '',
+          color: selectedColor || 'Default',
           quantity: quantity,
-          selectedGang: selectedGang,
-          selectedColor: selectedColor
+          selectedSwitchType: selectedSwitchType,
+          selectedGang: selectedGang || (selectedSwitchType === 'boiler' || selectedSwitchType === 'fan' ? 'single' : ''),
+          selectedColor: selectedColor,
+          engravingText: engravingText,
+          switchTypeDisplay: switchTypeDisplay,
+          totalPrice: totalPrice
         });
       } else {
         await onAddToCart({
-          productId: product.id,
-          productName: `${product.name} - ${selectedGang.charAt(0).toUpperCase() + selectedGang.slice(1)} Gang${engravingText ? ` (Engraved: "${engravingText}")` : ''}`,
+          productId: selectedProduct?.id || product.id,
+          productName: productName,
           quantity: quantity,
           installationCharge: 0,
           engravingText: engravingText || undefined,
-          selectedGang: selectedGang,
+          selectedSwitchType: selectedSwitchType,
+          selectedGang: selectedGang || (selectedSwitchType === 'boiler' || selectedSwitchType === 'fan' ? 'single' : ''),
           selectedColor: selectedColor,
-          totalPrice: totalPrice / quantity
+          switchTypeDisplay: switchTypeDisplay,
+          totalPrice: totalPrice
         });
       }
       
@@ -230,7 +507,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: '/images/sohub_protect/installation-icon.png',
+          image: selectedProduct?.image || getCurrentGangImage() || product.image || '',
           color: 'Service',
           quantity: 1
         });
@@ -320,7 +597,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
                     <ChevronLeft className="w-4 h-4 text-gray-600" />
                   </button>
                   
-                  <div className="flex gap-3 overflow-hidden max-w-xs">
+                  <div className="flex gap-3 overflow-x-auto max-w-md scrollbar-hide">
                     {allImages.map((image, index) => (
                       <button
                         key={index}
@@ -367,14 +644,20 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
-                {selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || currentProductData.title || currentProductData.display_name || currentProductData.name}
+                {selectedSwitchType ? (
+                  selectedSwitchType === 'light' ? 'Light Switch' : 
+                  selectedSwitchType === 'fan' ? 'Fan Switch' : 
+                  selectedSwitchType === 'boiler' ? 'Boiler Switch' : 'Touch Switch'
+                ) : (
+                  currentProductData.title || currentProductData.display_name || currentProductData.name
+                )}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-4 mb-3">
                   <span className="text-lg lg:text-xl font-bold text-black">
-                    {totalPrice.toLocaleString()} BDT
+                    {!selectedProduct ? `Starting from ${currentProductData.price?.toLocaleString() || '3,500'}` : totalPrice.toLocaleString()} BDT
                   </span>
                   {(() => {
                     // Check if variants exist and parse them
@@ -527,60 +810,170 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
               </Accordion>
             </div>
 
-            {/* Product Variation Section */}
+            {/* Switches Section */}
             <div className="mb-4">
-              <h3 className="text-base font-bold text-gray-900 mb-3">Variations</h3>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {['one', 'two', 'three'].map((gang) => {
-                  const gangNumber = gang === 'one' ? '1' : gang === 'two' ? '2' : gang === 'three' ? '3' : '4';
-                  const gangProduct = staticProducts.find(p => 
-                    p.id === `${gangNumber}-gang`
-                  );
-                  
-                  const gangPrice = gangProduct?.price || 0;
-                  const isAvailable = !!gangProduct;
-                  const isSelected = selectedGang === gang;
-                  
-                  return (
-                    <div key={gang} className="text-center">
-                      <div 
-                        className={`rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden relative ${
-                          isSelected ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 
-                          isAvailable ? 'border-gray-200 hover:border-gray-300 bg-white' : 
-                          'border-gray-100 bg-gray-50 cursor-not-allowed opacity-50'
-                        }`}
-                        onClick={() => {
-                          if (isAvailable && gangProduct) {
-                            setSelectedGang(gang);
-                            setSelectedProduct(gangProduct);
-                          }
-                        }}
-                      >
-                        <img 
-                          src={`/assets/light_switch/${gangNumber}gang.png`}
-                          alt={`${gangNumber} Gang Switch`}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedGangImage(`/assets/light_switch/${gangNumber}gang.png`);
-                            setSelectedGangTitle(`Variations: ${gangNumber} Gang`);
-                            setImageModalOpen(true);
-                          }}
-                          className="absolute top-2 right-2 w-6 h-6 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-colors shadow-sm"
-                        >
-                          <Eye className="w-3 h-3 text-gray-600" />
-                        </button>
-                      </div>
-                      <div className={`mt-2 text-xs font-medium ${
-                        isSelected ? 'text-[#0a1d3a]' : 'text-gray-700'
-                      }`}>{gangNumber} Gang</div>
-                    </div>
-                  );
-                })}
+              <h3 className="text-base font-bold text-gray-900 mb-3">Switches</h3>
+              <div className="grid grid-cols-4 gap-3">
+                <div className="flex flex-col items-center">
+                  <div 
+                    onClick={() => setSelectedSwitchType('light')}
+                    className={`w-24 h-24 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden flex items-center justify-center ${
+                      selectedSwitchType === 'light' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <img 
+                      src="/assets/light_switch/touch_switch/Lw1.jpg"
+                      alt="Touch Light Switch"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className={`mt-2 text-xs font-medium text-center ${
+                    selectedSwitchType === 'light' ? 'text-[#0a1d3a]' : 'text-gray-700'
+                  }`}>Light Switch</div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div 
+                    onClick={() => setSelectedSwitchType('fan')}
+                    className={`w-24 h-24 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden flex items-center justify-center ${
+                      selectedSwitchType === 'fan' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <img 
+                      src="/assets/Fan_switch/touch/fan_switch.png"
+                      alt="Touch Fan Switch"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <div className={`mt-2 text-xs font-medium text-center ${
+                    selectedSwitchType === 'fan' ? 'text-[#0a1d3a]' : 'text-gray-700'
+                  }`}>Fan Switch</div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div 
+                    onClick={() => setSelectedSwitchType('boiler')}
+                    className={`w-24 h-24 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden flex items-center justify-center ${
+                      selectedSwitchType === 'boiler' ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <img 
+                      src="/assets/Boiler_switch/touch_boiler_switch/btouch1.jpg"
+                      alt="Boiler Switch"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className={`mt-2 text-xs font-medium text-center ${
+                    selectedSwitchType === 'boiler' ? 'text-[#0a1d3a]' : 'text-gray-700'
+                  }`}>Boiler Switch</div>
+                </div>
+                <div></div>
               </div>
             </div>
+
+            {/* Color Section */}
+            {selectedSwitchType && (
+              <div className="mb-4">
+                <h3 className="text-base font-bold text-gray-900 mb-3">Colors</h3>
+                <div className="flex gap-4">
+                  {(selectedSwitchType === 'light' ? ['White', 'Golden', 'Black'] : 
+                   selectedSwitchType === 'fan' ? ['White', 'Gold', 'Black'] : 
+                   ['White']).map((color) => {
+                    const isSelected = selectedColor === color;
+                    const getColorStyle = (colorName) => {
+                      switch (colorName) {
+                        case 'White': return 'bg-white border-2 border-gray-300';
+                        case 'Golden': return 'bg-gradient-to-br from-yellow-300 to-yellow-500';
+                        case 'Gold': return 'bg-gradient-to-br from-yellow-300 to-yellow-500';
+                        case 'Black': return 'bg-black';
+                        default: return 'bg-gray-200';
+                      }
+                    };
+                    
+                    return (
+                      <div key={color} className="flex flex-col items-center gap-2">
+                        <div 
+                          className={`w-8 h-8 rounded-full cursor-pointer transition-all duration-200 ${getColorStyle(color)} ${
+                            isSelected ? 'ring-2 ring-[#0a1d3a] ring-offset-2' : 'hover:scale-110'
+                          }`}
+                          onClick={() => setSelectedColor(color)}
+                        ></div>
+                        <div className={`text-xs font-medium ${
+                          isSelected ? 'text-[#0a1d3a]' : 'text-gray-700'
+                        }`}>{color}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Variation Section - Show when light switch is selected but inactive until color is selected */}
+            {selectedSwitchType === 'light' && (
+              <div className="mb-4">
+                <h3 className={`text-base font-bold mb-3 ${!selectedColor ? 'text-gray-400' : 'text-gray-900'}`}>Variations</h3>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {['one', 'two', 'three'].map((gang) => {
+                    const gangNumber = gang === 'one' ? '1' : gang === 'two' ? '2' : gang === 'three' ? '3' : '4';
+                    const gangProduct = currentProducts.find(p => 
+                      p.id.includes(`${gangNumber}-gang`)
+                    );
+                    
+                    const gangPrice = gangProduct?.price || 0;
+                    const isAvailable = !!gangProduct;
+                    const isSelected = selectedGang === gang && selectedGang !== '';
+                    
+                    return (
+                      <div key={gang} className="flex flex-col items-center">
+                        <div 
+                          className={`w-24 h-24 rounded-xl border-2 transition-all duration-200 overflow-hidden relative flex items-center justify-center ${
+                            !selectedColor ? 'border-gray-200 bg-white cursor-not-allowed' :
+                            isSelected ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md cursor-pointer' : 
+                            isAvailable ? 'border-gray-200 hover:border-gray-300 bg-white cursor-pointer hover:shadow-md' : 
+                            'border-gray-100 bg-gray-50 cursor-not-allowed'
+                          }`}
+                          onClick={() => {
+                            if (selectedColor && isAvailable && gangProduct) {
+                              setSelectedGang(gang);
+                              setSelectedProduct(gangProduct);
+                            }
+                          }}
+                        >
+                          <img 
+                            src={`/assets/light_switch/touch_switch/${selectedColor ? (selectedColor === 'Golden' ? 'gold' : selectedColor.toLowerCase()) : 'white'}_${gangNumber}gang.png`}
+                            alt={`${gangNumber} Gang Switch`}
+                            className="w-full h-full object-contain"
+                          />
+                          {!selectedColor && (
+                            <div className="absolute inset-0 bg-gray-200/50">
+
+
+                                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+
+                            </div>
+                          )}
+                          {selectedColor && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedGangImage(`/assets/light_switch/touch_switch/${selectedColor === 'Golden' ? 'gold' : selectedColor.toLowerCase()}_${gangNumber}gang.png`);
+                                setSelectedGangTitle(`Variations: ${gangNumber} Gang`);
+                                setImageModalOpen(true);
+                              }}
+                              className="absolute top-2 right-2 w-6 h-6 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-colors shadow-sm"
+                            >
+                              <Eye className="w-3 h-3 text-gray-600" />
+                            </button>
+                          )}
+                        </div>
+                        <div className={`mt-2 text-xs font-medium text-center ${
+                          !selectedColor ? 'text-gray-400' :
+                          isSelected ? 'text-[#0a1d3a]' : 'text-gray-700'
+                        }`}>{gangNumber} Gang</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
 
             {/* Customization Section */}
@@ -830,7 +1223,7 @@ export function LightSwitchModal({ open, onOpenChange, product, onAddToCart, onB
             open={engravingModalOpen}
             onOpenChange={setEngravingModalOpen}
             productImage={allImages[selectedImage] || currentProductData.image || ''}
-            engravingImage="/assets/light_switch/engreving.png"
+            engravingImage={selectedSwitchType === 'fan' ? '/assets/Fan_switch/touch/fan_engreving.png' : selectedSwitchType === 'boiler' ? '/assets/Boiler_switch/boiler_engreving.png' : '/assets/light_switch/touch_switch/light_engreving.png'}
             productName={selectedProduct?.name || currentProductData.name}
             engravingTextColor={selectedProduct?.engraving_text_color || currentProductData.engraving_text_color}
             initialText={engravingText}

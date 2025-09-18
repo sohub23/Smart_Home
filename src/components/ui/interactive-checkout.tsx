@@ -19,12 +19,13 @@ import { SmartSwitchModal } from "@/components/ui/SmartSwitchModal";
 import { LightSwitchModal } from "@/components/ui/LightSwitchModal_new";
 import { LightSwitchModal as LightMechanicalSwitchModal } from "@/components/ui/LightMechanicalSwitch";
 import { FanSwitchModal } from "@/components/ui/FanSwitchModal";
-import { FanSwitchModal as FanMechanicalSwitchModal } from "@/components/ui/FanSwitchmodal_mechanical";
+import { FanSwitchModal as FanMechanicalSwitchModal } from "@/components/ui/Hubmodal";
 import { BoilerSwitchModal } from "@/components/ui/BoilerSwitchModal";
 import { productData } from "@/lib/productData";
 import { SpotLightModal } from '@/components/ui/SpotLightModal';
 import { StripLightModal } from '@/components/ui/StripLightModal';
 import { CeilingLampModal } from '@/components/ui/Ceiling_lamb_modal';
+import { HubModal } from '@/components/ui/Hubmodal';
 
 import { ServicesModal } from "@/components/ui/ServicesModal";
 import { InstallationModal } from "@/components/ui/InstallationModal";
@@ -231,6 +232,7 @@ function InteractiveCheckout({
     const [spotLightModalOpen, setSpotLightModalOpen] = useState(false);
     const [stripLightModalOpen, setStripLightModalOpen] = useState(false);
     const [ceilingLampModalOpen, setCeilingLampModalOpen] = useState(false);
+    const [hubModalOpen, setHubModalOpen] = useState(false);
     const [servicesModalOpen, setServicesModalOpen] = useState(false);
     const [installationModalOpen, setInstallationModalOpen] = useState(false);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -502,10 +504,18 @@ function InteractiveCheckout({
                 const productsWithStock = allSubcategoryProducts.filter(p => (p.stock || p.stock_quantity || 0) > 0);
                 const firstProduct = allSubcategoryProducts[0];
                 
+                // Format price with "Starting From"
+                let priceDisplay = 'Coming Soon';
+                if (subcategory.starting_from) {
+                    priceDisplay = subcategory.starting_from.includes('Starting From') ? subcategory.starting_from : `Starting From ${subcategory.starting_from}`;
+                } else if (firstProduct && firstProduct.price) {
+                    priceDisplay = `Starting From ${firstProduct.price} BDT`;
+                }
+                
                 return {
                     id: subcategory.id,
                     name: subcategory.name,
-                    price: subcategory.starting_from || (firstProduct ? `${firstProduct.price} BDT` : 'Coming Soon'),
+                    price: priceDisplay,
                     gangType: subcategory.name,
                     imageUrl: subcategory.image_url || firstProduct?.image || '/images/smart_switch/3 gang mechanical.webp',
                     isSoldOut: false
@@ -518,9 +528,9 @@ function InteractiveCheckout({
         return directProducts.map(p => ({
             id: p.id,
             name: p.title,
-            price: `${p.price.toLocaleString()} BDT`,
+            price: `Starting From ${p.price.toLocaleString()} BDT`,
             gangType: p.title,
-            imageUrl: '/images/smart_switch/3 gang mechanical.webp',
+            imageUrl: p.image || '/images/smart_switch/3 gang mechanical.webp',
             isSoldOut: p.stock_quantity === 0
         }));
     };
@@ -1017,6 +1027,36 @@ function InteractiveCheckout({
                                     setBoilerSwitchModalOpen(true);
                                     return;
                                 }
+                                // TEMP: Force BoilerSwitchModal for Touch DIY Series (for testing)
+                                if (product.name === 'Touch DIY Series') {
+                                    console.log('Opening Boiler Switch Modal for testing');
+                                    const boilerVariant = {
+                                        id: product.id,
+                                        name: product.name,
+                                        price: product.price,
+                                        gangType: 'Boiler Switch',
+                                        imageUrl: product.imageUrl
+                                    };
+                                    setSelectedVariant(boilerVariant);
+                                    setBoilerSwitchModalOpen(true);
+                                    return;
+                                }
+                                
+                                // Handle M6 Hub clicks
+                                if (product.name.toLowerCase().includes('m6') || product.name.toLowerCase().includes('hub')) {
+                                    console.log('Opening Hub Modal for M6 Hub');
+                                    const hubVariant = {
+                                        id: product.id,
+                                        name: product.name,
+                                        price: product.price,
+                                        gangType: 'Hub',
+                                        imageUrl: product.imageUrl
+                                    };
+                                    setSelectedVariant(hubVariant);
+                                    setHubModalOpen(true);
+                                    return;
+                                }
+                                
                                 const variant = categoryGroup.products.find(p => p.id === product.id);
                                 setSelectedVariant(variant);
                                 setSelectedProduct(categoryToIdMap[categoryGroup.category] || '3');
@@ -1078,6 +1118,10 @@ function InteractiveCheckout({
                                         }
                                         break;
                                     case 'boilerSwitch': setBoilerSwitchModalOpen(true); break;
+                                    case 'hub':
+                                        console.log('Opening hub modal');
+                                        setHubModalOpen(true);
+                                        break;
                                     case 'lighting':
                                         if (product.name.toLowerCase().includes('spot')) {
                                             console.log('Opening spot light modal');
@@ -1121,6 +1165,13 @@ function InteractiveCheckout({
                             {product.isSoldOut && (
                                 <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] px-2 py-1 rounded-full font-medium z-10">
                                     Sold Out
+                                </div>
+                            )}
+                            
+                            {/* Personalize Badge for Touch Series */}
+                            {(product.name.toLowerCase().includes('touch') && categoryGroup.category === 'Switch') && (
+                                <div className="absolute top-1 right-1 bg-gray-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium z-10">
+                                    Personalize
                                 </div>
                             )}
                             

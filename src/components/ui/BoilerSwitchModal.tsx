@@ -43,28 +43,30 @@ interface BoilerSwitchModalProps {
 // Static boiler switch product data
 const boilerSwitchProduct = {
   id: 'boiler-switch-1',
-  title: 'Heavy Duty Boiler Switch',
-  display_name: 'Heavy Duty Boiler Switch',
-  name: 'Heavy Duty Boiler Switch',
-  price: 2500,
-  discount_price: 2200,
-  image: '/assets/Boiler_switch/boiler1.jpg',
-  image2: '/assets/Boiler_switch/boiler2.jpg',
-  image3: '/assets/Boiler_switch/boiler3.jpg',
-  image4: '/assets/Boiler_switch/boiler4.jpg',
-  image5: '/assets/Boiler_switch/boiler5.jpg',
+  title: 'Touch DIY Series',
+  display_name: 'Touch DIY Series',
+  name: 'Touch DIY Series',
+  price: 6500,
+  discount_price: 6500,
+  image: '/assets/Touch_DIY/light_switch_main.png',
+  image2: '/assets/Touch_DIY/light_1.jpg',
+  image3: '/assets/Touch_DIY/light2.jpg',
+  image4: '/assets/Touch_DIY/light3.jpg',
+  image5: '/assets/Touch_DIY/light4.jpg',
   additional_images: JSON.stringify([
-    '/assets/Boiler_switch/boiler6.jpg',
-    '/assets/Boiler_switch/white.png'
+    '/assets/Touch_DIY/light5.jpg',
+    '/assets/Touch_DIY/light6.jpg'
   ]),
   overview: 'Heavy-duty electrical switch engineered for high-power appliances like boilers, water heaters, and industrial equipment\nPremium heat-resistant materials with enhanced safety mechanisms and thermal protection for reliable operation\nProfessional-grade construction with reinforced contacts and arc suppression technology for extended lifespan',
   technical_details: 'Voltage Rating: AC 100-240V, Maximum Current: 20A, Power Rating: 4800W with overload protection\nDimensions: 86mm x 86mm x 45mm, Operating Temperature: -10°C to +60°C, IP20 protection rating\nElectrical Life: 100,000 switching cycles, Contact Material: Silver alloy, Mounting: Standard 35mm DIN rail compatible',
   warranty: '1 Year Service Warranty',
   variants: JSON.stringify([
-    { name: 'Standard', price: 2500, discount_price: 2200, stock: 15 }
+    { name: '1 Gang', price: 6500, discount_price: 6500, stock: 15, image: '/assets/Touch_DIY/1gang.png' },
+    { name: '2 Gang', price: 6750, discount_price: 6750, stock: 12, image: '/assets/Touch_DIY/2gang.png' },
+    { name: '3 Gang', price: 7000, discount_price: 7000, stock: 8, image: '/assets/Touch_DIY/3gang.png' }
   ]),
   help_text: 'This heavy-duty boiler switch is specifically designed for controlling high-power electrical appliances like boilers and water heaters. Features enhanced safety mechanisms and heat-resistant materials.',
-  help_image_url: '/assets/Boiler_switch/boiler1.jpg',
+  help_image_url: '/assets/Touch_DIY/light_switch_main.png',
   engraving_available: false,
   stock: 15
 };
@@ -80,12 +82,16 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(boilerSwitchProduct);
+  const [selectedGang, setSelectedGang] = useState('');
+  const [hasSelectedGang, setHasSelectedGang] = useState(false);
 
   useEffect(() => {
     if (open) {
       setQuantity(1);
       setSelectedImage(0);
       setSelectedProduct(boilerSwitchProduct);
+      setHasSelectedGang(false);
+      setSelectedGang('');
     }
   }, [open]);
 
@@ -153,31 +159,43 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
     }
     
     if (variants && variants.length > 0) {
-      const firstVariant = variants[0];
-      return firstVariant.discount_price && firstVariant.discount_price > 0 
-        ? firstVariant.discount_price 
-        : firstVariant.price || 0;
+      const selectedVariant = selectedGang ? variants.find(v => v.name === selectedGang) : variants[0];
+      const variant = selectedVariant || variants[0];
+      return variant.discount_price && variant.discount_price > 0 
+        ? variant.discount_price 
+        : variant.price || 0;
     }
     
     return currentProductData.price || 0;
   };
   
   const currentPrice = getCurrentPrice();
-  const engravingPrice = engravingText && (currentProductData.engraving_price || 200) ? (currentProductData.engraving_price || 200) * quantity : 0;
+  const engravingPrice = engravingText ? (currentProductData.engraving_price || 200) * quantity : 0;
   const totalPrice = (currentPrice * quantity) + engravingPrice;
 
   const handleAddToCart = async () => {
+    if (!selectedGang) {
+      toast({
+        title: "Please Select Variation",
+        description: "Please select a gang variation before adding to bag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
+      const unitPrice = currentPrice + (engravingText ? (currentProductData.engraving_price || 200) : 0);
       const cartPayload = {
-        id: `${currentProductData.id || product.id}_white_${Date.now()}`,
-        name: `${currentProductData?.title || currentProductData?.name || product.name} - White`,
-        price: currentPrice,
+        id: `${currentProductData.id || product.id}_${selectedGang.replace(' ', '_')}_${Date.now()}`,
+        name: `${currentProductData?.title || currentProductData?.name || product.name} - ${selectedGang}${engravingText ? ` (Engraved: "${engravingText}")` : ''}`,
+        price: unitPrice,
         category: product.category,
         image: currentProductData?.image || '',
         quantity: quantity,
-        selectedVariation: 'White',
-        color: 'White',
+        selectedVariation: selectedGang,
+        gang: selectedGang,
+        engravingText: engravingText,
         totalPrice: totalPrice
       };
       
@@ -194,9 +212,12 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: '/images/sohub_protect/installation-icon.png',
+          image: currentProductData?.image || allImages[selectedImage] || '/images/sohub_protect/installation-icon.png',
           color: 'Service',
-          quantity: 1
+          quantity: 1,
+          selectedImages: allImages,
+          selectedGang: selectedGang,
+          productName: currentProductData?.title || currentProductData?.name || product.name
         });
       }
       
@@ -284,6 +305,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                       <button
                         key={index}
                         onClick={() => setSelectedImage(index)}
+                        onMouseEnter={() => setSelectedImage(index)}
                         className={cn(
                           "w-16 h-16 rounded-lg overflow-hidden transition-all duration-200",
                           selectedImage === index ? "ring-2 ring-black" : "opacity-70 hover:opacity-100"
@@ -293,7 +315,6 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
                           src={image} 
                           alt={`${product.name} ${index + 1}`} 
                           className="w-full h-full object-cover"
-
                         />
                       </button>
                     ))}
@@ -321,7 +342,7 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
               <div className="mb-4">
                 <div className="flex items-baseline gap-4 mb-3">
                   <span className="text-lg lg:text-xl font-bold text-black">
-                    {totalPrice.toLocaleString()} BDT
+                    {!hasSelectedGang ? 'Starting From ' : ''}{(hasSelectedGang ? totalPrice : currentPrice).toLocaleString()} BDT
                   </span>
                   {(() => {
                     // Check if variants exist and parse them
@@ -505,22 +526,97 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
               </Accordion>
             </div>
 
-            {/* Color Variation Section */}
+            {/* Gang Variation Section */}
             <div className="mb-4">
               <h3 className="text-base font-bold text-gray-900 mb-3">Variations</h3>
-              <div className="grid grid-cols-4 gap-3">
-                <div className="text-center">
-                  <div className="rounded-xl border-2 border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md overflow-hidden relative">
-                    <img 
-                      src="/assets/Boiler_switch/white.png"
-                      alt="White Boiler Switch"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="mt-2 text-xs font-medium text-[#0a1d3a]">White</div>
-                </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {(() => {
+                  let variants = currentProductData.variants;
+                  if (typeof variants === 'string') {
+                    try {
+                      variants = JSON.parse(variants);
+                    } catch (e) {
+                      variants = [];
+                    }
+                  }
+                  return variants.map((variant) => (
+                    <div key={variant.name} className="flex flex-col items-center">
+                      <div 
+                        onClick={() => {
+                          setSelectedGang(variant.name);
+                          setHasSelectedGang(true);
+                        }}
+                        className={`w-24 h-24 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md overflow-hidden relative flex items-center justify-center ${
+                          selectedGang === variant.name ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md' : 
+                          'border-gray-200 hover:border-gray-300 bg-white'
+                        }`}
+                      >
+                        <img 
+                          src={variant.image}
+                          alt={`${variant.name} Switch`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className={`mt-2 text-xs font-medium text-center ${
+                        selectedGang === variant.name ? 'text-[#0a1d3a]' : 'text-gray-700'
+                      }`}>{variant.name}</div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
+
+            {/* Customization Section */}
+            <div className="mb-4">
+                <h3 className="text-base font-bold text-gray-900 mb-3">Personalization</h3>
+                <div 
+                  onClick={() => setEngravingModalOpen(true)}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
+                    engravingText 
+                      ? 'border-[#0a1d3a] bg-[#0a1d3a]/5 shadow-md hover:shadow-lg' 
+                      : 'border-dashed border-gray-300 bg-gray-50/50 hover:border-[#0a1d3a]/50 hover:bg-[#0a1d3a]/5'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        engravingText ? 'bg-[#0a1d3a]/10' : 'bg-gray-200'
+                      }`}>
+                        <svg className={`w-5 h-5 ${
+                          engravingText ? 'text-[#0a1d3a]' : 'text-gray-500'
+                        }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <div className={`font-semibold ${
+                          engravingText ? 'text-[#0a1d3a]' : 'text-gray-700'
+                        }`}>Customize Your Switch</div>
+                        <div className="text-sm text-gray-600">
+                          {engravingText ? (
+                            <span className="flex items-center gap-1">
+                              <span className="font-medium">"{engravingText}"</span>
+                              <span className="text-green-600">✓ Added</span>
+                            </span>
+                          ) : (
+                            'Add personal text engraving'
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-semibold ${
+                        engravingText ? 'text-[#0a1d3a]' : 'text-gray-700'
+                      }`}>
+                        +{((currentProductData.engraving_price || 200) * quantity).toLocaleString()} BDT
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {engravingText ? 'Click to edit' : 'Optional'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
             {/* Quantity Selection */}
             <div className="mb-4">
@@ -671,20 +767,21 @@ export function BoilerSwitchModal({ open, onOpenChange, product, onAddToCart, on
       </Dialog>
       
       {/* Engraving Modal */}
-      {product.engraving_available && engravingModalOpen && (
+      {engravingModalOpen && (
         <>
           <div className="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm" />
           <EngravingModal
             open={engravingModalOpen}
             onOpenChange={setEngravingModalOpen}
-            productImage={allImages[selectedImage] || product.image || ''}
-            engravingImage={product.engraving_image}
-            productName={product.name}
-            engravingTextColor={product.engraving_text_color}
+            productImage={allImages[selectedImage] || currentProductData.image || product.image || ''}
+            engravingImage={currentProductData.engraving_image || product.engraving_image || '/assets/Touch_DIY/engreving.png'}
+            productName={currentProductData.name || product.name}
+            engravingTextColor={currentProductData.engraving_text_color || product.engraving_text_color}
             initialText={engravingText}
             currentQuantity={quantity}
             onSave={({ text }) => {
               setEngravingText(text);
+              // Force re-render to update price calculation
             }}
           />
         </>

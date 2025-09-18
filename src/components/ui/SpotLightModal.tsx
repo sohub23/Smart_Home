@@ -67,7 +67,7 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
   const [selectedGangTitle, setSelectedGangTitle] = useState('');
 
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
-  const [selectedSize, setSelectedSize] = useState('3.5');
+  const [selectedSize, setSelectedSize] = useState('');
 
 
   const isLoading = false;
@@ -147,6 +147,15 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
   console.log('Current image being displayed:', allImages[selectedImage]);
 
   const handleAddToCart = async () => {
+    if (!selectedSize) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a size variation before adding to cart.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const basePrice = currentPrice * quantity;
@@ -154,7 +163,7 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
       
       const cartPayload = {
         id: `${selectedProduct.id}_${selectedSize}_${Date.now()}`,
-        name: `${selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || ''} - ${selectedSize === '24' ? '24 degree' : '36 degree'}`,
+        name: `${product?.name || selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name || ''} - ${selectedSize === '24' ? '24 degree' : '36 degree'}`,
         price: currentPrice,
         category: product.category,
         image: selectedProduct?.image || '',
@@ -162,7 +171,11 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
         selectedSize: selectedSize,
         variation: selectedSize === '24' ? '24 degree' : '36 degree',
         size: selectedSize === '24' ? '24 degree' : '36 degree',
-        totalPrice: currentPrice * quantity
+        totalPrice: currentPrice * quantity,
+        selectedImages: [selectedProduct?.image || ''],
+        productName: product?.name || selectedProduct?.name,
+        selectedModel: selectedSize === '24' ? '24 degree' : '36 degree',
+        basePrice: currentPrice
       };
       
       if (addToCart) {
@@ -177,7 +190,7 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: selectedProduct?.image || product.image,
+          image: selectedProduct?.image || '',
           color: 'Service',
           quantity: 1
         });
@@ -341,14 +354,17 @@ export function SpotLightModal({ open, onOpenChange, product, onAddToCart, onBuy
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
-                {selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name}
+                {product?.name || selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-4 mb-3">
                   <span className="text-lg lg:text-xl font-bold text-black">
-                    {((currentPrice || 0) * quantity).toLocaleString()} BDT
+                    {selectedSize ? 
+                      `${((currentPrice || 0) * quantity).toLocaleString()} BDT` : 
+                      `Starting From ${(4500 * quantity).toLocaleString()} BDT`
+                    }
                   </span>
                   {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
                     <>

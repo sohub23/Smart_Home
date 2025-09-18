@@ -104,14 +104,17 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
       
       // Add installation service if selected
       if (installationSelected && addToCart) {
+        const installationImage = product?.image || accessories[0]?.image || '/images/services/services.png';
         addToCart({
           id: `installation_${Date.now()}`,
           name: 'Professional Installation Service',
           price: 0, // TBD price
           category: 'Installation Service',
-          image: '/images/services/services.png',
+          image: installationImage,
           color: 'Service',
-          quantity: 1
+          quantity: 1,
+          productName: product?.name || 'Security Sensors',
+          installationFor: product?.name || 'Security Sensors'
         });
       }
       
@@ -230,14 +233,14 @@ export function SensorsSelectionModal({ open, onOpenChange, product, addToCart, 
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                Security Sensors
+                {product?.name || 'Security Sensors'}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-base text-gray-900">
-                    {totalPrice > 0 || installationSelected ? `${totalPrice.toLocaleString()} BDT` : 'Select items'}
+                    {totalPrice > 0 || installationSelected ? `${totalPrice.toLocaleString()} BDT` : `Starting From ${(product?.price || 850).toLocaleString()} BDT`}
                   </span>
                   {(totalPrice > 0 || installationSelected) && (
                     <span className="text-sm text-green-600 font-semibold">

@@ -11,13 +11,22 @@ import { toast } from '@/components/ui/use-toast';
 const staticCameras = [
   { 
     id: '1', 
-    name: 'AI Camera', 
+    name: 'AI Camera (2.4G)', 
     desc: 'Smart AI-powered security camera with motion detection', 
     price: 3500, 
     image: '/assets/Security/Camera/ai_camera.jpeg',
     additionalImages: [
-      '/assets/Security/Camera/camera_1.jpeg',
-      '/assets/Security/Camera/camera2.jpeg'
+      '/assets/Security/Camera/camera_1.jpeg'
+    ]
+  },
+  { 
+    id: '2', 
+    name: 'AI Camera (5G)', 
+    desc: 'Smart AI-powered security camera with motion detection', 
+    price: 3500, 
+    image: '/assets/Security/Camera/ai_camera.jpeg',
+    additionalImages: [
+      '/assets/Security/Camera/camera_1.jpeg'
     ]
   }
 ];
@@ -134,14 +143,17 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
       
       // Add installation service if selected
       if (installationSelected && addToCart) {
+        const installationImage = product?.image || accessories[0]?.image || '/images/services/services.png';
         addToCart({
           id: `installation_${Date.now()}`,
           name: 'Professional Installation Service',
           price: 0, // TBD price
           category: 'Installation Service',
-          image: '/images/services/services.png',
+          image: installationImage,
           color: 'Service',
-          quantity: 1
+          quantity: 1,
+          productName: product?.name || 'Security Cameras',
+          installationFor: product?.name || 'Security Cameras'
         });
       }
       
@@ -260,14 +272,14 @@ export function CameraSelectionModal({ open, onOpenChange, product, addToCart, o
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-lg lg:text-xl font-bold text-gray-900 mb-2 lg:mb-3">
-                Security Cameras
+                {product?.name || 'Security Cameras'}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-base text-gray-900">
-                    {totalPrice > 0 || installationSelected ? `${totalPrice.toLocaleString()} BDT` : 'Select items'}
+                    {totalPrice > 0 || installationSelected ? `${totalPrice.toLocaleString()} BDT` : `Starting From ${(product?.price || 3500).toLocaleString()} BDT`}
                   </span>
                   {(totalPrice > 0 || installationSelected) && (
                     <span className="text-sm text-green-600 font-semibold">

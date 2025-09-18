@@ -46,13 +46,15 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [connectionType, setConnectionType] = useState('zigbee');
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedSize, setSelectedSize] = useState('1-channel remote');
-  const [selectedCapacity, setSelectedCapacity] = useState('Matter over Thread');
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedCapacity, setSelectedCapacity] = useState('');
   
-  // Price mapping for different variations
+  // Price mapping for different wattage variations
+  const basePrice = product.price || 12500;
   const sizePricing = {
-    '1-channel remote': 15000,
-    'Only Motor (Remote is required to set the limit)': 13000
+    '12W': 12500,
+    '24W': 12700,
+    '30W': 12900
   };
   const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
   const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
@@ -63,9 +65,9 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   // Static product data
   const staticProductData = {
     id: 'roller-curtain-1',
-    title: 'Smart Roller Curtain',
-    display_name: 'Smart Roller Curtain',
-    price: 13000,
+    title: product.name || 'Smart Roller Curtain',
+    display_name: product.name || 'Smart Roller Curtain',
+    price: product.price || 13000,
     overview: '<ul><li>Motorized roller system with smooth, quiet up–down operation</li><li>Supports app, remote, voice, and scheduled automation</li><li>Ideal for modern homes, offices, and hotels with energy-saving design</li></ul>',
     technical_details: '<ul><li>Motor & Control: DC/AC motor (<35 dB), app, remote, voice, timer</li><li>Tube & Capacity: Up to 8 ft width, curtain fabric not included</li><li>Power: AC 100–220V, optional battery, 6–10 kg load</li></ul>',
     warranty: '1 year service warranty',
@@ -108,6 +110,8 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
       setSelectedProduct({ ...product, ...staticProductData });
       setDynamicProducts([staticProductData]);
       setDynamicLoading(false);
+      setSelectedSize('');
+      setSelectedCapacity('');
       
       // Set default variant
       if (staticProductData.variants?.length > 0) {
@@ -135,7 +139,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
   const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
   const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
-  const currentPrice = sizePricing[selectedSize] || 15000;
+  const currentPrice = sizePricing[selectedSize] || basePrice;
   
   console.log('Current product data:', currentProductData);
   console.log('Selected product:', selectedProduct);
@@ -161,6 +165,26 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const totalWithInstallation = (currentPrice * totalQuantity);
 
   const handleAddToCart = async () => {
+    if (!selectedSize) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a wattage before adding to bag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+
+    
+    if (!selectedCapacity) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a connectivity type before adding to bag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const quantity = trackQuantities[0] || 1;
@@ -169,6 +193,9 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
       
       const variationText = ` - ${selectedSize} (${selectedCapacity})`;
       
+      // Get the product image that will be used
+      const productImage = allImages[1] || product.image;
+      
       // Add main product to cart instantly
       if (addToCart) {
         addToCart({
@@ -176,8 +203,8 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           name: `${product.name}${variationText}`,
           price: currentPrice,
           category: 'Smart Curtain',
-          image: allImages[1] || product.image,
-          color: `Option: ${selectedSize}, Type: ${selectedCapacity}`,
+          image: productImage,
+          color: `Wattage: ${selectedSize}, Type: ${selectedCapacity}`,
           model: selectedSize,
           capacity: selectedCapacity,
           quantity: quantity
@@ -191,9 +218,13 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: '/images/sohub_protect/installation-icon.png',
+          image: productImage,
           color: 'Service',
-          quantity: 1
+          quantity: 1,
+          selectedImages: allImages,
+          selectedWattage: selectedSize,
+          selectedCapacity: selectedCapacity,
+          productName: product.name
         });
       }
       
@@ -358,7 +389,7 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <div className="mb-5">
                 <div className="flex items-baseline gap-4 mb-3">
                   <span className="text-lg lg:text-xl font-bold text-black">
-                    {totalQuantity > 1 ? `${totalWithInstallation.toLocaleString()} BDT` : `${currentPrice.toLocaleString()} BDT`}
+                    {totalQuantity > 1 ? `${totalWithInstallation.toLocaleString()} BDT` : selectedSize ? `${currentPrice.toLocaleString()} BDT` : `Starting From ${basePrice.toLocaleString()} BDT`}
                   </span>
                   {totalQuantity > 1 && (
                     <span className="text-base text-gray-600 font-medium">
@@ -507,49 +538,53 @@ export function RollerCurtainModal({ open, onOpenChange, product, onAddToCart, o
                   <div className="flex items-center gap-4">
                     <h3 className="text-base font-bold text-gray-900">Variations</h3>
                     <span className="text-sm text-gray-600">
-                      option: <span className="font-semibold text-gray-900">
-                        {selectedSize || '1-channel remote'}
+                      wattage: <span className="font-semibold text-gray-900">
+                        {selectedSize || 'Please select'}
                       </span>
                     </span>
                   </div>
                 </div>
                 
-                {/* Variation Options - Horizontal Row */}
+                {/* Wattage Variation Options */}
                 <div className="flex gap-2">
-                  {['1-channel remote', 'Only Motor'].map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => setSelectedSize(option === '1-channel remote' ? option : 'Only Motor (Remote is required to set the limit)')}
-                      className={`flex-1 py-1.5 text-xs rounded border-2 transition-all font-medium flex flex-col items-center justify-center text-center ${
-                        selectedSize === (option === '1-channel remote' ? option : 'Only Motor (Remote is required to set the limit)') ? 'border-black bg-gray-100 text-black' : 'border-gray-200 hover:border-black text-gray-700'
-                      }`}
-                    >
-                      <span>{option}</span>
-                      {option === 'Only Motor' && (
-                        <span className="text-gray-500 text-xs mt-1">(Remote is required to set the limit)</span>
-                      )}
-                    </button>
-                  ))}
+                  {['12W', '24W', '30W'].map((wattage) => {
+                    const wattagePrice = sizePricing[wattage];
+                    return (
+                      <button
+                        key={wattage}
+                        onClick={() => setSelectedSize(wattage)}
+                        className={`flex-1 py-1.5 text-xs rounded border-2 transition-all font-medium flex flex-col items-center ${
+                          selectedSize === wattage ? 'border-black bg-gray-100 text-black' : 'border-gray-200 hover:border-black text-gray-700'
+                        }`}
+                      >
+                        <div>{wattage}</div>
+                        <div className="text-xs text-gray-500">{wattagePrice.toLocaleString()} BDT</div>
+                      </button>
+                    );
+                  })}
                 </div>
                 
               </div>
             </div>
 
-            {/* Capacity Section */}
+            {/* Connectivity Section */}
             <div className="mb-6">
-              <h3 className="text-base font-bold text-gray-900 mb-3">Capacity</h3>
+              <h3 className={`text-base font-bold mb-3 ${!selectedSize ? 'text-gray-400' : 'text-gray-900'}`}>Connectivity</h3>
               <div className="text-sm text-gray-700 flex gap-2 flex-wrap">
-                {['Matter over Thread', 'Matter Over wifi', 'Zigbee'].map((capacity) => (
+                {['Matter over Thread', 'Matter Over wifi', 'Zigbee'].map((connectivity) => (
                   <button
-                    key={capacity}
-                    onClick={() => setSelectedCapacity(capacity)}
-                    className={`border rounded px-3 py-2 transition-all cursor-pointer ${
-                      selectedCapacity === capacity 
-                        ? 'border-black bg-black text-white' 
-                        : 'border-gray-300 bg-gray-100 hover:border-gray-400'
+                    key={connectivity}
+                    onClick={() => selectedSize && setSelectedCapacity(connectivity)}
+                    disabled={!selectedSize}
+                    className={`border rounded px-3 py-2 transition-all ${
+                      !selectedSize 
+                        ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                        : selectedCapacity === connectivity 
+                        ? 'border-black bg-black text-white cursor-pointer' 
+                        : 'border-gray-300 bg-gray-100 hover:border-gray-400 cursor-pointer'
                     }`}
                   >
-                    {capacity}
+                    {connectivity}
                   </button>
                 ))}
               </div>

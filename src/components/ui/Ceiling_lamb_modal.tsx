@@ -69,7 +69,7 @@ export function CeilingLampModal({ open, onOpenChange, product, onAddToCart, onB
   const [selectedGangTitle, setSelectedGangTitle] = useState('');
 
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
-  const [selectedSize, setSelectedSize] = useState('2.5');
+  const [selectedSize, setSelectedSize] = useState('');
 
 
   const isLoading = false;
@@ -78,11 +78,11 @@ export function CeilingLampModal({ open, onOpenChange, product, onAddToCart, onB
     if (open) {
       setQuantity(1);
       setSelectedImage(0);
+      setSelectedSize(''); // No default size selected
+      setActiveTab('benefits');
       
       const productData = spotlightProducts[0];
-      if (!selectedProduct) {
-        setSelectedProduct(productData);
-      }
+      setSelectedProduct(productData);
       
       try {
         let variants = [];
@@ -112,8 +112,9 @@ export function CeilingLampModal({ open, onOpenChange, product, onAddToCart, onB
   }, [open]);
 
   const getSizePrice = () => {
-    const sizeMap = { '2.5': 5999, '3.5': 6200, '4': 6500 };
-    return sizeMap[selectedSize] || 5999;
+    const basePrice = 5999;
+    const sizeMap = { '2.5': basePrice, '3.5': basePrice + 200, '4': basePrice + 400 };
+    return sizeMap[selectedSize] || basePrice;
   };
   
   const currentPrice = getSizePrice();
@@ -143,6 +144,15 @@ export function CeilingLampModal({ open, onOpenChange, product, onAddToCart, onB
   });
 
   const handleAddToCart = async () => {
+    if (!selectedSize) {
+      toast({
+        title: "Please Select Size",
+        description: "Please select a size variation before adding to bag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const basePrice = currentPrice * quantity;
@@ -167,14 +177,17 @@ export function CeilingLampModal({ open, onOpenChange, product, onAddToCart, onB
       }
       
       if (installationSelected && addToCart) {
+        const installationImage = product?.image || selectedProduct?.image || '/images/services/services.png';
         addToCart({
-          id: `${product.id}_installation`,
-          name: 'Installation and setup',
+          id: `${product.id}_installation_${Date.now()}`,
+          name: 'Professional Installation Service',
           price: 0,
           category: 'Installation Service',
-          image: selectedProduct?.image || product.image,
+          image: installationImage,
           color: 'Service',
-          quantity: 1
+          quantity: 1,
+          productName: product?.name || 'Ceiling Lamp',
+          installationFor: product?.name || 'Ceiling Lamp'
         });
       }
       
@@ -324,14 +337,14 @@ export function CeilingLampModal({ open, onOpenChange, product, onAddToCart, onB
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
-                {selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name}
+                {product?.name || selectedProduct?.title || selectedProduct?.display_name || selectedProduct?.name}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-4 mb-3">
                   <span className="text-lg lg:text-xl font-bold text-black">
-                    {((currentPrice || 0) * quantity).toLocaleString()} BDT
+                    {selectedSize ? `${((currentPrice || 0) * quantity).toLocaleString()} BDT` : `Starting From ${(product?.price || 5999).toLocaleString()} BDT`}
                   </span>
                   {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
                     <>
@@ -443,7 +456,7 @@ export function CeilingLampModal({ open, onOpenChange, product, onAddToCart, onB
 
             {/* Product Variation Section */}
             <div className="mb-4">
-              <h3 className="text-base font-bold text-gray-900 mb-3">New</h3>
+              <h3 className="text-base font-bold text-gray-900 mb-3">Variations</h3>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {['2.5', '3.5', '4'].map((size) => {
                   const isSelected = selectedSize === size;

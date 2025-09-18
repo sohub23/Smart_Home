@@ -56,21 +56,22 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
   const [accessoryQuantities, setAccessoryQuantities] = useState<{[key: number]: number}>({});
   const [installationSelected, setInstallationSelected] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('SP-01');
+  const [selectedModel, setSelectedModel] = useState('');
   
   useEffect(() => {
     if (open) {
-      setSelectedModel('SP-01');
+      setSelectedModel('');
       setAccessories(staticAccessories);
     }
   }, [open]);
   
 
   
-  // Static model data
+  // Static model data - use database price as base
+  const basePrice = product.price || 7490;
   const modelData = {
     'SP-01': {
-      price: 7490,
+      price: basePrice,
       images: [
         'https://www.youtube.com/watch?v=XKjPvhZcSWA',
         '/assets/Security/Panel/SP01/model.jpeg',
@@ -87,7 +88,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
       }
     },
     'SP-05': {
-      price: 15990,
+      price: basePrice + 8500,
       images: [
         'https://www.youtube.com/watch?v=2jh58viBn2g',
         '/assets/Security/Panel/SP05/panel_1.jpeg',
@@ -105,9 +106,17 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
     }
   };
   
-  const currentModel = modelData[selectedModel];
-  const currentPrice = currentModel.price;
-  const currentImages = currentModel.images;
+  const defaultImages = [
+    product.image,
+    product.image2,
+    product.image3,
+    product.image4,
+    product.image5
+  ].filter(Boolean);
+  
+  const currentModel = selectedModel ? modelData[selectedModel] : null;
+  const currentPrice = selectedModel ? currentModel.price : basePrice;
+  const currentImages = selectedModel ? currentModel.images : defaultImages;
   const currentStock = 10;
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +155,15 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
   };
 
   const handleAddToCart = async () => {
+    if (!selectedModel) {
+      toast({
+        title: "Model Required",
+        description: "Please select a model before adding to bag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const variationText = ` - ${selectedModel}`;
@@ -160,17 +178,30 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
         unitPrice: currentPrice
       };
       
+      // Get the specific model image for the bag
+      const modelSpecificImage = selectedModel && currentImages.length > 0 ? 
+        (currentImages.find(img => !img.includes('youtube.com')) || currentImages[0]) : 
+        (currentImages[selectedImage] || currentImages[0] || product.image);
+      
+      const productImage = modelSpecificImage;
+      
       // Add main product to cart instantly
       if (addToCart) {
         addToCart({
           id: `${product.id}_${selectedModel}_${Date.now()}`,
           name: `${product.name}${variationText}`,
           price: currentPrice,
-          category: 'Security System',
-          image: currentImages[0],
+          category: product.category || 'Security System',
+          image: productImage,
+          allImages: currentImages,
           color: `Model: ${selectedModel}`,
           model: selectedModel,
-          quantity: quantity
+          quantity: quantity,
+          selectedImages: currentImages,
+          productName: product.name,
+          selectedModel: selectedModel,
+          basePrice: basePrice,
+          totalPrice: currentPrice * quantity
         });
       }
       
@@ -194,13 +225,18 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
       // Add installation instantly if selected
       if (installationSelected && addToCart) {
         addToCart({
-          id: `${product.id}_installation`,
+          id: `${product.id}_installation_${Date.now()}`,
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: null,
+          image: productImage,
           color: 'Service',
-          quantity: 1
+          quantity: 1,
+          selectedImages: currentImages,
+          selectedModel: selectedModel,
+          selectedAccessories: selectedAccessories.map(index => accessories[index]),
+          productName: product.name,
+          installationFor: `${product.name} - ${selectedModel}`
         });
       }
       
@@ -239,11 +275,11 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
               {/* Main Product Image */}
               <div className="flex-1 flex items-center justify-center relative lg:min-h-0">
                 <div className="w-full h-48 lg:h-auto lg:max-w-lg lg:max-h-[60vh] lg:aspect-square">
-                  {currentImages[selectedImage] ? (
+                  {currentImages.length > 0 && currentImages[selectedImage] ? (
                     currentImages[selectedImage].includes('youtube.com') ? (
                       <iframe
                         src={currentImages[selectedImage].replace('https://www.youtube.com/watch?v=', 'https://www.youtube.com/embed/')}
-                        title={`${modelData[selectedModel].name} Video`}
+                        title={`${selectedModel ? modelData[selectedModel].name : 'Product'} Video`}
                         className="w-full h-full rounded-lg"
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -252,14 +288,14 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                     ) : (
                       <img
                         src={currentImages[selectedImage]}
-                        alt={`${modelData[selectedModel].name} ${selectedImage + 1}`}
+                        alt={`${selectedModel ? modelData[selectedModel].name : 'Product'} ${selectedImage + 1}`}
                         className="w-full h-full object-contain lg:object-cover rounded-lg"
                       />
                     )
                   ) : null}
                   <div className={`w-full h-full bg-gray-100 rounded-lg flex flex-col items-center justify-center ${currentImages.length > 0 ? 'hidden' : ''}`}>
                     <div className="w-12 h-12 bg-gray-200 rounded-lg mb-3"></div>
-                    <span className="text-gray-400 text-sm">No image</span>
+                    <span className="text-gray-400 text-sm">{selectedModel ? 'No image' : 'Select a model'}</span>
                   </div>
                 </div>
                 
@@ -284,7 +320,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
               </div>
               
               {/* Desktop Thumbnails */}
-              {currentImages.length > 0 && (
+              {currentImages.length > 1 && (
                 <div className="flex items-center gap-3 justify-center mt-6">
                   <button
                     onClick={() => setSelectedImage(selectedImage > 0 ? selectedImage - 1 : currentImages.length - 1)}
@@ -312,7 +348,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                         ) : (
                           <img 
                             src={image} 
-                            alt={`${modelData[selectedModel].name} ${index + 1}`} 
+                            alt={`${selectedModel ? modelData[selectedModel].name : 'Product'} ${index + 1}`} 
                             className="w-full h-full object-cover"
                           />
                         )}
@@ -335,14 +371,18 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
             {/* Top Section */}
             <div className="mb-6">
               <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
-                Smart Security System
+                {product.name || 'Smart Security System'}
               </h1>
               
               {/* Price Section */}
               <div className="mb-4">
                 <div className="flex items-baseline gap-4 mb-3">
                   <span className="text-lg lg:text-xl font-bold text-black">
-                    {totalPrice.toLocaleString()} BDT
+                    {selectedModel ? (
+                      accessoryTotal > 0 || quantity > 1 ? `${totalPrice.toLocaleString()} BDT` : `${currentPrice.toLocaleString()} BDT`
+                    ) : (
+                      `Starting From ${basePrice.toLocaleString()} BDT`
+                    )}
                   </span>
                 </div>
               </div>
@@ -391,17 +431,29 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                     <div className="pt-4">
                       {activeTab === 'benefits' && (
                         <div className="text-sm text-gray-500">
-                          <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.overview }} />
+                          {selectedModel ? (
+                            <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.overview }} />
+                          ) : (
+                            <p>Please select a model to view details.</p>
+                          )}
                         </div>
                       )}
                       {activeTab === 'specs' && (
                         <div className="text-sm text-gray-500">
-                          <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.technical_details }} />
+                          {selectedModel ? (
+                            <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.technical_details }} />
+                          ) : (
+                            <p>Please select a model to view technical details.</p>
+                          )}
                         </div>
                       )}
                       {activeTab === 'warranty' && (
                         <div className="text-sm text-gray-500">
-                          <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.warranty }} />
+                          {selectedModel ? (
+                            <div dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.warranty }} />
+                          ) : (
+                            <p>Please select a model to view warranty information.</p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -432,7 +484,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                         SP-01
                       </div>
                       <div className="text-xs text-gray-600">Standard Security Kit</div>
-                      <div className="text-xs text-gray-500 mt-1">৳ 7,490</div>
+                      <div className="text-xs text-gray-500 mt-1">৳ {basePrice.toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
@@ -455,7 +507,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
                         SP-05
                       </div>
                       <div className="text-xs text-gray-600">Advanced Security Kit</div>
-                      <div className="text-xs text-gray-500 mt-1">৳ 15,990</div>
+                      <div className="text-xs text-gray-500 mt-1">৳ {(basePrice + 8500).toLocaleString()}</div>
                     </div>
                   </div>
                 </div>
@@ -487,10 +539,10 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
             </div>
 
             {/* Add Accessories */}
-            <div className="mb-4">
+            <div className={`mb-4 transition-opacity duration-300 ${!selectedModel ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
               <div className="mb-3">
                 <h3 className="text-base font-bold text-gray-900">Add Accessories</h3>
-                <p className="text-xs text-gray-500">(Optional)</p>
+                <p className="text-xs text-gray-500">{!selectedModel ? 'Select a model first' : '(Optional)'}</p>
               </div>
               
               {accessories.length > 0 ? (
@@ -700,7 +752,7 @@ export function SmartSecurityBoxModal({ open, onOpenChange, product, onAddToCart
           <div className="p-6 max-h-[70vh] overflow-y-auto">
             <div 
               className="prose prose-sm max-w-none leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: modelData[selectedModel].data.help_text }}
+              dangerouslySetInnerHTML={{ __html: selectedModel ? modelData[selectedModel].data.help_text : '<p>Please select a model first.</p>' }}
             />
             
             {/* Contact Section */}

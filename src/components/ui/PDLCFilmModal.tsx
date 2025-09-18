@@ -196,7 +196,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: '/images/sohub_protect/installation-icon.png',
+          image: selectedProduct?.image || product.image || '',
           color: 'Service',
           quantity: 1
         });
@@ -351,7 +351,7 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
             <div className="mb-6">
               {!isLoading && selectedProduct ? (
                 <h1 className="text-xl lg:text-2xl font-bold text-black mb-4 lg:mb-5 leading-tight tracking-tight">
-                  {selectedProduct.title || selectedProduct.display_name || selectedProduct.name}
+                  {product?.name || selectedProduct.title || selectedProduct.display_name || selectedProduct.name}
                 </h1>
               ) : (
                 <div className="h-6 bg-gray-200 rounded animate-pulse mb-3"></div>
@@ -362,9 +362,11 @@ export function PDLCFilmModal({ open, onOpenChange, product, onAddToCart, onBuyN
                 <div className="mb-5">
                   <div className="flex items-baseline gap-4 mb-3">
                     <span className="text-lg lg:text-xl font-bold text-black">
-                      {currentPrice.toLocaleString()} BDT
+                      {totalArea > 0 ? 
+                        `${totalWithTransformer.toLocaleString()} BDT` : 
+                        `Starting From ${currentPrice.toLocaleString()} BDT per sq ft`
+                      }
                     </span>
-                    <span className="text-base text-gray-600 font-medium">per sq ft</span>
                     {selectedVariant && selectedVariant.discount_price > 0 && selectedVariant.discount_price < selectedVariant.price && (
                       <>
                         <span className="text-xs text-gray-500 line-through">

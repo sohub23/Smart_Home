@@ -46,18 +46,19 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const [connectionType, setConnectionType] = useState('zigbee');
   const [activeTab, setActiveTab] = useState('benefits');
   const [helpModalOpen, setHelpModalOpen] = useState(false);
-  const [selectedSize, setSelectedSize] = useState('2m set');
-  const [selectedCapacity, setSelectedCapacity] = useState('Matter over Thread');
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedCapacity, setSelectedCapacity] = useState('');
   
-  // Price mapping for different sizes
+  // Price mapping for different sizes - base price from database
+  const basePrice = product.price || 30000;
   const sizePricing = {
-    '2m set': 30000,
-    '3m set': 31500,
-    '4m set': 33000,
-    '5m set': 34500,
-    '6m set': 36000,
-    '7m set': 37500,
-    '8m set': 39000
+    '2m set': basePrice,
+    '3m set': basePrice + 1500,
+    '4m set': basePrice + 3000,
+    '5m set': basePrice + 4500,
+    '6m set': basePrice + 6000,
+    '7m set': basePrice + 7500,
+    '8m set': basePrice + 9000
   };
   const [selectedProduct, setSelectedProduct] = useState(product.subcategoryProducts?.[0] || product);
   const [dynamicProducts, setDynamicProducts] = useState<any[]>([]);
@@ -68,9 +69,9 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   // Static product data
   const staticProductData = {
     id: 'slider-curtain-1',
-    title: 'Smart Slider Curtain',
-    display_name: 'Smart Slider Curtain',
-    price: 25000,
+    title: product.name || 'Slider Curtain Motor',
+    display_name: product.name || 'Slider Curtain Motor',
+    price: product.price || 30000,
     overview: '<ul><li>Smooth, quiet motorized sliding</li><li>App, voice, remote & automation control</li><li>Adds convenience, energy efficiency & premium look</li></ul>',
     technical_details: '<ul><li>DC brushless motor (<35 dB), manual pull supported</li><li>Track up to 8 feet, supports 50 kg curtain</li><li>AC 100–220V, battery backup, 3 speed modes</li></ul>',
     warranty: '1 year service warranty',
@@ -85,21 +86,21 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       {
         id: 'slider-standard',
         name: 'Standard (up to 8 feet)',
-        price: 25000,
+        price: basePrice,
         discount_price: 0,
         stock: 10
       },
       {
         id: 'slider-large',
         name: 'Large (8-12 feet)',
-        price: 35000,
-        discount_price: 32000,
+        price: basePrice + 5000,
+        discount_price: basePrice + 2000,
         stock: 5
       },
       {
         id: 'slider-xl',
         name: 'Extra Large (12+ feet)',
-        price: 45000,
+        price: basePrice + 15000,
         discount_price: 0,
         stock: 3
       }
@@ -113,6 +114,8 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
       setSelectedProduct({ ...product, ...staticProductData });
       setDynamicProducts([staticProductData]);
       setDynamicLoading(false);
+      setSelectedSize('');
+      setSelectedCapacity('');
       
       // Set default variant
       if (staticProductData.variants?.length > 0) {
@@ -140,7 +143,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const features = currentProductData.features ? currentProductData.features.split('\n').filter(f => f.trim()) : [];
   const specifications = currentProductData.specifications ? currentProductData.specifications.split('\n').filter(s => s.trim()) : [];
   const warranty = currentProductData.warranty ? currentProductData.warranty.split('\n').filter(w => w.trim()) : [];
-  const currentPrice = sizePricing[selectedSize] || 30000;
+  const currentPrice = selectedSize ? sizePricing[selectedSize] : basePrice;
   
   console.log('Current product data:', currentProductData);
   console.log('Selected product:', selectedProduct);
@@ -166,6 +169,24 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
   const totalWithInstallation = (currentPrice * totalQuantity);
 
   const handleAddToCart = async () => {
+    if (!selectedSize) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a size variation before adding to bag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!selectedCapacity) {
+      toast({
+        title: "Selection Required",
+        description: "Please select a capacity type before adding to bag.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const quantity = trackQuantities[0] || 1;
@@ -185,6 +206,9 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
         unitPrice: currentPrice
       };
       
+      // Get the product image that will be used
+      const productImage = allImages[1] || product.image;
+      
       // Add main product to cart instantly
       if (addToCart) {
         addToCart({
@@ -192,7 +216,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
           name: `${product.name}${variationText}`,
           price: currentPrice,
           category: 'Smart Curtain',
-          image: allImages[1] || product.image,
+          image: productImage,
           color: `Size: ${selectedSize}, Type: ${selectedCapacity}`,
           model: selectedSize,
           capacity: selectedCapacity,
@@ -207,9 +231,13 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
           name: 'Installation and setup',
           price: 0,
           category: 'Installation Service',
-          image: '/images/sohub_protect/installation-icon.png',
+          image: productImage,
           color: 'Service',
-          quantity: 1
+          quantity: 1,
+          selectedImages: allImages,
+          selectedSize: selectedSize,
+          selectedCapacity: selectedCapacity,
+          productName: product.name
         });
       }
       
@@ -374,7 +402,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
               <div className="mb-5">
                 <div className="flex items-baseline gap-4 mb-3">
                   <span className="text-lg lg:text-xl font-bold text-black">
-                    {totalQuantity > 1 ? `${totalWithInstallation.toLocaleString()} BDT` : `${currentPrice.toLocaleString()} BDT`}
+                    {totalQuantity > 1 ? `${totalWithInstallation.toLocaleString()} BDT` : selectedSize ? `${currentPrice.toLocaleString()} BDT` : `Starting From ${basePrice.toLocaleString()} BDT`}
                   </span>
                   {totalQuantity > 1 && (
                     <span className="text-base text-gray-600 font-medium">
@@ -524,7 +552,7 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
                     <h3 className="text-base font-bold text-gray-900">Variations</h3>
                     <span className="text-sm text-gray-600">
                       size: <span className="font-semibold text-gray-900">
-                        {selectedSize || '2m set'}
+                        {selectedSize || 'Please select'}
                       </span>
                     </span>
                   </div>
@@ -550,16 +578,19 @@ export function SliderCurtainModal({ open, onOpenChange, product, onAddToCart, o
 
             {/* Capacity Section */}
             <div className="mb-6">
-              <h3 className="text-base font-bold text-gray-900 mb-3">Capacity</h3>
+              <h3 className={`text-base font-bold mb-3 ${!selectedSize ? 'text-gray-400' : 'text-gray-900'}`}>Capacity</h3>
               <div className="text-sm text-gray-700 flex gap-2 flex-wrap">
                 {['Matter over Thread', 'Matter Over wifi', 'Zigbee', 'Wifi'].map((capacity) => (
                   <button
                     key={capacity}
-                    onClick={() => setSelectedCapacity(capacity)}
-                    className={`border rounded px-3 py-2 transition-all cursor-pointer ${
-                      selectedCapacity === capacity 
-                        ? 'border-black bg-black text-white' 
-                        : 'border-gray-300 bg-gray-100 hover:border-gray-400'
+                    onClick={() => selectedSize && setSelectedCapacity(capacity)}
+                    disabled={!selectedSize}
+                    className={`border rounded px-3 py-2 transition-all ${
+                      !selectedSize 
+                        ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-50'
+                        : selectedCapacity === capacity 
+                        ? 'border-black bg-black text-white cursor-pointer' 
+                        : 'border-gray-300 bg-gray-100 hover:border-gray-400 cursor-pointer'
                     }`}
                   >
                     {capacity}

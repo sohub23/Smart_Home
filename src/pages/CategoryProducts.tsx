@@ -588,7 +588,11 @@ const CategoryProducts = () => {
             </div>
             <div className="grid grid-cols-3 gap-4">
             {/* Light Switch Card */}
-            <Card className="border-0 shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 bg-white group">
+            <Card className="border-0 shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 bg-white group relative">
+              {/* Personalize Badge */}
+              <div className="absolute top-1 right-1 bg-gray-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium z-10">
+                Personalize
+              </div>
               <div 
                 className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-4 cursor-pointer"
                 onClick={() => setSelectedSecurityCategory('light')}
@@ -619,7 +623,11 @@ const CategoryProducts = () => {
             </Card>
 
             {/* Fan Switch Card */}
-            <Card className="border-0 shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 bg-white group">
+            <Card className="border-0 shadow-md rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 bg-white group relative">
+              {/* Personalize Badge */}
+              <div className="absolute top-1 right-1 bg-gray-500 text-white text-[8px] px-1.5 py-0.5 rounded-full font-medium z-10">
+                Personalize
+              </div>
               <div 
                 className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center justify-center p-4 cursor-pointer"
                 onClick={() => setSelectedSecurityCategory('fan')}
